@@ -66,7 +66,10 @@ General:
 ## Testing
 
 - Backend: `cd backend && ./mvnw test` (Spring Boot + JUnit 5, 123 tests).
-- Frontend: `cd frontend && pnpm build` (typecheck via `tsc -b` + Vite build).
+- Frontend: `cd frontend && pnpm test` (Vitest + Testing Library on jsdom).
+- Frontend typecheck and bundle: `cd frontend && pnpm build` (`tsc -b` + Vite).
+- CI (`.github/workflows/ci.yml`) runs the backend tests, the frontend tests and
+  build, and packages the deployable JAR on every push and pull request to `main`.
 - Add or update tests with the change; a PR that breaks the build is not merged.
 
 ## Definition of Done

@@ -81,6 +81,7 @@ cd backend
 cd frontend
 pnpm install
 pnpm dev
+pnpm test    # Vitest + Testing Library (jsdom)
 ```
 
 ---
