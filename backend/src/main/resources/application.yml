@@ -1,0 +1,97 @@
+spring:
+  application:
+    name: neonvibe
+
+  # Datasource defaults (production-oriented). Values injected via env vars;
+  # never hardcode secrets here.
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+    contentnegotiation:
+      media-types:
+        webmanifest: application/manifest+json
+
+  # OpenAPI / Swagger UI (dev). Deshabilitado en prod (application-prod.yml).
+  springdoc:
+    api-docs:
+      path: /v3/api-docs
+    swagger-ui:
+      path: /swagger-ui
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# NeonVibe custom configuration (see AGENTS.md section 10)
+neonvibe:
+  jwt:
+    # 256-bit secret for HS256. Always injected via env; never hardcode in prod.
+    secret: ${JWT_SECRET:neonvibe-dev-only-secret-change-me-please-00000000}
+    access-token-expiration-ms: 900000        # 15 minutes
+    refresh-token-expiration-ms: 604800000    # 7 days
+  auth:
+    google:
+      # true (default): validate id_token against Google. false: dev/test mock.
+      enabled: ${GOOGLE_AUTH_ENABLED:true}
+      tokeninfo-url: https://oauth2.googleapis.com/tokeninfo
+      # OAuth 2.0 Web client id. Required to verify the token's `aud` claim;
+      # without it, tokens minted for other Google apps would be accepted.
+      client-id: ${GOOGLE_CLIENT_ID:}
+    # Comma-separated email allowlist. Empty = anyone with a Google account can
+    # register (dev only). Required in prod — see ProdStartupGuard.
+    allowed-emails: ${ALLOWED_EMAILS:}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  music:
+    paths: /srv/Music
+    supported-formats: mp3,flac,aac,ogg,m4a,wav
+    scan-interval-seconds: 0
+  covers:
+    cache-path: ./data/covers
+    max-size-mb: 500
+    retry-days: 7
+  lyrics:
+    cache-path: ./data/lyrics
+  lastfm:
+    api-key: ${LASTFM_API_KEY:}
+    api-secret: ${LASTFM_API_SECRET:}
+  frontend-base: ${FRONTEND_BASE:http://localhost:5173}
+  websocket:
+    allowed-origins: "*"
+
+logging:
+  level:
+    root: INFO

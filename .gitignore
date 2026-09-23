@@ -1,0 +1,95 @@
+# =============================================================================
+# NeonVibe — .gitignore raíz  (Spring Boot backend + React/Vite/pnpm frontend)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Secretos y variables de entorno → NUNCA commitear
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# Env de producción (systemd lo carga desde /opt/neonvibe/neonvibe.env)
+deploy/neonvibe.env
+
+# Credenciales OAuth de Google descargadas de Cloud Console.
+# Mantenerlas fuera del repo (p. ej. ~/.secrets/neonvibe/).
+client_secret*.json
+*client_secret*.json
+
+# -----------------------------------------------------------------------------
+# Frontend (React + Vite + pnpm)
+# -----------------------------------------------------------------------------
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build de Vite / PWA
+dist/
+dev-dist/
+.vite/
+*.tsbuildinfo
+.eslintcache
+coverage/
+
+# -----------------------------------------------------------------------------
+# Backend (Java 21 + Maven + Spring Boot)
+# -----------------------------------------------------------------------------
+target/
+*.class
+*.jar
+*.war
+# El wrapper de Maven sí se versiona (permite ./mvnw sin Maven instalado)
+!**/.mvn/wrapper/maven-wrapper.jar
+
+# Frontend compilado e incrustado en el JAR (resources/static)
+static/
+
+# -----------------------------------------------------------------------------
+# Artefactos de build/deploy (deploy/build.sh → dist/neonvibe.jar)
+# -----------------------------------------------------------------------------
+# (cubierto por `dist/` de arriba)
+
+# -----------------------------------------------------------------------------
+# Datos locales de la app en dev (cachés de carátulas/letras, etc.)
+# -----------------------------------------------------------------------------
+data/
+
+# -----------------------------------------------------------------------------
+# Logs / crash dumps de la JVM
+# -----------------------------------------------------------------------------
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+
+# -----------------------------------------------------------------------------
+# Sistema operativo
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------------------------
+# IDE / editor
+# -----------------------------------------------------------------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# -----------------------------------------------------------------------------
+# Docker / tooling local
+# -----------------------------------------------------------------------------
+docker-compose.override.yml
+
+# opencode/agent tool state
+.commandcode/

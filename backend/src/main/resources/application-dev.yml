@@ -1,0 +1,33 @@
+# Development profile: overrides for local development against Dockerized PostgreSQL.
+# Activate with: ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/neonvibe
+    username: neonvibe
+    password: neonvibe
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+
+# CORS: allow the Vite dev server during development.
+neonvibe:
+  auth:
+    google:
+      # Dev: accept mock tokens (no real Google credentials needed).
+      enabled: false
+  music:
+    # Dev: use a local scratch dir instead of the production library.
+    paths: /tmp/test-music
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+
+logging:
+  level:
+    com.neonvibe: DEBUG
+    org.hibernate.SQL: DEBUG

@@ -1,0 +1,36 @@
+# Test profile: embedded H2 in PostgreSQL compatibility mode.
+# Flyway is disabled because the migration script is only a placeholder in Phase 0.
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:neonvibe;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        # Auto-quote reserved keywords (e.g. YEAR) so H2/MODE=PostgreSQL accepts
+        # entity-schema columns generated via create-drop.
+        auto_quote_keyword: true
+
+  flyway:
+    enabled: false
+
+neonvibe:
+  auth:
+    google:
+      # Test: accept mock tokens.
+      enabled: false
+  music:
+    # Test: point at a non-existent path so the auto-scan is a fast no-op and
+    # never touches the real /srv/Music library.
+    paths: /nonexistent-test-music
+
+logging:
+  level:
+    com.neonvibe: DEBUG

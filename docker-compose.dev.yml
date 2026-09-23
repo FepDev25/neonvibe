@@ -1,0 +1,32 @@
+# NeonVibe - development infrastructure
+# PostgreSQL 16 for local development. Start with:
+#   docker compose -f docker-compose.dev.yml up -d
+# Stop with:
+#   docker compose -f docker-compose.dev.yml down
+#
+# Host port 5433: local PostgreSQL may already listen on 5432 on dev machines.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: neonvibe-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: neonvibe
+      POSTGRES_USER: neonvibe
+      # Dev-only default. Override via env if needed; never use in production.
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-neonvibe}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neonvibe -d neonvibe"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
+    name: neonvibe_postgres_data

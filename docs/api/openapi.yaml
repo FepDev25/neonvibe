@@ -1,0 +1,1544 @@
+openapi: 3.1.0
+info:
+  title: NeonVibe API
+  description: "Servidor de música personal self-hosted. Los endpoints bajo /api/v1\
+    \ requieren un JWT de acceso (header Authorization: Bearer <token>), salvo /auth/**\
+    \ y /public/**."
+  version: v1
+servers:
+- url: https://neonvibe.fepdev.app
+  description: Producción
+security:
+- bearer: []
+paths:
+  /api/v1/settings:
+    get:
+      tags:
+      - settings-controller
+      operationId: get
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SettingsResponse"
+    put:
+      tags:
+      - settings-controller
+      operationId: update
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SettingsResponse"
+  /api/v1/queue:
+    get:
+      tags:
+      - queue-controller
+      operationId: get_1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlayQueueResponse"
+    put:
+      tags:
+      - queue-controller
+      operationId: update_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayQueueRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlayQueueResponse"
+  /api/v1/playlists/{id}:
+    get:
+      tags:
+      - playlist-controller
+      operationId: getById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlaylistDetailResponse"
+    put:
+      tags:
+      - playlist-controller
+      operationId: update_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaylistRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlaylistResponse"
+    delete:
+      tags:
+      - playlist-controller
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+  /api/v1/settings/cache/clear:
+    post:
+      tags:
+      - settings-controller
+      operationId: clearCache
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int32
+  /api/v1/playlists:
+    get:
+      tags:
+      - playlist-controller
+      operationId: list
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlaylistResponse"
+    post:
+      tags:
+      - playlist-controller
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaylistRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlaylistResponse"
+  /api/v1/playlists/{id}/tracks:
+    post:
+      tags:
+      - playlist-controller
+      operationId: addTrack
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaylistTrackRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlaylistResponse"
+  /api/v1/playlists/{id}/reorder:
+    post:
+      tags:
+      - playlist-controller
+      operationId: reorder
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlaylistResponse"
+  /api/v1/lastfm/disconnect:
+    post:
+      tags:
+      - last-fm-controller
+      operationId: disconnect
+      responses:
+        "200":
+          description: OK
+  /api/v1/history:
+    get:
+      tags:
+      - history-controller
+      operationId: list_1
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagePlayHistoryResponse"
+    post:
+      tags:
+      - history-controller
+      operationId: record
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayHistoryRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlayHistoryResponse"
+  /api/v1/favorites:
+    get:
+      tags:
+      - favorite-controller
+      operationId: list_2
+      parameters:
+      - name: entityType
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - TRACK
+          - ALBUM
+          - ARTIST
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FavoriteResponse"
+    post:
+      tags:
+      - favorite-controller
+      operationId: create_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FavoriteResponse"
+  /api/v1/auth/refresh:
+    post:
+      tags:
+      - auth-controller
+      operationId: refresh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /api/v1/auth/google:
+    post:
+      tags:
+      - auth-controller
+      operationId: googleLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleTokenRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /api/v1/artists/{id}/cover:
+    get:
+      tags:
+      - cover-controller
+      operationId: artistCover
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+    post:
+      tags:
+      - cover-controller
+      operationId: uploadArtistCover
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ArtistResponse"
+  /api/v1/albums/{id}/cover:
+    get:
+      tags:
+      - cover-controller
+      operationId: albumCover
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+    post:
+      tags:
+      - cover-controller
+      operationId: uploadAlbumCover
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AlbumResponse"
+  /api/v1/admin/scan:
+    post:
+      tags:
+      - admin-controller
+      operationId: triggerScan
+      responses:
+        "200":
+          description: OK
+  /api/v1/tracks:
+    get:
+      tags:
+      - track-controller
+      operationId: list_3
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: artist
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: album
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: genre
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageTrackResponse"
+  /api/v1/tracks/{id}:
+    get:
+      tags:
+      - track-controller
+      operationId: getById_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TrackResponse"
+  /api/v1/tracks/{id}/stream:
+    get:
+      tags:
+      - stream-controller
+      operationId: stream
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: Range
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+  /api/v1/tracks/{id}/lyrics:
+    get:
+      tags:
+      - lyrics-controller
+      operationId: lyrics
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LyricsResponse"
+  /api/v1/tracks/{id}/cover:
+    get:
+      tags:
+      - cover-controller
+      operationId: trackCover
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /api/v1/radio/seed:
+    get:
+      tags:
+      - radio-controller
+      operationId: seed
+      parameters:
+      - name: track_id
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackResponse"
+  /api/v1/public/playlists/{id}:
+    get:
+      tags:
+      - public-controller
+      operationId: get_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PublicPlaylistResponse"
+  /api/v1/lastfm/callback:
+    get:
+      tags:
+      - last-fm-controller
+      operationId: callback
+      parameters:
+      - name: token
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+  /api/v1/lastfm/auth-url:
+    get:
+      tags:
+      - last-fm-controller
+      operationId: authUrl
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+  /api/v1/favorites/tracks:
+    get:
+      tags:
+      - favorite-controller
+      operationId: listTracks
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackResponse"
+  /api/v1/favorites/artists:
+    get:
+      tags:
+      - favorite-controller
+      operationId: listArtists
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArtistResponse"
+  /api/v1/favorites/albums:
+    get:
+      tags:
+      - favorite-controller
+      operationId: listAlbums
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlbumResponse"
+  /api/v1/auth/me:
+    get:
+      tags:
+      - auth-controller
+      operationId: me
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+  /api/v1/artists:
+    get:
+      tags:
+      - artist-controller
+      operationId: list_4
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageArtistResponse"
+  /api/v1/artists/{id}:
+    get:
+      tags:
+      - artist-controller
+      operationId: getById_2
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ArtistResponse"
+  /api/v1/artists/{id}/tracks:
+    get:
+      tags:
+      - artist-controller
+      operationId: getTracks
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackResponse"
+  /api/v1/artists/{id}/albums:
+    get:
+      tags:
+      - artist-controller
+      operationId: getAlbums
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlbumResponse"
+  /api/v1/albums:
+    get:
+      tags:
+      - album-controller
+      operationId: list_5
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: artist
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageAlbumResponse"
+  /api/v1/albums/{id}:
+    get:
+      tags:
+      - album-controller
+      operationId: getById_3
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AlbumResponse"
+  /api/v1/albums/{id}/tracks:
+    get:
+      tags:
+      - album-controller
+      operationId: getTracks_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackResponse"
+  /api/v1/admin/scan/status:
+    get:
+      tags:
+      - admin-controller
+      operationId: status
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ScanStatusResponse"
+  /api/v1/playlists/{id}/tracks/{trackId}:
+    delete:
+      tags:
+      - playlist-controller
+      operationId: removeTrack
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: trackId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+  /api/v1/favorites/{id}:
+    delete:
+      tags:
+      - favorite-controller
+      operationId: delete_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    SettingsRequest:
+      type: object
+      properties:
+        theme:
+          type: string
+          pattern: dark|light
+        notificationsEnabled:
+          type: boolean
+        scrobbleEnabled:
+          type: boolean
+        coverSources:
+          type: object
+          additionalProperties:
+            type: boolean
+    LastFmStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        username:
+          type: string
+    SettingsResponse:
+      type: object
+      properties:
+        theme:
+          type: string
+        notificationsEnabled:
+          type: boolean
+        scrobbleEnabled:
+          type: boolean
+        coverSources:
+          type: object
+          additionalProperties:
+            type: boolean
+        lastfm:
+          $ref: "#/components/schemas/LastFmStatus"
+    PlayQueueRequest:
+      type: object
+      properties:
+        currentTrackId:
+          type: integer
+          format: int64
+        positionSeconds:
+          type: integer
+          format: int32
+        shuffleEnabled:
+          type: boolean
+        repeatMode:
+          type: string
+          enum:
+          - NONE
+          - ALL
+          - ONE
+        tracksOrder:
+          type: array
+          items:
+            type: integer
+            format: int64
+      required:
+      - tracksOrder
+    PlayQueueResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        currentTrackId:
+          type: integer
+          format: int64
+        positionSeconds:
+          type: integer
+          format: int32
+        shuffleEnabled:
+          type: boolean
+        repeatMode:
+          type: string
+          enum:
+          - NONE
+          - ALL
+          - ONE
+        tracksOrder:
+          type: array
+          items:
+            type: integer
+            format: int64
+        updatedAt:
+          type: string
+          format: date-time
+    PlaylistRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 0
+        description:
+          type: string
+          maxLength: 2000
+          minLength: 0
+        isPublic:
+          type: boolean
+      required:
+      - name
+    PlaylistResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        isPublic:
+          type: boolean
+        coverArtPath:
+          type: string
+        ownerId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        tracks:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlaylistTrackResponse"
+    PlaylistTrackResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        trackId:
+          type: integer
+          format: int64
+        position:
+          type: integer
+          format: int32
+    PlaylistTrackRequest:
+      type: object
+      properties:
+        trackId:
+          type: integer
+          format: int64
+      required:
+      - trackId
+    ReorderRequest:
+      type: object
+      properties:
+        trackIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+      required:
+      - trackIds
+    PlayHistoryRequest:
+      type: object
+      properties:
+        trackId:
+          type: integer
+          format: int64
+        completed:
+          type: boolean
+        durationListenedSeconds:
+          type: integer
+          format: int32
+      required:
+      - trackId
+    PlayHistoryResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        trackId:
+          type: integer
+          format: int64
+        playedAt:
+          type: string
+          format: date-time
+        completed:
+          type: boolean
+        durationListenedSeconds:
+          type: integer
+          format: int32
+    FavoriteRequest:
+      type: object
+      properties:
+        entityType:
+          type: string
+          enum:
+          - TRACK
+          - ALBUM
+          - ARTIST
+        entityId:
+          type: integer
+          format: int64
+      required:
+      - entityId
+      - entityType
+    FavoriteResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        entityType:
+          type: string
+          enum:
+          - TRACK
+          - ALBUM
+          - ARTIST
+        entityId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+      required:
+      - refreshToken
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+    GoogleTokenRequest:
+      type: object
+      properties:
+        idToken:
+          type: string
+          minLength: 1
+      required:
+      - idToken
+    ArtistResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    AlbumResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        artist:
+          type: string
+        year:
+          type: integer
+          format: int32
+        genre:
+          type: string
+        coverArtPath:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        trackCount:
+          type: integer
+          format: int64
+    Pageable:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+        sort:
+          type: array
+          items:
+            type: string
+    PageTrackResponse:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackResponse"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        paged:
+          type: boolean
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        unpaged:
+          type: boolean
+    SortObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+        sorted:
+          type: boolean
+        unsorted:
+          type: boolean
+    TrackResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        filePath:
+          type: string
+        title:
+          type: string
+        artist:
+          type: string
+        album:
+          type: string
+        albumArtist:
+          type: string
+        year:
+          type: integer
+          format: int32
+        genre:
+          type: string
+        trackNumber:
+          type: integer
+          format: int32
+        discNumber:
+          type: integer
+          format: int32
+        durationSeconds:
+          type: integer
+          format: int32
+        bitrate:
+          type: integer
+          format: int32
+        format:
+          type: string
+        mimeType:
+          type: string
+        hasLyrics:
+          type: boolean
+        coverArtPath:
+          type: string
+        isAvailable:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    LyricsResponse:
+      type: object
+      properties:
+        trackId:
+          type: integer
+          format: int64
+        synced:
+          type: boolean
+        lyrics:
+          type: string
+        source:
+          type: string
+    PublicPlaylistResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        ownerId:
+          type: string
+        tracks:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicTrackResponse"
+    PublicTrackResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        artist:
+          type: string
+        album:
+          type: string
+        year:
+          type: integer
+          format: int32
+        genre:
+          type: string
+        trackNumber:
+          type: integer
+          format: int32
+        durationSeconds:
+          type: integer
+          format: int32
+        hasLyrics:
+          type: boolean
+    PlaylistDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        isPublic:
+          type: boolean
+        coverArtPath:
+          type: string
+        ownerId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        tracks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackResponse"
+    PagePlayHistoryResponse:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayHistoryResponse"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        avatarUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    PageArtistResponse:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArtistResponse"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    PageAlbumResponse:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AlbumResponse"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    ScanStatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+          - IDLE
+          - SCANNING
+        totalScanned:
+          type: integer
+          format: int64
+        processed:
+          type: integer
+          format: int64
+        failed:
+          type: integer
+          format: int64
+        running:
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        failedFiles:
+          type: object
+          additionalProperties:
+            type: string
+  securitySchemes:
+    bearer:
+      type: http
+      name: bearer
+      scheme: bearer
+      bearerFormat: JWT

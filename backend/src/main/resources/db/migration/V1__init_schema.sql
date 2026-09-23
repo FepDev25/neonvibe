@@ -1,0 +1,1 @@
+-- Placeholder: schema will be defined in Phase 2

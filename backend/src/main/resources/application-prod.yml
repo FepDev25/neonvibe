@@ -1,0 +1,74 @@
+# Production profile. Secrets are injected via environment variables (the
+# systemd unit loads /opt/neonvibe/neonvibe.env). There are NO default secrets
+# here: the app fails fast if a required variable is missing.
+#
+# Activate with: java -jar neonvibe.jar --spring.profiles.active=prod
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/neonvibe}
+    username: ${DB_USERNAME:neonvibe}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+
+  # Graceful shutdown: wait up to 30s for in-flight requests before stopping.
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # OpenAPI / Swagger UI: no se exponen en producción.
+  springdoc:
+    api-docs:
+      enabled: false
+    swagger-ui:
+      enabled: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+
+# NeonVibe custom configuration (see AGENTS.md section 10)
+neonvibe:
+  jwt:
+    # Required in prod; no fallback so a missing secret fails fast.
+    secret: ${JWT_SECRET}
+    access-token-expiration-ms: 900000        # 15 minutes
+    refresh-token-expiration-ms: 604800000    # 7 days
+  auth:
+    google:
+      enabled: true
+      # Required in prod; no fallback so a missing client id fails fast.
+      client-id: ${GOOGLE_CLIENT_ID}
+    allowed-emails: ${ALLOWED_EMAILS}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  music:
+    paths: ${MUSIC_PATHS:/srv/Music}
+    supported-formats: mp3,flac,aac,ogg,m4a,wav
+    scan-interval-seconds: ${SCAN_INTERVAL:0}
+  covers:
+    cache-path: ${COVERS_CACHE:/var/lib/neonvibe/covers}
+    max-size-mb: 500
+    retry-days: 7
+  lyrics:
+    cache-path: ${LYRICS_CACHE:/var/lib/neonvibe/lyrics}
+  lastfm:
+    api-key: ${LASTFM_API_KEY:}
+    api-secret: ${LASTFM_API_SECRET:}
+  frontend-base: ${FRONTEND_BASE}
+  websocket:
+    allowed-origins: ${WS_ORIGINS}
+
+logging:
+  level:
+    root: INFO
+    com.neonvibe: INFO
+    # jaudiotagger logs every file at INFO ("Found padding..."), flooding the
+    # journal during scans. WARN keeps real errors, drops the noise.
+    org.jaudiotagger: WARN

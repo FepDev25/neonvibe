@@ -1,0 +1,27 @@
+# Test resources: embedded H2 in PostgreSQL compatibility mode.
+# Merged on top of the main application.yml and application-test.yml.
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:neonvibe;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        auto_quote_keyword: true
+
+  flyway:
+    enabled: false
+
+neonvibe:
+  auth:
+    google:
+      enabled: false
+  music:
+    paths: /nonexistent-test-music

@@ -1,0 +1,44 @@
+# NeonVibe — systemd service
+# Instalada por deploy/setup.sh en /etc/systemd/system/neonvibe.service
+
+[Unit]
+Description=NeonVibe - self-hosted music server
+Documentation=file:///opt/neonvibe/docs/DEPLOY.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=neonvibe
+Group=neonvibe
+WorkingDirectory=/opt/neonvibe
+# Los secrets se cargan aquí (0640 root:neonvibe; systemd los lee como root).
+EnvironmentFile=/opt/neonvibe/neonvibe.env
+ExecStart=/usr/bin/java -Xms256m -Xmx1g -jar /opt/neonvibe/neonvibe.jar --spring.profiles.active=prod
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+# Spring hace graceful shutdown; dale tiempo para terminar requests.
+TimeoutStopSec=45
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+# El proceso solo escribe en /var/lib/neonvibe; /opt/neonvibe es de solo lectura
+# (integridad del JAR y del env).
+ReadOnlyPaths=/opt/neonvibe
+ReadWritePaths=/var/lib/neonvibe
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+SystemCallFilter=@system-service
+
+[Install]
+WantedBy=multi-user.target
