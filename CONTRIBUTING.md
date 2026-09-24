@@ -65,7 +65,9 @@ General:
 
 ## Testing
 
-- Backend: `cd backend && ./mvnw test` (Spring Boot + JUnit 5, 123 tests).
+- Backend: `cd backend && ./mvnw test` (Spring Boot + JUnit 5). Includes a
+  PostgreSQL Testcontainers smoke test (Flyway migrations + schema validation),
+  skipped automatically when no Docker daemon is available.
 - Frontend: `cd frontend && pnpm test` (Vitest + Testing Library on jsdom).
 - Frontend typecheck and bundle: `cd frontend && pnpm build` (`tsc -b` + Vite).
 - CI (`.github/workflows/ci.yml`) runs the backend tests, the frontend tests and
