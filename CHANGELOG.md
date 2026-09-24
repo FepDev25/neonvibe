@@ -7,10 +7,37 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Testing backend:** suite ampliada de 123 a 428 tests (JUnit 5 + Mockito +
+  Spring Boot Test) cubriendo seguridad, scanner, servicios de biblioteca,
+  controladores, clientes externos, repositorios, mappers, excepciones y
+  configuración.
+- **Testing frontend:** Vitest + Testing Library (jsdom) con tests de utilidades,
+  hooks, stores y componentes.
+- **PostgreSQL real:** smoke test con Testcontainers que aplica las migraciones
+  Flyway V1–V7 y valida el esquema con `ddl-auto: validate`; se salta
+  automáticamente cuando no hay Docker.
+- **Cobertura:** JaCoCo con reporte HTML/CSV y umbral en el build (líneas ≥ 82%,
+  ramas ≥ 63%).
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) con tests de backend, tests
+  y build de frontend y empaquetado del JAR; publica los artefactos de cobertura
+  y del JAR.
+- **Fixtures de audio** (MP3 con tags ID3 y artwork embebido) para probar la
+  extracción real de metadatos de jaudiotagger.
+
 ### Fixed
 
-- Scanner: arreglar la lectura doble de metadatos (jaudiotagger) que impedía
-  completar el escaneo de la biblioteca real.
+- Scanner: leer cada archivo una sola vez (metadata + artwork embebido) en lugar
+  de dos, que ralentizaba y hacía fallar escaneos grandes.
+- Scanner: el hilo del watcher ya no muere con `ClosedWatchServiceException` al
+  apagar el servicio.
+- API: parámetros de query o cuerpos malformados devuelven `400` (antes `500`).
+- WebSocket: se rechaza la suscripción a `/topic/sync/{otroUsuario}`, que permitía
+  escuchar el estado del reproductor y la cola de otro usuario.
+- Last.fm: `track.scrobble` se firma correctamente y el `api_sig` excluye
+  `format`/`callback`, según la especificación oficial (auth y scrobbling
+  estaban rotos).
 
 ## [0.1.0] - 2026-08-12
 
