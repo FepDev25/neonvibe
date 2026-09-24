@@ -106,4 +106,67 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(response.getBody().get("error")).isEqualTo("bad_request");
     }
+
+    @Test
+    void genericException_returns500() {
+        ResponseEntity<Map<String, Object>> response = handler.handleGeneric(
+                new RuntimeException("boom"),
+                new org.springframework.web.context.request.ServletWebRequest(
+                        new org.springframework.mock.web.MockHttpServletRequest()));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(500);
+        assertThat(response.getBody().get("error")).isEqualTo("internal_error");
+    }
+
+    @Test
+    void unknownSpaRoute_forwardsToIndexHtml() throws Exception {
+        org.springframework.mock.web.MockHttpServletRequest request =
+                new org.springframework.mock.web.MockHttpServletRequest("GET", "/library");
+        request.setRequestURI("/library");
+        org.springframework.mock.web.MockHttpServletResponse response =
+                new org.springframework.mock.web.MockHttpServletResponse();
+
+        Object result = handler.handleNoResource(
+                new org.springframework.web.servlet.resource.NoResourceFoundException(
+                        org.springframework.http.HttpMethod.GET, "/library"),
+                request, response);
+
+        assertThat(result).isNull();
+        assertThat(response.getForwardedUrl()).isEqualTo("/index.html");
+    }
+
+    @Test
+    void unknownAssetRoute_returns404WithoutForwarding() throws Exception {
+        org.springframework.mock.web.MockHttpServletRequest request =
+                new org.springframework.mock.web.MockHttpServletRequest("GET", "/assets/app.js");
+        request.setRequestURI("/assets/app.js");
+        org.springframework.mock.web.MockHttpServletResponse response =
+                new org.springframework.mock.web.MockHttpServletResponse();
+
+        Object result = handler.handleNoResource(
+                new org.springframework.web.servlet.resource.NoResourceFoundException(
+                        org.springframework.http.HttpMethod.GET, "/assets/app.js"),
+                request, response);
+
+        assertThat(result).isInstanceOf(ResponseEntity.class);
+        assertThat(((ResponseEntity<?>) result).getStatusCode().value()).isEqualTo(404);
+        assertThat(response.getForwardedUrl()).isNull();
+    }
+
+    @Test
+    void unknownApiRoute_returns404WithoutForwarding() throws Exception {
+        org.springframework.mock.web.MockHttpServletRequest request =
+                new org.springframework.mock.web.MockHttpServletRequest("GET", "/api/v1/nope");
+        request.setRequestURI("/api/v1/nope");
+        org.springframework.mock.web.MockHttpServletResponse response =
+                new org.springframework.mock.web.MockHttpServletResponse();
+
+        Object result = handler.handleNoResource(
+                new org.springframework.web.servlet.resource.NoResourceFoundException(
+                        org.springframework.http.HttpMethod.GET, "/api/v1/nope"),
+                request, response);
+
+        assertThat(((ResponseEntity<?>) result).getStatusCode().value()).isEqualTo(404);
+        assertThat(response.getForwardedUrl()).isNull();
+    }
 }
