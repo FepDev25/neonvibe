@@ -199,8 +199,8 @@ public class MusicScannerService {
             return;
         }
         try {
-            MusicMetadata meta = metadataExtractor.extract(path);
-            librarySyncService.upsert(path, meta);
+            MetadataExtractor.ExtractedFile extracted = metadataExtractor.extractFile(path);
+            librarySyncService.upsert(path, extracted.metadata(), extracted.embeddedArt());
             status.incProcessed();
         } catch (Exception ex) {
             String msg = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();

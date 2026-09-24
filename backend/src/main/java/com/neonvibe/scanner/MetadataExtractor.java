@@ -23,4 +23,26 @@ public interface MetadataExtractor {
     default EmbeddedArt extractEmbedded(Path path) {
         return null;
     }
+
+    /**
+     * Reads the file once and returns both its metadata and embedded artwork.
+     *
+     * <p>The default implementation composes {@link #extract} and
+     * {@link #extractEmbedded}; implementations that can parse both in a single
+     * pass (e.g. jaudiotagger) must override it. Reading the same file twice is a
+     * known scanner bottleneck and can fail on some files, so the scanner uses
+     * this method exclusively.</p>
+     */
+    default ExtractedFile extractFile(Path path) {
+        return new ExtractedFile(extract(path), extractEmbedded(path));
+    }
+
+    /**
+     * Result of a single-pass extraction.
+     *
+     * @param metadata    parsed metadata (never null)
+     * @param embeddedArt embedded cover art, or {@code null} when absent
+     */
+    record ExtractedFile(MusicMetadata metadata, EmbeddedArt embeddedArt) {
+    }
 }

@@ -32,7 +32,6 @@ public class LibrarySyncService {
     private final AlbumRepository albumRepository;
     private final ArtistRepository artistRepository;
     private final CoverArtStore coverArtStore;
-    private final MetadataExtractor metadataExtractor;
 
     /** Tracks whose ids were newly created since the last drain (for WS NEW_TRACKS). */
     private final ConcurrentLinkedQueue<Long> newTrackIds = new ConcurrentLinkedQueue<>();
@@ -40,13 +39,11 @@ public class LibrarySyncService {
     public LibrarySyncService(TrackRepository trackRepository,
                               AlbumRepository albumRepository,
                               ArtistRepository artistRepository,
-                              CoverArtStore coverArtStore,
-                              MetadataExtractor metadataExtractor) {
+                              CoverArtStore coverArtStore) {
         this.trackRepository = trackRepository;
         this.albumRepository = albumRepository;
         this.artistRepository = artistRepository;
         this.coverArtStore = coverArtStore;
-        this.metadataExtractor = metadataExtractor;
     }
 
     /**
@@ -66,10 +63,13 @@ public class LibrarySyncService {
      * Creates or updates the track for the given path, reusing/creating the
      * artist and album when a name is present.
      *
+     * <p>The embedded artwork is passed in (extracted in the same single file
+     * read as the metadata) so this method never re-reads the audio file.</p>
+     *
      * @return the persisted track
      */
     @Transactional
-    public Track upsert(Path path, MusicMetadata meta) {
+    public Track upsert(Path path, MusicMetadata meta, EmbeddedArt embeddedArt) {
         Track track = trackRepository.findByFilePath(path.toString())
                 .orElseGet(() -> Track.builder().filePath(path.toString()).build());
         boolean isNew = track.getId() == null;
@@ -95,28 +95,25 @@ public class LibrarySyncService {
         track.setAvailable(true);
 
         Track saved = trackRepository.save(track);
-        saveEmbeddedCover(path, saved);
+        saveEmbeddedCover(saved, embeddedArt);
         if (isNew) {
             newTrackIds.offer(saved.getId());
         }
         return saved;
     }
 
-    /** Extracts embedded artwork (if any) and caches it under embedded/{trackId}.{ext}. */
-    private void saveEmbeddedCover(Path path, Track track) {
-        if (track.getCoverArtPath() != null) {
-            return; // already extracted in a previous scan
+    /** Caches embedded artwork (if any) under embedded/{trackId}.{ext}. */
+    private void saveEmbeddedCover(Track track, EmbeddedArt art) {
+        if (art == null || track.getCoverArtPath() != null) {
+            return; // no artwork, or already extracted in a previous scan
         }
         try {
-            EmbeddedArt art = metadataExtractor.extractEmbedded(path);
-            if (art != null) {
-                Path file = coverArtStore.fileFor("embedded", track.getId(), art.extension());
-                coverArtStore.write(file, art.data());
-                track.setCoverArtPath(file.toString());
-                trackRepository.save(track);
-            }
+            Path file = coverArtStore.fileFor("embedded", track.getId(), art.extension());
+            coverArtStore.write(file, art.data());
+            track.setCoverArtPath(file.toString());
+            trackRepository.save(track);
         } catch (Exception ex) {
-            log.debug("Could not cache embedded cover for {}: {}", path, ex.getMessage());
+            log.debug("Could not cache embedded cover for track {}: {}", track.getId(), ex.getMessage());
         }
     }
 

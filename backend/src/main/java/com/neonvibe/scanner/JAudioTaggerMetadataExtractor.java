@@ -27,6 +27,21 @@ public class JAudioTaggerMetadataExtractor implements MetadataExtractor {
 
     @Override
     public MusicMetadata extract(Path path) {
+        return extractFile(path).metadata();
+    }
+
+    @Override
+    public EmbeddedArt extractEmbedded(Path path) {
+        return extractFile(path).embeddedArt();
+    }
+
+    /**
+     * Reads the file a single time and returns both metadata and embedded art.
+     * The scanner relies on this to avoid the double jaudiotagger read that made
+     * full-library scans slow and unreliable.
+     */
+    @Override
+    public ExtractedFile extractFile(Path path) {
         String format = extension(path);
         String mimeType = mimeTypeFor(format);
         String titleFallback = titleFromFilename(path);
@@ -48,27 +63,26 @@ public class JAudioTaggerMetadataExtractor implements MetadataExtractor {
             Integer bitrate = parseBitrate(header);
             boolean hasLyrics = hasLyrics(tag);
 
-            return new MusicMetadata(
+            MusicMetadata metadata = new MusicMetadata(
                     title, artist, album, albumArtist, year, genre,
                     trackNumber, discNumber, duration, bitrate,
                     format, mimeType, hasLyrics);
+            return new ExtractedFile(metadata, embeddedArt(tag));
         } catch (Exception ex) {
             // Individual file failures are tolerated: log and return a minimal
             // metadata record (title from filename) so the scanner can continue.
             log.debug("Could not read metadata for {}: {}", path, ex.getMessage());
-            return new MusicMetadata(titleFallback, null, null, null, null, null,
+            MusicMetadata fallback = new MusicMetadata(titleFallback, null, null, null, null, null,
                     null, null, null, null, format, mimeType, false);
+            return new ExtractedFile(fallback, null);
         }
     }
 
-    @Override
-    public EmbeddedArt extractEmbedded(Path path) {
+    private EmbeddedArt embeddedArt(Tag tag) {
+        if (tag == null) {
+            return null;
+        }
         try {
-            AudioFile audioFile = AudioFileIO.read(path.toFile());
-            Tag tag = audioFile.getTag();
-            if (tag == null) {
-                return null;
-            }
             Artwork artwork = tag.getFirstArtwork();
             if (artwork == null || artwork.getBinaryData() == null || artwork.getBinaryData().length == 0) {
                 return null;
@@ -77,7 +91,7 @@ public class JAudioTaggerMetadataExtractor implements MetadataExtractor {
             String ext = mime != null && mime.contains("png") ? EmbeddedArt.EXT_PNG : EmbeddedArt.EXT_JPEG;
             return new EmbeddedArt(artwork.getBinaryData(), ext);
         } catch (Exception ex) {
-            log.debug("Could not extract embedded cover for {}: {}", path, ex.getMessage());
+            // Tolerate corrupt artwork; the rest of the metadata is still valid.
             return null;
         }
     }

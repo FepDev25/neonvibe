@@ -46,4 +46,18 @@ class MetadataExtractorTest {
         assertEquals("audio/mpeg", meta.mimeType());
         assertFalse(meta.hasLyrics());
     }
+
+    @Test
+    void extractFile_nonExistentFile_returnsFallbackAndNullArt() {
+        MetadataExtractor.ExtractedFile result =
+                extractor.extractFile(Path.of("/nonexistent/02 - Fallback Title.mp3"));
+
+        assertEquals("Fallback Title", result.metadata().title());
+        assertNull(result.embeddedArt());
+    }
+
+    @Test
+    void extractEmbedded_nonExistentFile_returnsNullWithoutThrowing() {
+        assertNull(extractor.extractEmbedded(Path.of("/nonexistent/x.mp3")));
+    }
 }

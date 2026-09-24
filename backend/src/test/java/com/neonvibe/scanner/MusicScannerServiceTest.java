@@ -65,19 +65,21 @@ class MusicScannerServiceTest {
 
     @Test
     void onFileChanged_persistsSupportedFile() {
-        when(extractor.extract(mp3)).thenReturn(new MusicMetadata("T", "A", "Al", null, null,
-                null, null, null, null, null, "mp3", "audio/mpeg", false));
+        when(extractor.extractFile(mp3)).thenReturn(new MetadataExtractor.ExtractedFile(
+                new MusicMetadata("T", "A", "Al", null, null,
+                        null, null, null, null, null, "mp3", "audio/mpeg", false),
+                null));
 
         scanner.onFileChanged(mp3);
 
-        verify(sync).upsert(eq(mp3), any(MusicMetadata.class));
+        verify(sync).upsert(eq(mp3), any(MusicMetadata.class), any());
         assertTrue(status.getProcessed() >= 1);
     }
 
     @Test
     void onFileChanged_unsupportedFile_isCountedButNotPersisted() {
         scanner.onFileChanged(txt);
-        verify(sync, never()).upsert(any(), any());
+        verify(sync, never()).upsert(any(), any(), any());
     }
 
     @Test
@@ -88,9 +90,74 @@ class MusicScannerServiceTest {
 
     @Test
     void onFileChanged_failedFile_trackedAsFailure() {
-        when(extractor.extract(mp3)).thenThrow(new RuntimeException("corrupt tags"));
+        when(extractor.extractFile(mp3)).thenThrow(new RuntimeException("corrupt tags"));
         scanner.onFileChanged(mp3);
         assertTrue(status.getFailed() > 0);
         assertTrue(status.getFailedFiles().containsKey(mp3.toString()));
+    }
+
+    private MetadataExtractor.ExtractedFile extracted(String title) {
+        return new MetadataExtractor.ExtractedFile(
+                new MusicMetadata(title, "A", "Al", null, null, null, null, null, null, null,
+                        "mp3", "audio/mpeg", false),
+                null);
+    }
+
+    @Test
+    void scanAll_walksRootAndProcessesSupportedFiles() {
+        config.setPaths(java.util.List.of(tempDir.toString()));
+        when(extractor.extractFile(any())).thenReturn(extracted("T"));
+
+        scanner.scanAll();
+
+        verify(sync, org.mockito.Mockito.times(2)).upsert(any(), any(MusicMetadata.class), any());
+        assertTrue(status.getProcessed() >= 2);
+        assertFalse(status.isRunning());
+        verify(wsBridge).publishProgress(status);
+    }
+
+    @Test
+    void scanAll_missingRoot_completesWithoutProcessing() {
+        config.setPaths(java.util.List.of(tempDir.resolve("nope").toString()));
+
+        scanner.scanAll();
+
+        verify(sync, never()).upsert(any(), any(), any());
+        assertFalse(status.isRunning());
+    }
+
+    @Test
+    void triggerManualScan_returnsIdleStatus() {
+        config.setPaths(java.util.List.of(tempDir.toString()));
+        when(extractor.extractFile(any())).thenReturn(extracted("T"));
+
+        ScannerStatus result = scanner.triggerManualScan();
+
+        assertFalse(result.isRunning());
+    }
+
+    @Test
+    void onFileDeleted_failureIsRecorded() {
+        Path gone = tempDir.resolve("gone.mp3");
+        org.mockito.Mockito.doThrow(new RuntimeException("db down")).when(sync).markUnavailable(gone.toString());
+
+        scanner.onFileDeleted(gone);
+
+        assertTrue(status.getFailed() > 0);
+        assertTrue(status.getFailedFiles().containsKey(gone.toString()));
+    }
+
+    @Test
+    void scanAsync_processesInBackground() throws InterruptedException {
+        config.setPaths(java.util.List.of(tempDir.toString()));
+        when(extractor.extractFile(any())).thenReturn(extracted("T"));
+
+        scanner.scanAsync();
+
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (status.getProcessed() < 2 && System.currentTimeMillis() < deadline) {
+            Thread.sleep(25);
+        }
+        assertTrue(status.getProcessed() >= 2);
     }
 }
