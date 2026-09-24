@@ -13,17 +13,24 @@
 - **Estado:** MVP desplegado en producción (Debian Trixie bare-metal). v0.2 implementado
   salvo transcodificación y notificaciones nativas. El JAR desplegado no incluye
   todavía springdoc/OpenAPI (solo dev, ver §13).
+- **Testing/CI (2026-09-23):** backend con **428 tests** (`./mvnw test`) y JaCoCo
+  (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
+  Testcontainers; frontend con **24 tests** (Vitest + Testing Library); CI en
+  `.github/workflows/ci.yml`. Ver §14.
 
-### Próxima sesión: rebuild + deploy, y arranque de v0.3
+### Próximos pasos: deploy y v0.3
 
-1. **Rebuild del JAR:** `VITE_GOOGLE_CLIENT_ID="285886976623-3k6e7r74666u0ahpmv8kjmo8me52i3fp.apps.googleusercontent.com" ./deploy/build.sh`
-   — incorpora springdoc (swagger solo en dev) y todos los fixes commiteados.
-2. **Deploy:** `scp dist/neonvibe.jar ssh.fepdev.app:/tmp/` y luego en el server
-   `sudo /tmp/deploy.sh /tmp/neonvibe.jar`.
-3. **Verificar en producción:** login de Google, abrir álbum y artista (sin React #310),
-   `GET /ws/info` respondiendo 200 (SockJS) y `GET /actuator/health` UP.
-4. **Planificar v0.3** (roadmap en §11): definir alcance de quality selector,
-   notificaciones nativas, fulltext, social y stats antes de implementar.
+1. **Rebuild + deploy del JAR** (incluye springdoc solo-dev y todos los fixes):
+   `VITE_GOOGLE_CLIENT_ID="285886976623-3k6e7r74666u0ahpmv8kjmo8me52i3fp.apps.googleusercontent.com" ./deploy/build.sh`
+   → `scp dist/neonvibe.jar ssh.fepdev.app:/tmp/` → `sudo /tmp/deploy.sh /tmp/neonvibe.jar`.
+2. **Verificar en producción:** login de Google, álbum y artista (sin React #310),
+   `GET /ws/info` 200 (SockJS), `GET /actuator/health` UP, y **escaneo real de
+   `/srv/Music`** (`POST /api/v1/admin/scan`).
+3. **Verificar el scrobbling real** con claves Last.fm (el firmado ya está corregido).
+4. **Planificar v0.3** (roadmap en §11): quality selector, notificaciones nativas,
+   fulltext, social y stats.
+5. **Cubrir huecos de cobertura** (opcional): `CoverArtService`, `PlayHistoryService`,
+   `PlayQueueService`, uploads de `CoverController` y `ScanService`.
 
 ---
 
@@ -422,4 +429,27 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 
 ---
 
-*Última actualización: 2026-08-12*
+## 14. Testing y CI
+
+- **Backend:** `cd backend && ./mvnw test`. JUnit 5 + Mockito + Spring Boot Test.
+  Incluye `PostgresMigrationTest` (Testcontainers) que arranca un PostgreSQL real,
+  aplica Flyway `V1..V7` y verifica `ddl-auto: validate`; se **salta solo** si no
+  hay Docker.
+- **Cobertura:** JaCoCo genera `backend/target/site/jacoco` (HTML + CSV/XML) y el
+  build **falla** por debajo de **líneas ≥ 82%** y **ramas ≥ 63%**. Para subir el
+  umbral, editar `jacoco-maven-plugin` en `backend/pom.xml`.
+- **Frontend:** `cd frontend && pnpm test` (Vitest + Testing Library sobre jsdom).
+  `pnpm test:coverage` para el reporte. `pnpm build` hace el typecheck (`tsc -b`).
+- **Fixtures de audio:** `backend/src/test/resources/audio/` contiene clips MP3
+  cortos con tags ID3 y artwork embebido para probar `JAudioTaggerMetadataExtractor`.
+- **CI:** `.github/workflows/ci.yml` ejecuta en cada push/PR a `main`:
+  `backend` (tests + artefacto JaCoCo), `frontend` (tests + build) y `package`
+  (JAR con frontend embebido). `main` debe quedar siempre verde.
+- **Reglas:** añadir/actualizar tests con cada cambio; preferir tests unitarios con
+  colaboradores mockeados y `@WebMvcTest` para la capa HTTP; usar `@DataJpaTest`
+  (H2) para repositorios y reservar Testcontainers para la integración con
+  PostgreSQL.
+
+---
+
+*Última actualización: 2026-09-23*

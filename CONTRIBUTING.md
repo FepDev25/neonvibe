@@ -68,6 +68,8 @@ General:
 - Backend: `cd backend && ./mvnw test` (Spring Boot + JUnit 5). Includes a
   PostgreSQL Testcontainers smoke test (Flyway migrations + schema validation),
   skipped automatically when no Docker daemon is available.
+- Backend coverage is enforced by JaCoCo (lines ≥ 82%, branches ≥ 63%); the build
+  fails below those thresholds. Reports land in `backend/target/site/jacoco`.
 - Frontend: `cd frontend && pnpm test` (Vitest + Testing Library on jsdom).
 - Frontend typecheck and bundle: `cd frontend && pnpm build` (`tsc -b` + Vite).
 - CI (`.github/workflows/ci.yml`) runs the backend tests, the frontend tests and

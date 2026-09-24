@@ -4,6 +4,23 @@
 
 ---
 
+## Testing y CI — COMPLETADO (2026-09-23)
+
+- [x] **Backend:** 428 tests (`./mvnw test`); cobertura 84.8% líneas / 66.0% ramas,
+  con JaCoCo forzando el umbral (líneas ≥ 82%, ramas ≥ 63%).
+- [x] **PostgreSQL real:** `PostgresMigrationTest` (Testcontainers) aplica Flyway
+  `V1..V7` y valida el esquema con `ddl-auto: validate`.
+- [x] **Frontend:** Vitest + Testing Library (jsdom), 24 tests.
+- [x] **CI:** GitHub Actions (`.github/workflows/ci.yml`): backend tests, frontend
+  tests/build y empaquetado del JAR.
+- [x] **Bugs corregidos durante el testing:** doble lectura del scanner, cierre del
+  watcher, 400 en errores de cliente, suscripción cruzada al topic de sync y
+  firmado de Last.fm.
+- [ ] **Verificación end-to-end en servidor:** escaneo real de `/srv/Music` y
+  scrobbling real con claves Last.fm (ver más abajo).
+
+---
+
 ## Deploy en producción — EN VIVO (2026-08-12)
 
 - [x] **MVP desplegado** en `https://neonvibe.fepdev.app` (JAR único + systemd + Cloudflare).
@@ -12,7 +29,10 @@
 - [x] **Fix login 401** — el frontend guardaba el token después de `fetchMe()`; añadido `setToken()` antes.
 - [x] **Fix React #310** — hooks (`useMemo`) movidos arriba de los early returns en las páginas de detalle.
 - [x] **Fix WebSocket 405** — el SPA catch-all sombreaba `/ws`; el fallback SPA vive en `GlobalExceptionHandler`.
-- [ ] **Bug del scanner** — jaudiotagger + doble lectura: el escaneo de `/srv/Music` no completa. Revisar `MusicScannerService` y disparar `POST /api/v1/admin/scan`.
+- [x] **Bug del scanner (doble lectura)** — corregido: `MetadataExtractor.extractFile`
+  lee cada archivo una sola vez (metadata + artwork embebido) y `FileWatcherService`
+  cierra sin excepción. Queda verificar el escaneo real end-to-end en el servidor
+  (`POST /api/v1/admin/scan`).
 
 ---
 
@@ -26,7 +46,7 @@ Desarrollo movido a esta PC (2026-08-06). Infra local lista:
 - [x] **Backend boot con dev profile**
   - `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` → `GET /actuator/health` = UP.
   - Flyway V1, V2, V3 aplicadas sin errores.
-  - 92 tests pasan (`./mvnw test`).
+  - Tests del backend en verde (`./mvnw test`).
   - Fix aplicado: import `java.io.InputStream` faltante en `StreamController.java` (rompía la compilación local).
 - [x] **Frontend** — `pnpm install` (387 paquetes), `pnpm dev` en `localhost:5173`, `pnpm build` OK (integra a `backend/src/main/resources/static`).
 - [ ] **Escaneo real local** — crear MP3s de prueba en `/tmp/test-music` y disparar `POST /api/v1/admin/scan`.
@@ -83,7 +103,7 @@ Desarrollo movido a esta PC (2026-08-06). Infra local lista:
 
 - [x] **H2 scope en producción** — RESUELTO (2026-08-10)
   - `pom.xml`: H2 movido de `runtime` a `test`. Verificado: no aparece en
-    `BOOT-INF/lib/` del JAR empaquetado. Los 123 tests siguen pasando.
+    `BOOT-INF/lib/` del JAR empaquetado. Los tests siguen pasando.
 
 - [x] **Constraint de PlaylistTrack position** — RESUELTO en Fase 6
   - Se eliminó el unique index `uq_playlist_tracks_position` (V4) para permitir reorder transitorio.
@@ -114,7 +134,7 @@ Desarrollo movido a esta PC (2026-08-06). Infra local lista:
 
 ## Pendientes Fase 10 (verificación en navegador)
 
-- [ ] **Last.fm real** — configurar `LASTFM_API_KEY` + `LASTFM_API_SECRET`, conectar desde Settings, completar un track y verificar el scrobble en last.fm.
+- [ ] **Last.fm real** — configurar `LASTFM_API_KEY` + `LASTFM_API_SECRET`, conectar desde Settings, completar un track y verificar el scrobble en last.fm. El firmado (`api_sig`, exclusión de `format`) ya está corregido; falta la prueba con claves reales.
 - [ ] **Radio** — botón Radio en PlayerBar/álbum/artista genera una cola coherente y la reproduce.
 - [ ] **Compartir** — en una playlist pública, botón Compartir copia la URL `/p/:id`; abrir en ventana incógnito muestra la playlist sin login (los play requieren sesión).
 
@@ -214,4 +234,4 @@ Desarrollo movido a esta PC (2026-08-06). Infra local lista:
 
 ---
 
-*Última actualización: 2026-08-12*
+*Última actualización: 2026-09-23*

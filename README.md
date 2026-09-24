@@ -84,6 +84,17 @@ pnpm dev
 pnpm test    # Vitest + Testing Library (jsdom)
 ```
 
+### Tests
+
+```bash
+cd backend && ./mvnw test        # JUnit 5 + Mockito (+ PostgreSQL vía Testcontainers)
+cd frontend && pnpm test         # Vitest + Testing Library (jsdom)
+```
+
+La cobertura del backend se mide con JaCoCo (`backend/target/site/jacoco`) y el
+build falla por debajo de **líneas ≥ 82%** y **ramas ≥ 63%**. El CI de GitHub
+Actions ejecuta ambos y empaqueta el JAR.
+
 ---
 
 ## Despliegue
