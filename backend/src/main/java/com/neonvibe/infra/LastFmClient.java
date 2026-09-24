@@ -180,6 +180,10 @@ public class LastFmClient {
         }
         params.put("duration", String.valueOf(durationSeconds));
         params.put("timestamp", String.valueOf(timestamp));
+        // track.scrobble is an authenticated write method: it must carry a valid
+        // api_sig or Last.fm rejects it (error 13). format is not signed.
+        params.put("format", "json");
+        params.put("api_sig", sign(params));
         try {
             rest.post().uri(API_URL + "?" + query(params)).retrieve().toBodilessEntity();
         } catch (Exception ex) {
@@ -215,10 +219,20 @@ public class LastFmClient {
         return sb.toString();
     }
 
-    /** Last.fm api_sig = md5( sorted "keyvalue" pairs + secret ). */
+    /**
+     * Last.fm api_sig = md5( sorted "keyvalue" pairs + secret ).
+     *
+     * <p>Per the Last.fm auth spec, the {@code format} and {@code callback}
+     * parameters must be excluded from the signed string. Including {@code format}
+     * (as this used to) makes every authenticated call fail with error 13.</p>
+     */
     String sign(Map<String, String> params) {
         StringBuilder sb = new StringBuilder();
-        new TreeMap<>(params).forEach((k, v) -> sb.append(k).append(v));
+        new TreeMap<>(params).forEach((k, v) -> {
+            if (!"format".equals(k) && !"callback".equals(k)) {
+                sb.append(k).append(v);
+            }
+        });
         sb.append(apiSecret);
         return md5(sb.toString());
     }
