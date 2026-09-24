@@ -62,4 +62,32 @@ class SecurityConfigTest {
         mockMvc.perform(get("/actuator/info"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void publicPlaylistEndpoint_isPublic() throws Exception {
+        // No token needed: the missing playlist must yield 404, never 401.
+        mockMvc.perform(get("/api/v1/public/playlists/1"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void lastfmCallback_isPublic() throws Exception {
+        // The OAuth callback is hit by the browser without a Bearer token; it must
+        // redirect (302) to the frontend, not be blocked with 401.
+        mockMvc.perform(get("/api/v1/lastfm/callback").param("token", "unknown"))
+                .andExpect(status().isFound());
+    }
+
+    @Test
+    void wsInfo_isPublic() throws Exception {
+        // SockJS handshake endpoint must stay reachable without a token.
+        mockMvc.perform(get("/ws/info"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void mediaStream_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/tracks/1/stream"))
+                .andExpect(status().isUnauthorized());
+    }
 }
