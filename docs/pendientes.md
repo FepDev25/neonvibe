@@ -156,11 +156,11 @@ Desarrollo movido a esta PC (2026-08-06). Infra local lista:
 
 - [ ] **Covers/letras/visualizador en navegador**
   - Covers reales en grids y detalle (álbumes reales obtienen imagen online; los fake usan placeholder neón).
-  - Upload manual de cover (álbum/artista) desde la UI — **falta UI de upload**, el endpoint ya existe.
+  - Upload manual de cover (álbum/artista) desde la UI — **implementado** (`CoverUploadButton` en AlbumDetail/ArtistDetail).
   - Letras: abrir desde PlayerBar → resalta línea sincronizada con el progreso.
   - Visualizador: botón Waves → barras neón al ritmo; el audio sigue sonando al cerrar.
 
-- [ ] **UI de upload manual de carátula** (drag & drop / file input en AlbumDetail/ArtistDetail) — el endpoint `POST /cover` existe; falta el formulario frontend.
+- [x] **UI de upload manual de carátula** (file input en AlbumDetail/ArtistDetail) — `CoverUploadButton` con validación cliente (MIME + 10 MB), cache-busting `&v=` y refetch de queries.
 
 - [ ] **Genius fallback para letras** (LRCLIB es primaria; Genius requiere scraping).
 

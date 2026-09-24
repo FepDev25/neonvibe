@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Disc3, ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { useAlbum, useAlbumTracks } from '@/hooks/useLibrary';
 import { tracksToPlayerQueue } from '@/stores/playerStore';
-import { albumCoverUrl } from '@/api/cover';
+import { albumCoverUrl, uploadAlbumCover } from '@/api/cover';
 import AlbumCover from '@/components/AlbumCover';
 import TrackRow from '@/components/TrackRow';
+import CoverUploadButton from '@/components/CoverUploadButton';
 import DownloadButton from '@/components/DownloadButton';
 import RadioButton from '@/components/RadioButton';
 import Skeleton from '@/components/Skeleton';
@@ -19,8 +21,17 @@ export default function AlbumDetailPage() {
   const albumId = Number(id);
   const albumQuery = useAlbum(albumId);
   const tracksQuery = useAlbumTracks(albumId);
+  const queryClient = useQueryClient();
+  const [coverVersion, setCoverVersion] = useState<number | undefined>(undefined);
   const tracks = tracksQuery.data ?? [];
   const queue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
+
+  const handleCoverUploaded = () => {
+    void queryClient.invalidateQueries({ queryKey: ['album', albumId] });
+    void queryClient.invalidateQueries({ queryKey: ['album', albumId, 'tracks'] });
+    void queryClient.invalidateQueries({ queryKey: ['albums'] });
+    setCoverVersion(Date.now());
+  };
 
   if (albumQuery.isPending) {
     return (
@@ -66,7 +77,7 @@ export default function AlbumDetailPage() {
         <AlbumCover
           seed={`${album.name}-${album.artist ?? ''}`}
           alt={`Carátula de ${album.name}`}
-          src={albumCoverUrl(album.id)}
+          src={albumCoverUrl(album.id, coverVersion)}
           className="h-32 w-32 shrink-0 rounded-2xl sm:h-40 sm:w-40"
         >
           <Disc3 className="h-12 w-12 text-white/80" aria-hidden />
@@ -92,9 +103,13 @@ export default function AlbumDetailPage() {
             )}
             {album.genre && <span>{album.genre}</span>}
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <DownloadButton tracks={queue} />
             {tracks.length > 0 && <RadioButton trackId={tracks[0].id} />}
+            <CoverUploadButton
+              onUpload={(file) => uploadAlbumCover(album.id, file)}
+              onUploaded={handleCoverUploaded}
+            />
           </div>
         </div>
       </div>

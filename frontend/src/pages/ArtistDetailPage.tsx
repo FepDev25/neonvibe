@@ -1,12 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { useArtist, useArtistAlbums, useArtistTracks } from '@/hooks/useLibrary';
 import { tracksToPlayerQueue } from '@/stores/playerStore';
-import { artistCoverUrl } from '@/api/cover';
+import { artistCoverUrl, uploadArtistCover } from '@/api/cover';
 import AlbumCard from '@/components/AlbumCard';
 import AlbumCover from '@/components/AlbumCover';
 import TrackRow from '@/components/TrackRow';
+import CoverUploadButton from '@/components/CoverUploadButton';
 import RadioButton from '@/components/RadioButton';
 import Skeleton from '@/components/Skeleton';
 
@@ -19,8 +21,18 @@ export default function ArtistDetailPage() {
   const artistQuery = useArtist(artistId);
   const albumsQuery = useArtistAlbums(artistId);
   const tracksQuery = useArtistTracks(artistId);
+  const queryClient = useQueryClient();
+  const [coverVersion, setCoverVersion] = useState<number | undefined>(undefined);
   const tracks = tracksQuery.data ?? [];
   const queue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
+
+  const handleCoverUploaded = () => {
+    void queryClient.invalidateQueries({ queryKey: ['artist', artistId] });
+    void queryClient.invalidateQueries({ queryKey: ['artist', artistId, 'albums'] });
+    void queryClient.invalidateQueries({ queryKey: ['artist', artistId, 'tracks'] });
+    void queryClient.invalidateQueries({ queryKey: ['artists'] });
+    setCoverVersion(Date.now());
+  };
 
   if (artistQuery.isPending) {
     return (
@@ -59,16 +71,24 @@ export default function ArtistDetailPage() {
       </Link>
 
       <div className="flex flex-col items-center gap-3 py-2 text-center">
-        <AlbumCover
-          seed={artist.name}
-          alt={`Avatar de ${artist.name}`}
-          src={artistCoverUrl(artist.id)}
-          className="h-28 w-28 rounded-full"
-        >
-          <span className="text-4xl font-bold text-white/90">
-            {artist.name.trim().charAt(0).toUpperCase() || '?'}
-          </span>
-        </AlbumCover>
+        <div className="relative">
+          <AlbumCover
+            seed={artist.name}
+            alt={`Avatar de ${artist.name}`}
+            src={artistCoverUrl(artist.id, coverVersion)}
+            className="h-28 w-28 rounded-full"
+          >
+            <span className="text-4xl font-bold text-white/90">
+              {artist.name.trim().charAt(0).toUpperCase() || '?'}
+            </span>
+          </AlbumCover>
+          <CoverUploadButton
+            compact
+            onUpload={(file) => uploadArtistCover(artist.id, file)}
+            onUploaded={handleCoverUploaded}
+            className="absolute -bottom-1 -right-1"
+          />
+        </div>
         <div>
           <h1 className="neon-text text-2xl font-bold sm:text-3xl">{artist.name}</h1>
           {albums.length > 0 && (
