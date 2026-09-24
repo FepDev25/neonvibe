@@ -1,6 +1,7 @@
 package com.neonvibe.scanner;
 
 import java.io.IOException;
+import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -75,6 +76,11 @@ public class FileWatcherService {
                 key = watchService.take();
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
+                running = false;
+                return;
+            } catch (ClosedWatchServiceException ex) {
+                // close() was called (shutdown): exit the loop quietly instead of
+                // letting an uncaught exception kill the watcher thread.
                 running = false;
                 return;
             }
