@@ -67,4 +67,43 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(405);
         assertThat(response.getBody().get("error")).isEqualTo("method_not_allowed");
     }
+
+    @Test
+    void accountNotAllowed_returnsForbidden() {
+        ResponseEntity<Map<String, Object>> response =
+                handler.handleAccountNotAllowed(new AccountNotAllowedException("not allowed"));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(403);
+        assertThat(response.getBody().get("error")).isEqualTo("forbidden");
+    }
+
+    @Test
+    void missingRequestParameter_returnsBadRequest() {
+        ResponseEntity<Map<String, Object>> response = handler.handleMalformedRequest(
+                new org.springframework.web.bind.MissingServletRequestParameterException("track_id", "Long"));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).containsKeys("error", "message", "timestamp");
+        assertThat(response.getBody().get("error")).isEqualTo("bad_request");
+    }
+
+    @Test
+    void typeMismatch_returnsBadRequest() {
+        var ex = new org.springframework.web.method.annotation.MethodArgumentTypeMismatchException(
+                "abc", Integer.class, "size", null, null);
+
+        ResponseEntity<Map<String, Object>> response = handler.handleMalformedRequest(ex);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody().get("error")).isEqualTo("bad_request");
+    }
+
+    @Test
+    void unreadableBody_returnsBadRequest() {
+        ResponseEntity<Map<String, Object>> response = handler.handleMalformedRequest(
+                new org.springframework.http.converter.HttpMessageNotReadableException("bad json"));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody().get("error")).isEqualTo("bad_request");
+    }
 }

@@ -69,6 +69,21 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "bad_request", ex.getMessage());
     }
 
+    /**
+     * Client input errors that Spring raises before the controller runs: an
+     * unparsable query param, a missing required param or a malformed JSON body.
+     * Without this they fall through to the generic handler and surface as 500,
+     * which misattributes a client mistake to the server.
+     */
+    @ExceptionHandler({
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.http.converter.HttpMessageNotReadableException.class
+    })
+    public ResponseEntity<Map<String, Object>> handleMalformedRequest(Exception ex) {
+        return build(HttpStatus.BAD_REQUEST, "bad_request", "Malformed or missing request data");
+    }
+
     @ExceptionHandler(NoHandlerFoundException.class)
     public Object handleNoHandler(NoHandlerFoundException ex, HttpServletRequest request,
                                   HttpServletResponse response) throws ServletException, IOException {
