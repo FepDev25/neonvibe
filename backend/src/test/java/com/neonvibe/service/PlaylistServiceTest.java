@@ -154,6 +154,45 @@ class PlaylistServiceTest {
                 () -> service.reorder(userId, 1L, new ReorderRequest(java.util.List.of(10L, 99L))));
     }
 
+    @Test
+    void getPublic_publicPlaylist_returnsTracksSortedByPosition() {
+        Playlist playlist = playlistWith();
+        playlist.setPublic(true);
+        Track a = new Track();
+        a.setId(10L);
+        a.setTitle("A");
+        Track b = new Track();
+        b.setId(20L);
+        b.setTitle("B");
+        PlaylistTrack second = PlaylistTrack.builder().id(2L).trackId(20L).position(0).track(b).build();
+        PlaylistTrack first = PlaylistTrack.builder().id(1L).trackId(10L).position(1).track(a).build();
+        playlist.setTracks(new ArrayList<>(java.util.List.of(first, second)));
+        when(playlistRepository.findById(1L)).thenReturn(Optional.of(playlist));
+
+        var response = service.getPublic(1L);
+
+        assertEquals(1L, response.id());
+        assertEquals(userId.toString(), response.ownerId());
+        assertEquals(java.util.List.of("B", "A"),
+                response.tracks().stream().map(com.neonvibe.dto.PublicTrackResponse::title).toList());
+    }
+
+    @Test
+    void getPublic_privatePlaylist_throwsNotFound() {
+        Playlist playlist = playlistWith();
+        playlist.setPublic(false);
+        when(playlistRepository.findById(1L)).thenReturn(Optional.of(playlist));
+
+        assertThrows(ResourceNotFoundException.class, () -> service.getPublic(1L));
+    }
+
+    @Test
+    void getPublic_missingPlaylist_throwsNotFound() {
+        when(playlistRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.getPublic(1L));
+    }
+
     private Playlist playlistWith() {
         Playlist p = new Playlist();
         p.setId(1L);
