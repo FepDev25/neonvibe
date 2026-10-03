@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Sun,
   Moon,
@@ -17,6 +18,8 @@ import {
   disconnectLastFm,
   getLastFmAuthUrl,
 } from '@/api/settings';
+import { getPushKey, sendTestPush } from '@/api/push';
+import { disablePush, enablePush, pushSupported } from '@/push/notifications';
 import { logout as revokeSession } from '@/api/auth';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
@@ -24,16 +27,27 @@ import ScannerCard from '@/components/ScannerCard';
 import Skeleton from '@/components/Skeleton';
 import { cn } from '@/utils/cn';
 
-function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+function Toggle({
+  checked,
+  onChange,
+  label,
+  disabled = false,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+        'relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50',
         checked ? 'bg-neon-cyan' : 'bg-surface-alt',
       )}
     >
@@ -65,9 +79,50 @@ export default function SettingsPage() {
   const [disconnecting, setDisconnecting] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [cleared, setCleared] = useState<number | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
+  const [pushTesting, setPushTesting] = useState(false);
+  const [pushSent, setPushSent] = useState<number | null>(null);
+
+  const pushKey = useQuery({ queryKey: ['pushKey'], queryFn: getPushKey });
+  const pushConfigured = pushKey.data?.configured ?? false;
+  const pushAvailable = pushSupported() && pushConfigured;
 
   const set = (payload: Parameters<typeof updateSettings.mutate>[0]) =>
     void updateSettings.mutate(payload);
+
+  const handleToggleNotifications = async (enabled: boolean) => {
+    setPushBusy(true);
+    setPushError(null);
+    try {
+      if (enabled) {
+        const ok = await enablePush();
+        if (!ok) {
+          setPushError('No se pudo activar: permiso denegado o push no disponible.');
+          return;
+        }
+        set({ notifications_enabled: true });
+      } else {
+        await disablePush();
+        set({ notifications_enabled: false });
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const handleTestPush = async () => {
+    setPushTesting(true);
+    setPushSent(null);
+    try {
+      const { sent } = await sendTestPush();
+      setPushSent(sent);
+    } catch {
+      setPushSent(0);
+    } finally {
+      setPushTesting(false);
+    }
+  };
 
   const connectLastFm = async () => {
     setConnecting(true);
@@ -199,14 +254,36 @@ export default function SettingsPage() {
           <Bell className="h-6 w-6 text-neon-cyan" aria-hidden />
           <div>
             <p className="font-semibold">Notificaciones</p>
-            <p className="text-sm text-text-muted">Preferencia guardada (push nativo futuro)</p>
+            <p className="text-sm text-text-muted">
+              {!pushSupported()
+                ? 'Este navegador no soporta notificaciones push.'
+                : !pushConfigured
+                  ? 'Push no configurado en el servidor.'
+                  : 'Avisos nativos (p. ej. escaneo completado).'}
+            </p>
+            {pushError && <p className="text-xs text-neon-pink">{pushError}</p>}
+            {pushSent != null && (
+              <p className="text-xs text-text-muted">
+                {pushSent > 0
+                  ? `Enviada a ${pushSent} dispositivo${pushSent === 1 ? '' : 's'}.`
+                  : 'No se pudo enviar.'}
+              </p>
+            )}
           </div>
         </div>
-        <Toggle
-          checked={settings.notifications_enabled}
-          onChange={(v) => set({ notifications_enabled: v })}
-          label="Notificaciones"
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          {pushAvailable && settings.notifications_enabled && (
+            <Button variant="ghost" size="sm" onClick={() => void handleTestPush()} disabled={pushTesting}>
+              {pushTesting ? 'Enviando…' : 'Probar'}
+            </Button>
+          )}
+          <Toggle
+            checked={settings.notifications_enabled}
+            onChange={(v) => void handleToggleNotifications(v)}
+            label="Notificaciones"
+            disabled={!pushAvailable || pushBusy}
+          />
+        </div>
       </Card>
 
       {/* Last.fm scrobbling */}

@@ -37,6 +37,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        // Custom push/notificationclick handlers, injected into the generated SW.
+        importScripts: ['push-handler.js'],
         runtimeCaching: [
           {
             // Library/playlists/favorites/settings API reads. NetworkFirst (not
