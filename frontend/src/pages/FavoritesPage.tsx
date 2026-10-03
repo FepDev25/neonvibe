@@ -59,11 +59,19 @@ export default function FavoritesPage() {
       <div className="flex flex-col gap-4">
       <h1 className="neon-text text-2xl font-bold">Favoritos</h1>
 
-      <div className="flex gap-1 rounded-xl border border-border bg-surface p-1">
+      <div
+        role="tablist"
+        aria-label="Favoritos"
+        className="flex gap-1 rounded-xl border border-border bg-surface p-1"
+      >
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
+            role="tab"
+            id={`favorites-tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls={`favorites-panel-${id}`}
             onClick={() => setTab(id)}
             className={cn(
               'flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition-colors',
@@ -71,7 +79,6 @@ export default function FavoritesPage() {
                 ? 'bg-neon-purple/15 text-neon-cyan'
                 : 'text-text-muted hover:text-text',
             )}
-            aria-pressed={tab === id}
           >
             <Icon className="h-4 w-4" aria-hidden />
             {label}
@@ -79,6 +86,7 @@ export default function FavoritesPage() {
         ))}
       </div>
 
+      <div role="tabpanel" id={`favorites-panel-${tab}`} aria-labelledby={`favorites-tab-${tab}`}>
       {active.isPending ? (
         <div className="flex flex-col gap-2">
           <Skeleton className="h-12 w-full rounded-xl" />
@@ -112,6 +120,7 @@ export default function FavoritesPage() {
           ))}
         </div>
       )}
+      </div>
       </div>
     </PullToRefresh>
   );

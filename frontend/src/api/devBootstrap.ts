@@ -29,9 +29,11 @@ export function ensureDevSession(): Promise<void> {
     try {
       const auth = await loginWithGoogle('dev-bootstrap');
       const me = await fetchMe();
-      useAuthStore.getState().setAuth(me, auth.access_token);
+      useAuthStore.getState().setAuth(me, auth.access_token, auth.refresh_token);
     } catch (err) {
       console.warn('[dev] session bootstrap failed', err);
+      // Allow a retry on the next call instead of caching the failure forever.
+      bootstrapPromise = null;
     }
   })();
   return bootstrapPromise;

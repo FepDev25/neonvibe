@@ -20,6 +20,26 @@ export function getInitialTheme(): Theme {
   if (typeof window === 'undefined') {
     return 'dark';
   }
-  const stored = window.localStorage.getItem('neonvibe-theme');
-  return stored === 'light' || stored === 'dark' ? stored : 'dark';
+  return readPersistedTheme() ?? 'dark';
+}
+
+/**
+ * Reads the theme from zustand's persist envelope in localStorage, which is
+ * `{"state":{"theme":"light"},"version":0}` — not a raw string. A raw value is
+ * still tolerated so hand-written storage keeps working.
+ */
+function readPersistedTheme(): Theme | null {
+  try {
+    const raw = window.localStorage.getItem('neonvibe-theme');
+    if (!raw) {
+      return null;
+    }
+    let value: unknown = raw;
+    if (raw.startsWith('{')) {
+      value = (JSON.parse(raw) as { state?: { theme?: unknown } })?.state?.theme;
+    }
+    return value === 'light' || value === 'dark' ? value : null;
+  } catch {
+    return null;
+  }
 }

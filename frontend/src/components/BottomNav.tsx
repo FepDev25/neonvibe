@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Library, Search, Settings } from 'lucide-react';
+import { Home, Library, Search, Settings, History, Download } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Inicio', icon: Home, end: true },
   { to: '/library', label: 'Biblioteca', icon: Library, end: false },
+  { to: '/history', label: 'Historial', icon: History, end: false },
+  { to: '/downloads', label: 'Descargas', icon: Download, end: false },
   { to: '/search', label: 'Buscar', icon: Search, end: false },
   { to: '/settings', label: 'Ajustes', icon: Settings, end: false },
 ] as const;

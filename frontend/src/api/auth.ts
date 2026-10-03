@@ -17,3 +17,8 @@ export async function fetchMe(): Promise<User> {
   const { data } = await apiClient.get<User>('/auth/me');
   return data;
 }
+
+/** Revokes the server-side refresh token (best-effort on the caller side). */
+export async function logout(): Promise<void> {
+  await apiClient.post('/auth/logout');
+}

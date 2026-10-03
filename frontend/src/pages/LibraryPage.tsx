@@ -167,6 +167,8 @@ export default function LibraryPage() {
       </div>
 
       <div
+        role="tablist"
+        aria-label="Biblioteca"
         className="flex gap-1 rounded-xl border border-border bg-surface p-1"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
@@ -175,6 +177,10 @@ export default function LibraryPage() {
           <button
             key={id}
             type="button"
+            role="tab"
+            id={`library-tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls={`library-panel-${id}`}
             onClick={() => setTab(id)}
             className={cn(
               'flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition-colors',
@@ -182,7 +188,6 @@ export default function LibraryPage() {
                 ? 'bg-neon-purple/15 text-neon-cyan'
                 : 'text-text-muted hover:text-text',
             )}
-            aria-pressed={tab === id}
           >
             <Icon className="h-4 w-4" aria-hidden />
             {label}
@@ -190,9 +195,11 @@ export default function LibraryPage() {
         ))}
       </div>
 
-      {tab === 'tracks' && <TracksTab />}
-      {tab === 'albums' && <AlbumsTab />}
-      {tab === 'artists' && <ArtistsTab />}
+      <div role="tabpanel" id={`library-panel-${tab}`} aria-labelledby={`library-tab-${tab}`}>
+        {tab === 'tracks' && <TracksTab />}
+        {tab === 'albums' && <AlbumsTab />}
+        {tab === 'artists' && <ArtistsTab />}
+      </div>
       </div>
     </PullToRefresh>
   );

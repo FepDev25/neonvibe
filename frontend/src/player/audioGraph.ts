@@ -1,4 +1,4 @@
-import { getAudioElement } from '@/stores/playerStore';
+import { getAudioElement } from '@/player/audioElement';
 
 // Web Audio graph is created once and never torn down, so routing the audio
 // element through the AnalyserNode keeps sound alive (disconnecting it would

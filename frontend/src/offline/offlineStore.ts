@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useAuthStore } from '@/stores/authStore';
 import { offlineDb, type OfflineTrackRecord } from './offlineDb';
-import { revokeBlobUrl, streamUrl } from '@/player/playable';
+import { deferRevokeBlobUrl, revokeBlobUrl, streamUrl } from '@/player/playable';
 import { usePlayerStore, type PlayerTrack } from '@/stores/playerStore';
 
 export type DownloadStatus = 'idle' | 'downloading' | 'done' | 'error';
@@ -101,7 +101,9 @@ export const useOfflineStore = create<DownloadState>()((set, get) => ({
           set((s) => ({ progress: { ...s.progress, [track.id]: p } }));
         }
       }
-      const blob = new Blob(chunks, { type: 'audio/mpeg' });
+      // Preserve the real MIME type (FLAC/OGG/...), not a hardcoded audio/mpeg.
+      const contentType = res.headers.get('Content-Type') || 'application/octet-stream';
+      const blob = new Blob(chunks, { type: contentType });
       const record: OfflineTrackRecord = {
         id: track.id,
         blob,
@@ -143,9 +145,12 @@ export const useOfflineStore = create<DownloadState>()((set, get) => ({
   removeTrack: async (trackId) => {
     activeControllers.get(trackId)?.abort();
     await offlineDb.delete(trackId).catch(() => undefined);
-    // Don't revoke a blob that is currently playing (would cut audio).
+    // Don't revoke a blob that is currently playing (would cut audio): defer it
+    // until playback moves to another track (see playerStore.loadAndPlay).
     const playingId = usePlayerStore.getState().currentTrack?.id;
-    if (playingId !== trackId) {
+    if (playingId === trackId) {
+      deferRevokeBlobUrl(trackId);
+    } else {
       revokeBlobUrl(trackId);
     }
     set((s) => {

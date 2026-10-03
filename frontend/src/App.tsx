@@ -12,44 +12,32 @@ import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import PublicPlaylistPage from './pages/PublicPlaylistPage';
 import FavoritesPage from './pages/FavoritesPage';
 import SearchPage from './pages/SearchPage';
+import HistoryPage from './pages/HistoryPage';
+import DownloadsPage from './pages/DownloadsPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { useAuthStore } from './stores/authStore';
 import { ensureDevSession } from './api/devBootstrap';
-import { connectSync, setSyncHandler } from './player/sync';
-import { usePlayerStore } from './stores/playerStore';
-import { useOfflineStore } from './offline/offlineStore';
+import { useSessionBootstrap } from './hooks/useSessionBootstrap';
 
 /**
  * Top-level router. Every route renders inside the shared Layout.
  *
- * On mount: bootstrap the dev session (if any), connect the WebSocket sync
- * channel, restore the persisted play queue and load offline download state.
+ * On mount: bootstrap the dev session (if any). The session-dependent wiring
+ * (WebSocket sync, queue restore, offline state) is handled by
+ * {@link useSessionBootstrap}, keyed on the authenticated user so it also runs
+ * after a production login.
  */
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const userId = useAuthStore((s) => s.user?.id);
 
   useEffect(() => {
-    void (async () => {
-      await ensureDevSession();
-      setSyncHandler((message) => {
-        const store = usePlayerStore.getState();
-        if (message.type === 'PLAYER_SYNC') {
-          void store._applyPlayerSync(message.payload);
-        } else {
-          store._applyQueueUpdate(message.payload);
-        }
-      });
-      connectSync();
-      await usePlayerStore.getState().restoreFromServer();
-      await useOfflineStore.getState().ensureLoaded();
-      // Ask for persistent storage so downloads survive storage pressure.
-      if (navigator.storage?.persist) {
-        void navigator.storage.persist().catch(() => undefined);
-      }
-    })();
+    void ensureDevSession();
   }, []);
+
+  useSessionBootstrap(isAuthenticated, userId);
 
   // Production gate: no session -> login. DEV uses the mock bootstrap instead.
   const needsLogin = import.meta.env.PROD && !isAuthenticated;
@@ -72,6 +60,8 @@ export default function App() {
             <Route path="/playlist/:id" element={<PlaylistDetailPage />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/downloads" element={<DownloadsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/home" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFoundPage />} />

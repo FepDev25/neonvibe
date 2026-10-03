@@ -6,6 +6,7 @@ import { tracksToPlayerQueue } from '@/stores/playerStore';
 import TrackRow from '@/components/TrackRow';
 import AlbumCard from '@/components/AlbumCard';
 import ArtistCard from '@/components/ArtistCard';
+import LoadMore from '@/components/LoadMore';
 import Skeleton from '@/components/Skeleton';
 import { cn } from '@/utils/cn';
 
@@ -35,11 +36,15 @@ export default function SearchPage() {
       <h1 className="neon-text text-2xl font-bold">Buscar</h1>
 
       <div className="relative">
+        <label htmlFor="global-search" className="sr-only">
+          Buscar en la biblioteca
+        </label>
         <Search
           className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-text-muted"
           aria-hidden
         />
         <input
+          id="global-search"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -82,6 +87,7 @@ export default function SearchPage() {
               <TrackRow key={track.id} track={track} queue={trackQueue} />
             ))}
           </div>
+          <LoadMore query={tracksQuery} />
         </section>
       )}
 
@@ -93,6 +99,7 @@ export default function SearchPage() {
               <AlbumCard key={album.id} album={album} />
             ))}
           </div>
+          <LoadMore query={albumsQuery} />
         </section>
       )}
 
@@ -104,6 +111,7 @@ export default function SearchPage() {
               <ArtistCard key={artist.id} artist={artist} />
             ))}
           </div>
+          <LoadMore query={artistsQuery} />
         </section>
       )}
     </div>

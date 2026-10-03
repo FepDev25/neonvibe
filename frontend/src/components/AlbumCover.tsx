@@ -41,17 +41,20 @@ interface AlbumCoverProps {
  * falls back to a deterministic neon gradient placeholder on error.
  */
 export default function AlbumCover({ seed, alt, className, src, children }: AlbumCoverProps) {
-  const [failed, setFailed] = useState(false);
+  // Track which src failed (not just "failed") so a new cover — e.g. the next
+  // track in the player, or a freshly uploaded one — is retried instead of
+  // showing the placeholder forever.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [from, to] = paletteFor(seed);
 
-  if (src && !failed) {
+  if (src && src !== failedSrc) {
     return (
       <div className={cn('relative aspect-square overflow-hidden', className)}>
         <img
           src={src}
           alt={alt}
           loading="lazy"
-          onError={() => setFailed(true)}
+          onError={() => setFailedSrc(src)}
           className="h-full w-full object-cover"
         />
       </div>

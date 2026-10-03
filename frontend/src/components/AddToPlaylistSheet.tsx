@@ -1,7 +1,9 @@
+import { useRef } from 'react';
 import { X, Check } from 'lucide-react';
 import { usePlaylists } from '@/hooks/usePlaylists';
 import { useAddTrackToPlaylist } from '@/hooks/usePlaylists';
 import { useAuthStore } from '@/stores/authStore';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import Skeleton from './Skeleton';
 import { cn } from '@/utils/cn';
 
@@ -19,6 +21,8 @@ export default function AddToPlaylistSheet({ open, trackId, onClose }: AddToPlay
   const { data: playlists, isPending } = usePlaylists();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const addTrack = useAddTrackToPlaylist();
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useModalA11y(open, onClose, sheetRef);
 
   if (!open) {
     return null;
@@ -35,7 +39,9 @@ export default function AddToPlaylistSheet({ open, trackId, onClose }: AddToPlay
       aria-label="Añadir a playlist"
     >
       <div
-        className="max-h-[70vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 safe-bottom sm:rounded-2xl"
+        ref={sheetRef}
+        tabIndex={-1}
+        className="max-h-[70vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 safe-bottom outline-none sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">

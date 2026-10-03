@@ -14,8 +14,9 @@ export interface QueuePayload {
  */
 
 export async function getQueue(): Promise<PlayQueue | null> {
-  const { data } = await apiClient.get<PlayQueue>('/queue');
-  return data;
+  const response = await apiClient.get<PlayQueue>('/queue');
+  // The backend answers 204 when the user has no queue yet.
+  return response.status === 204 ? null : response.data;
 }
 
 export async function updateQueue(payload: QueuePayload): Promise<PlayQueue> {

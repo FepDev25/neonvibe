@@ -30,13 +30,30 @@ describe('getInitialTheme', () => {
     expect(getInitialTheme()).toBe('dark');
   });
 
-  it('returns the persisted theme', () => {
+  it('returns the theme from the zustand persist envelope', () => {
+    // This is the real shape zustand `persist` writes, not a raw string.
+    window.localStorage.setItem(
+      'neonvibe-theme',
+      JSON.stringify({ state: { theme: 'light' }, version: 0 }),
+    );
+    expect(getInitialTheme()).toBe('light');
+  });
+
+  it('still accepts a raw persisted value', () => {
     window.localStorage.setItem('neonvibe-theme', 'light');
     expect(getInitialTheme()).toBe('light');
   });
 
   it('falls back to dark for unknown values', () => {
-    window.localStorage.setItem('neonvibe-theme', 'neon');
+    window.localStorage.setItem(
+      'neonvibe-theme',
+      JSON.stringify({ state: { theme: 'neon' }, version: 0 }),
+    );
+    expect(getInitialTheme()).toBe('dark');
+  });
+
+  it('falls back to dark for malformed storage', () => {
+    window.localStorage.setItem('neonvibe-theme', '{not json');
     expect(getInitialTheme()).toBe('dark');
   });
 });

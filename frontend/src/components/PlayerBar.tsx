@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Play,
   Pause,
@@ -24,6 +24,7 @@ import SeekBar from './SeekBar';
 import QueueSheet from './QueueSheet';
 import LyricsSheet from './LyricsSheet';
 import Visualizer from './Visualizer';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { cn } from '@/utils/cn';
 
 /**
@@ -53,6 +54,8 @@ export default function PlayerBar() {
   const [lyricsOpen, setLyricsOpen] = useState(false);
   const [vizOpen, setVizOpen] = useState(false);
   const [radioBusy, setRadioBusy] = useState(false);
+  const vizRef = useRef<HTMLDivElement>(null);
+  useModalA11y(vizOpen, () => setVizOpen(false), vizRef);
 
   const startRadio = async (trackId: number) => {
     setRadioBusy(true);
@@ -62,6 +65,8 @@ export default function PlayerBar() {
         const q = tracksToPlayerQueue(tracks);
         playTrack(q[0], q);
       }
+    } catch (err) {
+      console.warn('[radio] failed to start', err);
     } finally {
       setRadioBusy(false);
     }
@@ -227,7 +232,14 @@ export default function PlayerBar() {
       <LyricsSheet open={lyricsOpen} onClose={() => setLyricsOpen(false)} />
 
       {vizOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/95">
+        <div
+          ref={vizRef}
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Visualizador de audio"
+          className="fixed inset-0 z-50 flex flex-col bg-black/95 outline-none"
+        >
           <div className="flex items-center justify-between px-5 pt-5">
             <p className="neon-text text-lg font-bold">Visualizador</p>
             <button

@@ -17,8 +17,10 @@ import {
   disconnectLastFm,
   getLastFmAuthUrl,
 } from '@/api/settings';
+import { logout as revokeSession } from '@/api/auth';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
+import ScannerCard from '@/components/ScannerCard';
 import Skeleton from '@/components/Skeleton';
 import { cn } from '@/utils/cn';
 
@@ -81,9 +83,18 @@ export default function SettingsPage() {
       if (configured && url) {
         window.location.href = url;
       }
+    } catch (err) {
+      // e.g. 503 when Last.fm is not configured; avoid an unhandled rejection.
+      console.warn('[lastfm] could not start auth', err);
     } finally {
       setConnecting(false);
     }
+  };
+
+  const handleLogout = async () => {
+    // Revoke the server-side refresh token, then clear local state.
+    await revokeSession().catch(() => undefined);
+    logout();
   };
 
   const handleDisconnect = async () => {
@@ -132,7 +143,7 @@ export default function SettingsPage() {
           </div>
         </div>
         {isAuthenticated ? (
-          <Button variant="ghost" size="sm" onClick={logout}>
+          <Button variant="ghost" size="sm" onClick={() => void handleLogout()}>
             <LogOut className="h-4 w-4" aria-hidden />
             Cerrar
           </Button>
@@ -274,6 +285,9 @@ export default function SettingsPage() {
           Limpiar
         </Button>
       </Card>
+
+      {/* Scanner (admin only; hidden for non-admins) */}
+      <ScannerCard />
 
       <p className="text-xs text-text-muted">
         NeonVibe v0.1 — preproducción. Los ajustes se guardan en la base de datos.

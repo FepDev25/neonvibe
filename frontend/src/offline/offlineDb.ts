@@ -26,7 +26,7 @@ function openDb(): Promise<IDBDatabase> {
   if (dbPromise) {
     return dbPromise;
   }
-  dbPromise = new Promise((resolve, reject) => {
+  const promise = new Promise<IDBDatabase>((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
       reject(new Error('IndexedDB is not available'));
       return;
@@ -46,8 +46,14 @@ function openDb(): Promise<IDBDatabase> {
       resolve(db);
     };
     req.onerror = () => reject(req.error ?? new Error('IndexedDB open failed'));
+  }).catch((err) => {
+    // Do not cache a rejected promise: a later call must be able to retry
+    // (e.g. IndexedDB temporarily unavailable, or a transient open error).
+    dbPromise = null;
+    throw err;
   });
-  return dbPromise;
+  dbPromise = promise;
+  return promise;
 }
 
 function tx<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {

@@ -8,6 +8,8 @@ import {
   Heart,
   Search,
   Settings,
+  History,
+  Download,
   Music2,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -19,6 +21,8 @@ const ITEMS = [
   { to: '/artists', label: 'Artistas', icon: UserRound, end: false },
   { to: '/playlists', label: 'Playlists', icon: ListMusic, end: false },
   { to: '/favorites', label: 'Favoritos', icon: Heart, end: false },
+  { to: '/history', label: 'Historial', icon: History, end: false },
+  { to: '/downloads', label: 'Descargas', icon: Download, end: false },
   { to: '/search', label: 'Buscar', icon: Search, end: false },
   { to: '/settings', label: 'Ajustes', icon: Settings, end: false },
 ] as const;

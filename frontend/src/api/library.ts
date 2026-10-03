@@ -49,11 +49,25 @@ export async function getAlbum(id: number): Promise<Album> {
   return data;
 }
 
+/** Page size the backend accepts for album tracks (it caps at 100). */
+const ALBUM_TRACKS_PAGE_SIZE = 100;
+/** Safety bound so a huge/broken album cannot loop forever. */
+const ALBUM_TRACKS_MAX_PAGES = 20;
+
 export async function getAlbumTracks(id: number): Promise<Track[]> {
-  const { data } = await apiClient.get<Track[]>(`/albums/${id}/tracks`, {
-    params: { size: 100 },
-  });
-  return data;
+  // The endpoint is paginated but returns a plain list; fetch successive pages
+  // until a short page, so albums with more than 100 tracks are complete.
+  const all: Track[] = [];
+  for (let page = 0; page < ALBUM_TRACKS_MAX_PAGES; page++) {
+    const { data } = await apiClient.get<Track[]>(`/albums/${id}/tracks`, {
+      params: { page, size: ALBUM_TRACKS_PAGE_SIZE },
+    });
+    all.push(...data);
+    if (data.length < ALBUM_TRACKS_PAGE_SIZE) {
+      break;
+    }
+  }
+  return all;
 }
 
 export async function searchArtists(filters: ArtistFilters): Promise<Page<Artist>> {

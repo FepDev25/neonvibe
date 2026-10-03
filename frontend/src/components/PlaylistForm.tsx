@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import Button from './Button';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { cn } from '@/utils/cn';
 
 interface PlaylistFormValues {
@@ -34,6 +35,8 @@ export default function PlaylistForm({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
+  useModalA11y(open, onClose, formRef);
 
   useEffect(() => {
     if (open) {
@@ -63,7 +66,9 @@ export default function PlaylistForm({
       aria-label={title}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-border bg-surface p-5 safe-bottom"
+        ref={formRef}
+        tabIndex={-1}
+        className="w-full max-w-md rounded-2xl border border-border bg-surface p-5 safe-bottom outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

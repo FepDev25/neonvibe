@@ -47,3 +47,23 @@ export function revokeBlobUrl(trackId: number): void {
     blobUrlCache.delete(trackId);
   }
 }
+
+// Tracks whose offline copy was deleted while they were playing: revoking their
+// blob URL immediately would cut the audio, so it is deferred until playback
+// moves to another track.
+const deferredRevoke = new Set<number>();
+
+/** Defers revoking a blob URL until the track is no longer playing. */
+export function deferRevokeBlobUrl(trackId: number): void {
+  deferredRevoke.add(trackId);
+}
+
+/** Revokes deferred blob URLs except the one currently playing. */
+export function flushDeferredRevokes(keepTrackId?: number): void {
+  for (const id of [...deferredRevoke]) {
+    if (id !== keepTrackId) {
+      revokeBlobUrl(id);
+      deferredRevoke.delete(id);
+    }
+  }
+}

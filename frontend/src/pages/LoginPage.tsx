@@ -48,9 +48,12 @@ export default function LoginPage() {
               // stores the token, comes after fetchMe).
               setToken(auth.access_token);
               const me = await fetchMe();
-              setAuth(me, auth.access_token);
+              setAuth(me, auth.access_token, auth.refresh_token);
               navigate('/', { replace: true });
             } catch (err) {
+              // fetchMe() failed (e.g. 401): clear the half-established session so
+              // we don't navigate into the app as an authenticated ghost.
+              useAuthStore.getState().logout();
               // 403 = cuenta válida pero fuera de la allowlist del servidor
               // (ALLOWED_EMAILS); distinguirlo evita reintentos inútiles.
               const status = (err as { response?: { status?: number } })?.response?.status;

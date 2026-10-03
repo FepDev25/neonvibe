@@ -27,6 +27,8 @@ export default function RadioButton({ trackId, label = 'Radio', size = 'sm', var
         const queue = tracksToPlayerQueue(tracks);
         playTrack(queue[0], queue);
       }
+    } catch (err) {
+      console.warn('[radio] failed to start', err);
     } finally {
       setBusy(false);
     }

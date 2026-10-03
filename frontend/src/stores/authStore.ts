@@ -13,13 +13,18 @@ interface AuthState {
   isAuthenticated: boolean;
   user: AuthUser | null;
   token: string | null;
-  /** Sets a user + token after a successful login (backend integration in Fase 1). */
-  setAuth: (user: AuthUser, token: string) => void;
+  refreshToken: string | null;
+  /** Sets a user + tokens after a successful login. */
+  setAuth: (user: AuthUser, token: string, refreshToken?: string) => void;
+  /** Updates the tokens after a refresh, keeping the current user. */
+  setTokens: (accessToken: string, refreshToken?: string) => void;
   /**
-   * Stores the access token only, without user data. Needed during login:
-   * fetchMe() (GET /auth/me) runs before setAuth(), so the request interceptor
-   * would send no Authorization header and the backend would 401. Setting the
-   * token first lets fetchMe() authenticate, then setAuth() fills the user.
+   * Stores the access token only, WITHOUT marking the session authenticated.
+   * Needed during login: fetchMe() (GET /auth/me) runs before setAuth(), so the
+   * request interceptor would send no Authorization header and the backend would
+   * 401. Crucially, this must not set `isAuthenticated`: if fetchMe() fails the
+   * session stays unauthenticated and the login error is shown instead of a
+   * "ghost" session.
    */
   setToken: (token: string) => void;
   /** Clears all session data (logout). */
@@ -33,14 +38,17 @@ interface AuthState {
  */
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       isAuthenticated: false,
       user: null,
       token: null,
-      setAuth: (user, token) =>
-        set({ isAuthenticated: true, user, token }),
-      setToken: (token) => set({ token, isAuthenticated: true }),
-      logout: () => set({ isAuthenticated: false, user: null, token: null }),
+      refreshToken: null,
+      setAuth: (user, token, refreshToken) =>
+        set({ isAuthenticated: true, user, token, refreshToken: refreshToken ?? null }),
+      setTokens: (accessToken, refreshToken) =>
+        set({ token: accessToken, refreshToken: refreshToken ?? get().refreshToken }),
+      setToken: (token) => set({ token }),
+      logout: () => set({ isAuthenticated: false, user: null, token: null, refreshToken: null }),
     }),
     { name: 'neonvibe-auth' },
   ),

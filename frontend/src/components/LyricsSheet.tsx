@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { X, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getLyrics } from '@/api/lyrics';
 import { usePlayerStore } from '@/stores/playerStore';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import Skeleton from './Skeleton';
 import { cn } from '@/utils/cn';
 
@@ -53,6 +54,8 @@ function parseLrc(text: string): TimedLine[] {
 export default function LyricsSheet({ open, onClose }: LyricsSheetProps) {
   const currentTrack = usePlayerStore((s) => s.currentTrack);
   const progress = usePlayerStore((s) => s.progress);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useModalA11y(open, onClose, sheetRef);
   const query = useQuery({
     queryKey: ['lyrics', currentTrack?.id],
     queryFn: () => getLyrics(currentTrack!.id),
@@ -94,7 +97,9 @@ export default function LyricsSheet({ open, onClose }: LyricsSheetProps) {
       aria-label="Letras"
     >
       <div
-        className="flex h-[70vh] w-full max-w-md flex-col rounded-t-2xl border border-border bg-surface safe-bottom sm:h-[60vh] sm:rounded-2xl"
+        ref={sheetRef}
+        tabIndex={-1}
+        className="flex h-[70vh] w-full max-w-md flex-col rounded-t-2xl border border-border bg-surface safe-bottom outline-none sm:h-[60vh] sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between px-5 pt-5">

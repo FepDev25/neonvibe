@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Sun, Moon, Music2, WifiOff } from 'lucide-react';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
+import { updateSettings } from '@/api/settings';
 import { useOnline } from '@/offline/useOnline';
 import IconButton from './IconButton';
 import { cn } from '@/utils/cn';
@@ -16,6 +17,13 @@ export default function TopHeader() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const online = useOnline();
+
+  const handleToggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    toggleTheme();
+    // Persist to the DB too, so the choice is not just a local override.
+    void updateSettings({ theme: next }).catch(() => undefined);
+  };
 
   const initials = user?.name
     ? user.name
@@ -45,7 +53,7 @@ export default function TopHeader() {
           )}
           <IconButton
             label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
-            onClick={toggleTheme}
+            onClick={handleToggleTheme}
           >
             {theme === 'dark' ? (
               <Sun className="h-5 w-5" aria-hidden />

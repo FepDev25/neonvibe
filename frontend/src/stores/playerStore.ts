@@ -4,9 +4,11 @@ import { getTrack } from '@/api/library';
 import type { Track } from '@/types';
 import type { PlayerSyncMessage, QueueUpdateMessage, RepeatMode } from '@/types';
 import { sendPlayerAction, sendQueueUpdate } from '@/player/sync';
-import { setupMediaSession, updateMediaSession } from '@/player/mediaSession';
+import { setMediaSessionPosition, setupMediaSession, updateMediaSession } from '@/player/mediaSession';
 import { ensureAudioRunning } from '@/player/audioGraph';
-import { getOfflineBlobUrl, getPlayableSrc } from '@/player/playable';
+import { getOfflineBlobUrl, getPlayableSrc, flushDeferredRevokes } from '@/player/playable';
+import { getAudioElement } from '@/player/audioElement';
+import { mapWithConcurrency } from '@/utils/async';
 
 export interface PlayerTrack {
   id: number;
@@ -57,12 +59,13 @@ async function resolveTracks(ids: number[]): Promise<PlayerTrack[]> {
   const byId = new Map(cache.map((t) => [t.id, t]));
   const missing = ids.filter((id) => !byId.has(id));
   if (missing.length > 0) {
-    await Promise.all(
-      missing.map((id) =>
-        getTrack(id)
-          .then((t) => byId.set(id, toPlayerTrack(t)))
-          .catch(() => undefined),
-      ),
+    // Bounded concurrency: a huge queue must not fire hundreds of requests at once.
+    await mapWithConcurrency(missing, 6, (id) =>
+      getTrack(id)
+        .then((t) => {
+          byId.set(id, toPlayerTrack(t));
+        })
+        .catch(() => undefined),
     );
   }
   const resolved = ids
@@ -74,9 +77,8 @@ async function resolveTracks(ids: number[]): Promise<PlayerTrack[]> {
   return resolved;
 }
 
-// Single shared audio element (works with MediaSession and AudioContext in Fase 8).
-const audio = new Audio();
-audio.preload = 'metadata';
+// Single shared audio element (works with MediaSession and AudioContext).
+const audio = getAudioElement();
 
 // Set to false while applying remote sync so internal changes don't re-broadcast.
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
@@ -109,6 +111,8 @@ export interface PlayerState {
   toggleShuffle: () => void;
   cycleRepeat: () => void;
   restoreFromServer: () => Promise<void>;
+  /** Stops playback and clears all per-user player state (used on logout). */
+  reset: () => void;
 
   // internals
   _tick: () => void;
@@ -127,6 +131,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
     if (gen !== loadGen) {
       return;
     }
+    // Playback moved to this track: release any blob URLs deferred while they
+    // were the playing one.
+    flushDeferredRevokes(track.id);
     const offline = !src.includes('/stream');
     if (currentLoadId !== track.id || currentSrcOffline !== offline) {
       audio.src = src;
@@ -152,9 +159,14 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
     if (!currentTrack) {
       return;
     }
-    const progress = Math.floor(completed ? duration || audio.currentTime : audio.currentTime);
+    // Fall back to the media element's duration when the store has not captured
+    // it yet (e.g. metadata arrived but state was not updated).
+    const effectiveDuration = duration > 0
+      ? duration
+      : (Number.isFinite(audio.duration) ? audio.duration : 0);
+    const progress = Math.floor(completed ? effectiveDuration || audio.currentTime : audio.currentTime);
     const significant =
-      completed || progress >= 30 || (duration > 0 && progress >= duration / 2);
+      completed || progress >= 30 || (effectiveDuration > 0 && progress >= effectiveDuration / 2);
     if (!significant) {
       return;
     }
@@ -190,7 +202,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
     updateMediaSession(target, autoplay);
     if (wasPlaying || autoplay) {
       persistSoon();
-      sendPlayerAction('NEXT', 0);
+      // Send the chosen track id so the server sets the SAME track (shuffle is
+      // decided client-side; the server must not pick a different random one).
+      sendPlayerAction('NEXT', 0, undefined, target.id);
     }
   };
 
@@ -245,6 +259,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
       if (index < 0) {
         index = 0;
       }
+      // Record the OUTGOING track before switching (it is still the current one).
+      recordCurrent(false);
       set({
         queue: targetQueue,
         currentIndex: index,
@@ -254,12 +270,13 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
         isPlaying: true,
       });
       saveQueueCache(targetQueue);
-      recordCurrent(false);
       void loadAndPlay(track);
       updateMediaSession(track, true);
       persistSoon();
-      sendPlayerAction('PLAY', 0);
+      // Update the server queue/current BEFORE PLAY: the `play` handler does not
+      // receive the track, so sending PLAY first would sync the previous track.
       sendQueueUpdate(targetQueue.map((t) => t.id), track.id);
+      sendPlayerAction('PLAY', 0);
     },
 
     toggle: () => {
@@ -338,7 +355,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
     seek: (seconds) => {
       audio.currentTime = seconds;
       set({ progress: seconds });
-      sendPlayerAction('SEEK', Math.floor(seconds));
+      setMediaSessionPosition(seconds, get().duration);
+      sendPlayerAction('SEEK', Math.floor(seconds), get().isPlaying);
       persistSoon();
     },
 
@@ -392,6 +410,39 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
       }
     },
 
+    reset: () => {
+      if (persistTimer) {
+        clearTimeout(persistTimer);
+        persistTimer = undefined;
+      }
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      currentLoadId = null;
+      pendingSeek = null;
+      consecutiveErrors = 0;
+      offlineRetried = false;
+      currentSrcOffline = false;
+      lastHistoryTrackId = -1;
+      lastHistoryAt = 0;
+      try {
+        localStorage.removeItem(QUEUE_CACHE_KEY);
+      } catch {
+        /* ignore */
+      }
+      set({
+        queue: [],
+        currentIndex: -1,
+        currentTrack: null,
+        isPlaying: false,
+        progress: 0,
+        duration: 0,
+        shuffle: false,
+        repeat: 'NONE',
+      });
+      updateMediaSession(null, false);
+    },
+
     _tick: () => {
       set({ progress: audio.currentTime });
     },
@@ -401,6 +452,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
       const { repeat, currentTrack } = get();
       if (repeat === 'ONE' && currentTrack) {
         audio.currentTime = 0;
+        ensureAudioRunning();
         void audio.play().catch(() => undefined);
         set({ progress: 0, isPlaying: true });
         return;
@@ -440,6 +492,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
       }
       if (currentTrack && currentTrack.id === msg.track_id) {
         if (msg.is_playing && !get().isPlaying) {
+          ensureAudioRunning();
           void audio.play().catch(() => undefined);
           set({ isPlaying: true });
         } else if (!msg.is_playing && get().isPlaying) {
@@ -502,6 +555,7 @@ audio.addEventListener('timeupdate', () => {
 
 audio.addEventListener('loadedmetadata', () => {
   usePlayerStore.setState({ duration: audio.duration || 0 });
+  setMediaSessionPosition(0, audio.duration || 0);
   if (pendingSeek != null) {
     audio.currentTime = pendingSeek;
     pendingSeek = null;
@@ -531,7 +585,5 @@ setupMediaSession({
     usePlayerStore.getState().seek(Math.max(0, usePlayerStore.getState().progress + delta)),
 });
 
-/** The shared audio element (used by the visualizer via MediaElementSource). */
-export function getAudioElement(): HTMLAudioElement {
-  return audio;
-}
+/** Re-exported for compatibility; the element lives in `player/audioElement`. */
+export { getAudioElement } from '@/player/audioElement';

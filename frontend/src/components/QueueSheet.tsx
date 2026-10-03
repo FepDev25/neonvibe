@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { X, Play } from 'lucide-react';
 import { usePlayerStore } from '@/stores/playerStore';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { cn } from '@/utils/cn';
 import { formatDuration } from '@/utils/format';
 
@@ -17,6 +19,8 @@ export default function QueueSheet({ open, onClose }: QueueSheetProps) {
   const currentIndex = usePlayerStore((s) => s.currentIndex);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const playTrack = usePlayerStore((s) => s.playTrack);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useModalA11y(open, onClose, sheetRef);
 
   if (!open) {
     return null;
@@ -31,7 +35,9 @@ export default function QueueSheet({ open, onClose }: QueueSheetProps) {
       aria-label="Cola de reproducción"
     >
       <div
-        className="flex max-h-[70vh] w-full max-w-md flex-col rounded-t-2xl border border-border bg-surface safe-bottom sm:rounded-2xl"
+        ref={sheetRef}
+        tabIndex={-1}
+        className="flex max-h-[70vh] w-full max-w-md flex-col rounded-t-2xl border border-border bg-surface safe-bottom outline-none sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between px-5 pt-5">
@@ -54,7 +60,8 @@ export default function QueueSheet({ open, onClose }: QueueSheetProps) {
               const isCurrent = index === currentIndex;
               return (
                 <button
-                  key={track.id}
+                  // Index suffix: queues may legitimately contain duplicate ids.
+                  key={`${track.id}-${index}`}
                   type="button"
                   onClick={() => playTrack(track, queue)}
                   className={cn(

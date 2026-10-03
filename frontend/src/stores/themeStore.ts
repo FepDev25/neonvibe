@@ -31,6 +31,13 @@ export const useThemeStore = create<ThemeState>()(
     {
       name: 'neonvibe-theme',
       partialize: (state) => ({ theme: state.theme }),
+      // Re-apply the class once persist hydrates the stored theme, so a
+      // persisted 'light' is honoured on reload even before any interaction.
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          applyThemeClass(state.theme);
+        }
+      },
     },
   ),
 );

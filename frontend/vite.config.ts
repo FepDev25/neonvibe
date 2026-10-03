@@ -50,6 +50,19 @@ export default defineConfig({
               cacheName: 'neonvibe-api',
               cacheableResponse: { statuses: [0, 200] },
               expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              plugins: [
+                {
+                  // Partition the cache by the auth token so a shared device never
+                  // serves one user's cached library/playlists to another. The
+                  // token is only a cache-key suffix, not sent anywhere new.
+                  cacheKeyWillBeUsed: async ({ request }: { request: Request }) => {
+                    const auth = request.headers.get('Authorization') ?? 'anon';
+                    const url = new URL(request.url);
+                    url.searchParams.set('__auth', auth.slice(-16));
+                    return url.toString();
+                  },
+                },
+              ],
             },
           },
           {
@@ -78,6 +91,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': 'http://localhost:8080',
+      // SockJS/STOMP handshake and frames; without this the dev WebSocket
+      // falls through to the SPA and the client retries forever.
+      '/ws': { target: 'http://localhost:8080', ws: true },
     },
   },
   build: {

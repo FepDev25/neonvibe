@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Download, Check, Loader2 } from 'lucide-react';
 import { useOfflineStore } from '@/offline/offlineStore';
 import Button from './Button';
@@ -19,10 +19,16 @@ export default function DownloadButton({ tracks }: DownloadButtonProps) {
   const downloadBatch = useOfflineStore((s) => s.downloadBatch);
   const removeTrack = useOfflineStore((s) => s.removeTrack);
   const [busy, setBusy] = useState(false);
+  const mounted = useRef(true);
 
   useEffect(() => {
     void ensureLoaded();
   }, [ensureLoaded]);
+
+  useEffect(() => () => {
+    // Avoid setState after unmount when navigating away mid-download.
+    mounted.current = false;
+  }, []);
 
   if (tracks.length === 0) {
     return null;
@@ -37,13 +43,13 @@ export default function DownloadButton({ tracks }: DownloadButtonProps) {
   const handleDownload = async () => {
     setBusy(true);
     await downloadBatch(tracks);
-    setBusy(false);
+    if (mounted.current) setBusy(false);
   };
 
   const handleDelete = async () => {
     setBusy(true);
     await Promise.all(tracks.map((t) => removeTrack(t.id)));
-    setBusy(false);
+    if (mounted.current) setBusy(false);
   };
 
   if (allDone) {

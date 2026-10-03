@@ -71,10 +71,22 @@ export default function Visualizer() {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="h-full w-full"
-      aria-label={supported ? 'Visualizador de audio' : 'Visualizador no disponible'}
-    />
+    <div className="relative h-full w-full">
+      <canvas
+        ref={canvasRef}
+        className="h-full w-full"
+        role="img"
+        aria-label="Visualizador de audio"
+      />
+      {/* Textual alternative for screen readers (the canvas has no content). */}
+      <p className="sr-only">
+        Visualizador de audio: barras que representan las frecuencias de la canción en tiempo real.
+      </p>
+      {!supported && (
+        <p className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-text-muted">
+          El visualizador no está disponible en este navegador.
+        </p>
+      )}
+    </div>
   );
 }

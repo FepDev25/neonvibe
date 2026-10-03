@@ -43,10 +43,17 @@ export default function PlaylistDetailPage() {
   const shareUrl = `${window.location.origin}/p/${playlistId}`;
 
   const handleShare = () => {
-    void navigator.clipboard?.writeText(shareUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    const clipboard = navigator.clipboard;
+    if (!clipboard?.writeText) {
+      return; // clipboard unavailable (insecure context / old browser)
+    }
+    void clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => undefined);
   };
 
   const isOwner = currentUserId != null && playlistQuery.data?.owner_id === currentUserId;

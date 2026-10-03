@@ -18,6 +18,8 @@ interface FavoritesState {
   ensureLoaded: () => Promise<void>;
   isFavorite: (entityType: FavoriteEntityType, entityId: number) => boolean;
   toggle: (entityType: FavoriteEntityType, entityId: number) => Promise<void>;
+  /** Clears the loaded set so the next user reloads their own (used on logout). */
+  reset: () => void;
 }
 
 let loadPromise: Promise<void> | null = null;
@@ -86,5 +88,10 @@ export const useFavoritesStore = create<FavoritesState>()((set, get) => ({
       delete nextPending[key];
       set({ pending: nextPending });
     }
+  },
+
+  reset: () => {
+    loadPromise = null;
+    set({ byKey: {}, loaded: false, pending: {} });
   },
 }));

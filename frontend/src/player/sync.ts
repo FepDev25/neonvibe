@@ -9,6 +9,27 @@ export type SyncInbound =
 
 export type SyncHandler = (message: SyncInbound) => void;
 
+/** Scanner progress payload broadcast on /topic/admin/scanner. */
+export interface ScannerProgress {
+  scanned_count: number;
+  total_count: number;
+  status: string;
+}
+
+/** New-tracks payload broadcast on /topic/admin/scanner. */
+export interface NewTracks {
+  track_ids: number[];
+  count: number;
+}
+
+export type ScannerInbound =
+  | { type: 'SCANNER_PROGRESS'; payload: ScannerProgress }
+  | { type: 'NEW_TRACKS'; payload: NewTracks };
+
+export type ScannerHandler = (message: ScannerInbound) => void;
+
+const SCANNER_TOPIC = '/topic/admin/scanner';
+
 /**
  * STOMP-over-SockJS client for the player sync channel (/topic/sync/{userId}).
  *
@@ -27,6 +48,7 @@ export type SyncHandler = (message: SyncInbound) => void;
  */
 let client: Client | null = null;
 let messageHandler: SyncHandler | null = null;
+let scannerHandler: ScannerHandler | null = null;
 let started = false;
 let subscribedUser: string | null = null;
 
@@ -62,20 +84,47 @@ function isQueueUpdate(b: unknown): b is QueueUpdateMessage {
   return typeof r === 'object' && r != null && 'tracks_order' in r && 'user_id' in r;
 }
 
+function isScannerProgress(b: unknown): b is ScannerProgress {
+  const r = b as Record<string, unknown>;
+  return typeof r === 'object' && r != null && 'scanned_count' in r && 'status' in r;
+}
+
+function isNewTracks(b: unknown): b is NewTracks {
+  const r = b as Record<string, unknown>;
+  return typeof r === 'object' && r != null && 'track_ids' in r && 'count' in r;
+}
+
 export function setSyncHandler(handler: SyncHandler) {
   messageHandler = handler;
+}
+
+/** Registers a handler for scanner events (admin UI). Null clears it. */
+export function setScannerHandler(handler: ScannerHandler | null) {
+  scannerHandler = handler;
 }
 
 export function sendPlayerAction(
   action: 'PLAY' | 'PAUSE' | 'SEEK' | 'NEXT' | 'PREV',
   positionSeconds?: number,
+  isPlaying?: boolean,
+  trackId?: number,
 ) {
   if (!client?.connected) {
     return;
   }
   client.publish({
     destination: `/app/player/${action.toLowerCase()}`,
-    body: JSON.stringify({ action, position_seconds: positionSeconds ?? 0, originator: clientId() }),
+    body: JSON.stringify({
+      action,
+      position_seconds: positionSeconds ?? 0,
+      // SEEK must not change the play state on other devices, so the sender
+      // reports its own state; ignored by PLAY/PAUSE which are explicit.
+      is_playing: isPlaying,
+      // For NEXT/PREV: the track the sender chose (client-side shuffle), so the
+      // server sets the same track instead of advancing/shuffling on its own.
+      track_id: trackId,
+      originator: clientId(),
+    }),
   });
 }
 
@@ -111,6 +160,10 @@ function handleFrame(frame: IMessage) {
     messageHandler?.({ type: 'PLAYER_SYNC', payload: body });
   } else if (isQueueUpdate(body)) {
     messageHandler?.({ type: 'QUEUE_UPDATED', payload: body });
+  } else if (isScannerProgress(body)) {
+    scannerHandler?.({ type: 'SCANNER_PROGRESS', payload: body });
+  } else if (isNewTracks(body)) {
+    scannerHandler?.({ type: 'NEW_TRACKS', payload: body });
   }
 }
 
@@ -150,6 +203,8 @@ export function connectSync() {
       if (currentUser && subscribedUser === currentUser) {
         client?.subscribe(`/topic/sync/${currentUser}`, handleFrame);
       }
+      // Scanner events are broadcast to a shared topic (admin UI listens).
+      client?.subscribe(SCANNER_TOPIC, handleFrame);
     },
     onWebSocketClose: () => {
       if (!useAuthStore.getState().token) {

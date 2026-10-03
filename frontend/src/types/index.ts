@@ -116,6 +116,30 @@ export interface PlayHistory {
   duration_listened_seconds?: number;
 }
 
+/** A history entry enriched with track metadata (GET /history). */
+export interface HistoryEntry {
+  id: number;
+  track_id: number;
+  title?: string;
+  artist?: string;
+  album?: string;
+  played_at: string;
+  completed: boolean;
+  duration_listened_seconds?: number;
+}
+
+/** Scanner status snapshot (GET /admin/scan/status). */
+export interface ScanStatus {
+  state: string;
+  total_scanned: number;
+  processed: number;
+  failed: number;
+  running: boolean;
+  started_at?: string;
+  finished_at?: string;
+  failed_files?: Record<string, string>;
+}
+
 /** Player state broadcast by the backend over WebSocket (PLAYER_SYNC). */
 export interface PlayerSyncMessage {
   track_id: number | null;
