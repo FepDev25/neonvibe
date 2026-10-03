@@ -3,6 +3,7 @@ import {
   formatBytes,
   formatDateTime,
   formatDuration,
+  formatListeningTime,
   formatTotalDuration,
   formatTrackCount,
 } from './format';
@@ -74,5 +75,22 @@ describe('formatDateTime', () => {
 
   it('formats a valid ISO timestamp', () => {
     expect(formatDateTime('2026-01-02T03:04:00Z')).not.toBe('');
+  });
+});
+
+describe('formatListeningTime', () => {
+  it('formats hours and minutes', () => {
+    expect(formatListeningTime(8100)).toBe('2 h 15 min');
+    expect(formatListeningTime(7200)).toBe('2 h');
+  });
+
+  it('formats minutes and seconds', () => {
+    expect(formatListeningTime(125)).toBe('2 min');
+    expect(formatListeningTime(45)).toBe('45 s');
+  });
+
+  it('handles zero and invalid values', () => {
+    expect(formatListeningTime(0)).toBe('0 min');
+    expect(formatListeningTime()).toBe('0 min');
   });
 });

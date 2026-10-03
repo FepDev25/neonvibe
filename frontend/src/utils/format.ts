@@ -48,6 +48,23 @@ export function formatDateTime(iso?: string): string {
   });
 }
 
+/** Human-readable total listening time (e.g. 8100 -> "2 h 15 min"). */
+export function formatListeningTime(seconds?: number): string {
+  if (seconds == null || Number.isNaN(seconds) || seconds <= 0) {
+    return '0 min';
+  }
+  const total = Math.round(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  if (h > 0) {
+    return m > 0 ? `${h} h ${m} min` : `${h} h`;
+  }
+  if (m > 0) {
+    return `${m} min`;
+  }
+  return `${total} s`;
+}
+
 /** Human-readable byte size (e.g. 1536 -> "1.5 KB"). */
 export function formatBytes(bytes?: number): string {
   if (bytes == null || Number.isNaN(bytes) || bytes < 0) {

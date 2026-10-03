@@ -13,6 +13,7 @@ import PublicPlaylistPage from './pages/PublicPlaylistPage';
 import FavoritesPage from './pages/FavoritesPage';
 import SearchPage from './pages/SearchPage';
 import HistoryPage from './pages/HistoryPage';
+import StatsPage from './pages/StatsPage';
 import DownloadsPage from './pages/DownloadsPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/stats" element={<StatsPage />} />
             <Route path="/downloads" element={<DownloadsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/home" element={<Navigate to="/" replace />} />

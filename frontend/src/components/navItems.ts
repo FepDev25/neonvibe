@@ -9,6 +9,7 @@ import {
   Settings,
   History,
   Download,
+  BarChart3,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -29,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/playlists', label: 'Playlists', icon: ListMusic, end: false },
   { to: '/favorites', label: 'Favoritos', icon: Heart, end: false },
   { to: '/history', label: 'Historial', icon: History, end: false },
+  { to: '/stats', label: 'Estadísticas', icon: BarChart3, end: false },
   { to: '/downloads', label: 'Descargas', icon: Download, end: false },
   { to: '/search', label: 'Buscar', icon: Search, end: false },
   { to: '/settings', label: 'Ajustes', icon: Settings, end: false },
