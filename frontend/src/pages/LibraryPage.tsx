@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Music, Disc3, UserRound, ListMusic, Heart } from 'lucide-react';
 import { useInfiniteAlbums, useInfiniteArtists, useInfiniteTracks } from '@/hooks/useLibrary';
+import { useDebounce } from '@/hooks/useDebounce';
 import { tracksToPlayerQueue } from '@/stores/playerStore';
 import AlbumCard from '@/components/AlbumCard';
 import ArtistCard from '@/components/ArtistCard';
 import TrackRow from '@/components/TrackRow';
 import LoadMore from '@/components/LoadMore';
 import PullToRefresh from '@/components/PullToRefresh';
+import SearchInput from '@/components/SearchInput';
 import Skeleton from '@/components/Skeleton';
 import { cn } from '@/utils/cn';
 
@@ -34,8 +36,8 @@ function AlbumGridSkeleton() {
   );
 }
 
-function TracksTab() {
-  const query = useInfiniteTracks({ size: 20 });
+function TracksTab({ q }: { q: string }) {
+  const query = useInfiniteTracks(q ? { q, size: 20 } : { size: 20 });
   const tracks = query.data?.pages.flatMap((p) => p.content) ?? [];
   const queue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
 
@@ -48,7 +50,9 @@ function TracksTab() {
           ))}
         </div>
       ) : tracks.length === 0 ? (
-        <p className="py-8 text-center text-sm text-text-muted">No hay canciones todavía.</p>
+        <p className="py-8 text-center text-sm text-text-muted">
+          {q ? `Sin resultados para “${q}”.` : 'No hay canciones todavía.'}
+        </p>
       ) : (
         tracks.map((track) => <TrackRow key={track.id} track={track} queue={queue} />)
       )}
@@ -57,8 +61,8 @@ function TracksTab() {
   );
 }
 
-function AlbumsTab() {
-  const query = useInfiniteAlbums({ size: 20 });
+function AlbumsTab({ q }: { q: string }) {
+  const query = useInfiniteAlbums(q ? { q, size: 20 } : { size: 20 });
   const albums = query.data?.pages.flatMap((p) => p.content) ?? [];
 
   return (
@@ -66,7 +70,9 @@ function AlbumsTab() {
       {query.isPending ? (
         <AlbumGridSkeleton />
       ) : albums.length === 0 ? (
-        <p className="py-8 text-center text-sm text-text-muted">No hay álbumes todavía.</p>
+        <p className="py-8 text-center text-sm text-text-muted">
+          {q ? `Sin resultados para “${q}”.` : 'No hay álbumes todavía.'}
+        </p>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {albums.map((album) => (
@@ -79,8 +85,8 @@ function AlbumsTab() {
   );
 }
 
-function ArtistsTab() {
-  const query = useInfiniteArtists({ size: 20 });
+function ArtistsTab({ q }: { q: string }) {
+  const query = useInfiniteArtists(q ? { q, size: 20 } : { size: 20 });
   const artists = query.data?.pages.flatMap((p) => p.content) ?? [];
 
   return (
@@ -95,7 +101,9 @@ function ArtistsTab() {
           ))}
         </div>
       ) : artists.length === 0 ? (
-        <p className="py-8 text-center text-sm text-text-muted">No hay artistas todavía.</p>
+        <p className="py-8 text-center text-sm text-text-muted">
+          {q ? `Sin resultados para “${q}”.` : 'No hay artistas todavía.'}
+        </p>
       ) : (
         <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
           {artists.map((artist) => (
@@ -114,6 +122,8 @@ function ArtistsTab() {
  */
 export default function LibraryPage() {
   const [tab, setTab] = useState<Tab>('tracks');
+  const [query, setQuery] = useState('');
+  const q = useDebounce(query.trim(), 300);
   const queryClient = useQueryClient();
   const touchX = useRef<number | null>(null);
 
@@ -166,6 +176,14 @@ export default function LibraryPage() {
         </div>
       </div>
 
+      <SearchInput
+        id="library-search"
+        value={query}
+        onChange={setQuery}
+        label="Buscar en tu biblioteca"
+        placeholder="Buscar en tu biblioteca…"
+      />
+
       <div
         role="tablist"
         aria-label="Biblioteca"
@@ -196,9 +214,9 @@ export default function LibraryPage() {
       </div>
 
       <div role="tabpanel" id={`library-panel-${tab}`} aria-labelledby={`library-tab-${tab}`}>
-        {tab === 'tracks' && <TracksTab />}
-        {tab === 'albums' && <AlbumsTab />}
-        {tab === 'artists' && <ArtistsTab />}
+        {tab === 'tracks' && <TracksTab q={q} />}
+        {tab === 'albums' && <AlbumsTab q={q} />}
+        {tab === 'artists' && <ArtistsTab q={q} />}
       </div>
       </div>
     </PullToRefresh>
