@@ -17,9 +17,9 @@
   v0.3 cerrada: fulltext (pg_trgm), notificaciones nativas (Web Push), quality
   selector (transcodificación AAC) y stats personales. v0.4: audiolibros/podcasts
   y Chromecast (ver §11).
-- **Testing/CI (2026-10-02):** backend con **540 tests** (`./mvnw test`) y JaCoCo
+- **Testing/CI (2026-10-02):** backend con **541 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **108 tests** (Vitest + Testing Library); CI en
+  Testcontainers; frontend con **109 tests** (Vitest + Testing Library); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
 ### Próximos pasos

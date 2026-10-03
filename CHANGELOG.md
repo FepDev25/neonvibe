@@ -60,6 +60,13 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Stats en producción:** las agregaciones usaban `(:param IS NULL OR col >= :param)`;
+  en PostgreSQL un parámetro nulo lanzaba `could not determine data type of
+  parameter` y `/api/v1/stats/*` devolvía 500 (la página salía vacía). El rango
+  «Todo» usa ahora `Instant.EPOCH` como límite inferior; se añade un test de las
+  agregaciones contra PostgreSQL real.
+- **Página de Stats:** si la API falla ahora muestra un error con botón
+  «Reintentar» en lugar del mensaje de "sin datos".
 - **PWA móvil — datos obsoletos:** las lecturas de API del service worker pasan a
   `NetworkFirst` (antes `StaleWhileRevalidate`). Al crear una playlist o cambiar
   el tema, la recarga del listado/ajustes ya no servía la respuesta cacheada
