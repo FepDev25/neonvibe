@@ -12,6 +12,18 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Búsqueda en las listas:** buscador en `/library` (compartido entre los tabs de
   canciones, álbumes y artistas), `/albums` y `/artists`, con un componente
   reutilizable `SearchInput` y debounce (300 ms) sobre el filtro `q` del backend.
+- **Reproductor — "Now Playing":** al pulsar la canción en la barra se abre una
+  vista a pantalla completa (funciona en móvil y escritorio) con carátula grande,
+  halo ambiental del propio cover, controles, volumen y acciones: favorito, añadir
+  a playlist, letras, radio y visualizador.
+- **Favorito y añadir a playlist desde la reproducción**, tanto en la vista
+  expandida como (en escritorio) en la propia barra.
+
+### Changed
+
+- **Barra de reproducción:** la pista ya avanza como una "estela de luz"
+  (gradiente cyan→pink) hasta el pulgar, con thumb neón; los controles tienen
+  `hover` con fondo y `title` (tooltips) en escritorio.
 
 ### Fixed
 

@@ -138,3 +138,70 @@
 @utility safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ------------------------------------------------------------------ */
+/* Neon range (seek / volume) — the filled part is a cyan→pink trail    */
+/* ------------------------------------------------------------------ */
+.neon-range {
+  --fill: 0%;
+  height: 6px;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--color-neon-cyan),
+    var(--color-neon-pink) var(--fill),
+    var(--color-surface-alt) var(--fill),
+    var(--color-surface-alt) 100%
+  );
+  outline: none;
+}
+
+.neon-range:disabled {
+  opacity: 0.5;
+}
+
+.neon-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 2px solid var(--color-neon-cyan);
+  box-shadow: 0 0 8px var(--color-glow);
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.neon-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.neon-range::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 2px solid var(--color-neon-cyan);
+  box-shadow: 0 0 8px var(--color-glow);
+  cursor: pointer;
+}
+
+.neon-range:hover::-webkit-slider-thumb,
+.neon-range:focus-visible::-webkit-slider-thumb,
+.neon-range:hover::-moz-range-thumb,
+.neon-range:focus-visible::-moz-range-thumb {
+  transform: scale(1.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-range::-webkit-slider-thumb,
+  .neon-range::-moz-range-thumb {
+    transition: none;
+  }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { formatDuration } from '@/utils/format';
 import { cn } from '@/utils/cn';
 
@@ -18,6 +18,9 @@ export default function SeekBar({ progress, duration, onSeek, className }: SeekB
   const dragging = useRef(false);
   const valueRef = useRef(progress);
   const max = duration > 0 ? duration : 0;
+  // Percentage of the track that is played, exposed to the CSS as `--fill` so
+  // the bar renders a cyan→pink "light trail" up to the thumb.
+  const fill = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
 
   useEffect(() => {
     valueRef.current = value;
@@ -56,6 +59,7 @@ export default function SeekBar({ progress, duration, onSeek, className }: SeekB
         value={Math.min(value, max || 0)}
         disabled={max <= 0}
         aria-label="Progreso de reproducción"
+        style={{ '--fill': `${fill}%` } as CSSProperties}
         onPointerDown={() => {
           dragging.current = true;
         }}
@@ -77,7 +81,7 @@ export default function SeekBar({ progress, duration, onSeek, className }: SeekB
             onSeek(Number((e.target as HTMLInputElement).value));
           }
         }}
-        className="neon-range h-1 flex-1 cursor-pointer appearance-none rounded-full bg-surface-alt accent-neon-cyan"
+        className="neon-range h-1.5 flex-1 cursor-pointer"
       />
       <span className="w-10 shrink-0 text-right text-[10px] tabular-nums text-text-muted">
         {formatDuration(Math.floor(max))}

@@ -7,13 +7,26 @@ interface FavoriteButtonProps {
   entityType: FavoriteEntityType;
   entityId: number;
   className?: string;
+  /** Touch/visual size. Defaults to `md` (36px). */
+  size?: 'sm' | 'md' | 'lg';
 }
+
+const SIZE_CLASSES = {
+  sm: 'h-8 w-8',
+  md: 'h-9 w-9',
+  lg: 'h-12 w-12',
+} as const;
 
 /**
  * Heart toggle for tracks, albums and artists. Reads/writes the optimistic
  * favorites store so the state is shared across the whole app instantly.
  */
-export default function FavoriteButton({ entityType, entityId, className }: FavoriteButtonProps) {
+export default function FavoriteButton({
+  entityType,
+  entityId,
+  className,
+  size = 'md',
+}: FavoriteButtonProps) {
   const isFavorite = useFavoritesStore((s) => s.isFavorite(entityType, entityId));
   const toggle = useFavoritesStore((s) => s.toggle);
 
@@ -30,8 +43,9 @@ export default function FavoriteButton({ entityType, entityId, className }: Favo
         void toggle(entityType, entityId);
       }}
       className={cn(
-        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors',
+        'flex shrink-0 items-center justify-center rounded-full transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan',
+        SIZE_CLASSES[size],
         active ? 'text-neon-pink' : 'text-text-muted hover:text-neon-pink',
         className,
       )}

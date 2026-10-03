@@ -15,4 +15,11 @@ describe('SeekBar', () => {
 
     expect(onSeek).toHaveBeenCalledWith(42);
   });
+
+  it('exposes the played fraction as a --fill percentage on the range', () => {
+    const { container } = render(<SeekBar progress={25} duration={100} onSeek={() => {}} />);
+    const input = container.querySelector('input')!;
+
+    expect(input.style.getPropertyValue('--fill')).toBe('25%');
+  });
 });

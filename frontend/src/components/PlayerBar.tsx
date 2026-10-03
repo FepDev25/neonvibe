@@ -15,6 +15,8 @@ import {
   X,
   Radio,
   Loader2,
+  Plus,
+  ChevronUp,
 } from 'lucide-react';
 import { usePlayerStore, tracksToPlayerQueue } from '@/stores/playerStore';
 import { getRadioSeed } from '@/api/radio';
@@ -23,6 +25,9 @@ import AlbumCover from './AlbumCover';
 import SeekBar from './SeekBar';
 import QueueSheet from './QueueSheet';
 import LyricsSheet from './LyricsSheet';
+import AddToPlaylistSheet from './AddToPlaylistSheet';
+import NowPlayingView from './NowPlayingView';
+import FavoriteButton from './FavoriteButton';
 import Visualizer from './Visualizer';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { cn } from '@/utils/cn';
@@ -52,6 +57,8 @@ export default function PlayerBar() {
 
   const [queueOpen, setQueueOpen] = useState(false);
   const [lyricsOpen, setLyricsOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
   const [vizOpen, setVizOpen] = useState(false);
   const [radioBusy, setRadioBusy] = useState(false);
   const vizRef = useRef<HTMLDivElement>(null);
@@ -85,7 +92,8 @@ export default function PlayerBar() {
   const hasPrev = currentIndex > 0 || repeat === 'ALL' || progress > 3;
   const muted = volume === 0;
 
-  const controlBtn = 'flex h-9 w-9 items-center justify-center rounded-full transition-colors';
+  const controlBtn =
+    'flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-surface-alt';
 
   return (
     <>
@@ -94,23 +102,52 @@ export default function PlayerBar() {
           <SeekBar progress={progress} duration={duration} onSeek={seek} className="mb-1" />
 
           <div className="flex items-center gap-2">
-            <AlbumCover
-              seed={`${currentTrack.title}-${currentTrack.artist}`}
-              alt={`Carátula de ${currentTrack.title}`}
-              src={trackCoverUrl(currentTrack.id)}
-              className="h-11 w-11 shrink-0 rounded-lg"
+            <button
+              type="button"
+              onClick={() => setNowPlayingOpen(true)}
+              aria-label="Abrir canción"
+              title="Abrir canción"
+              className="group -m-1 flex min-w-0 flex-1 items-center gap-2 rounded-xl p-1 text-left transition-colors hover:bg-surface-alt/60"
+            >
+              <AlbumCover
+                seed={`${currentTrack.title}-${currentTrack.artist}`}
+                alt={`Carátula de ${currentTrack.title}`}
+                src={trackCoverUrl(currentTrack.id)}
+                className="h-11 w-11 shrink-0 rounded-lg"
+              />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm font-semibold text-text">{currentTrack.title}</span>
+                <span className="truncate text-xs text-text-muted">{currentTrack.artist}</span>
+              </span>
+              <ChevronUp
+                className="hidden h-4 w-4 shrink-0 text-text-muted opacity-0 transition-opacity group-hover:opacity-100 sm:block"
+                aria-hidden
+              />
+            </button>
+
+            <FavoriteButton
+              entityType="TRACK"
+              entityId={currentTrack.id}
+              size="sm"
+              className="hidden shrink-0 sm:flex"
             />
 
-            <div className="flex min-w-0 flex-1 flex-col">
-              <p className="truncate text-sm font-semibold text-text">{currentTrack.title}</p>
-              <p className="truncate text-xs text-text-muted">{currentTrack.artist}</p>
-            </div>
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              aria-label="Añadir a playlist"
+              title="Añadir a playlist"
+              className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-neon-cyan')}
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+            </button>
 
             <button
               type="button"
               onClick={toggleShuffle}
               aria-label={shuffle ? 'Desactivar aleatorio' : 'Activar aleatorio'}
               aria-pressed={shuffle}
+              title="Aleatorio"
               className={cn(
                 controlBtn,
                 'hidden sm:flex',
@@ -125,6 +162,7 @@ export default function PlayerBar() {
               onClick={cycleRepeat}
               aria-label={`Repetición: ${repeat === 'ONE' ? 'una' : repeat === 'ALL' ? 'todo' : 'ninguna'}`}
               aria-pressed={repeat !== 'NONE'}
+              title="Repetición"
               className={cn(
                 controlBtn,
                 'hidden sm:flex',
@@ -143,6 +181,7 @@ export default function PlayerBar() {
               onClick={prev}
               disabled={!hasPrev}
               aria-label="Anterior"
+              title="Anterior"
               className={cn(controlBtn, 'text-text hover:text-neon-cyan disabled:opacity-30')}
             >
               <SkipBack className="h-5 w-5" aria-hidden />
@@ -152,6 +191,7 @@ export default function PlayerBar() {
               type="button"
               onClick={toggle}
               aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+              title={isPlaying ? 'Pausar' : 'Reproducir'}
               className="flex h-11 w-11 items-center justify-center rounded-full bg-neon-cyan text-black neon-glow transition-colors hover:bg-neon-pink hover:text-white"
             >
               {isPlaying ? (
@@ -166,6 +206,7 @@ export default function PlayerBar() {
               onClick={next}
               disabled={!hasNext}
               aria-label="Siguiente"
+              title="Siguiente"
               className={cn(controlBtn, 'text-text hover:text-neon-cyan disabled:opacity-30')}
             >
               <SkipForward className="h-5 w-5" aria-hidden />
@@ -175,6 +216,7 @@ export default function PlayerBar() {
               type="button"
               onClick={() => setVolume(muted ? 1 : 0)}
               aria-label={muted ? 'Activar sonido' : 'Silenciar'}
+              title={muted ? 'Activar sonido' : 'Silenciar'}
               className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-neon-cyan')}
             >
               {muted ? (
@@ -188,6 +230,7 @@ export default function PlayerBar() {
               type="button"
               onClick={() => setVizOpen(true)}
               aria-label="Visualizador"
+              title="Visualizador"
               className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-neon-pink')}
             >
               <Waves className="h-4 w-4" aria-hidden />
@@ -198,6 +241,7 @@ export default function PlayerBar() {
               onClick={() => void startRadio(currentTrack.id)}
               disabled={radioBusy}
               aria-label="Radio basada en esta canción"
+              title="Radio basada en esta canción"
               className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-neon-purple disabled:opacity-50')}
             >
               {radioBusy ? (
@@ -211,6 +255,7 @@ export default function PlayerBar() {
               type="button"
               onClick={() => setLyricsOpen(true)}
               aria-label="Ver letras"
+              title="Letras"
               className={cn(controlBtn, 'text-text-muted hover:text-neon-cyan')}
             >
               <FileText className="h-4 w-4" aria-hidden />
@@ -220,6 +265,7 @@ export default function PlayerBar() {
               type="button"
               onClick={() => setQueueOpen(true)}
               aria-label="Ver cola"
+              title="Cola"
               className={cn(controlBtn, 'text-text-muted hover:text-neon-cyan')}
             >
               <ListMusic className="h-5 w-5" aria-hidden />
@@ -230,6 +276,8 @@ export default function PlayerBar() {
 
       <QueueSheet open={queueOpen} onClose={() => setQueueOpen(false)} />
       <LyricsSheet open={lyricsOpen} onClose={() => setLyricsOpen(false)} />
+      <AddToPlaylistSheet open={addOpen} trackId={currentTrack.id} onClose={() => setAddOpen(false)} />
+      <NowPlayingView open={nowPlayingOpen} onClose={() => setNowPlayingOpen(false)} />
 
       {vizOpen && (
         <div
