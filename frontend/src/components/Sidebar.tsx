@@ -1,34 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import {
-  Home,
-  Library,
-  Disc3,
-  UserRound,
-  ListMusic,
-  Heart,
-  Search,
-  Settings,
-  History,
-  Download,
-  Music2,
-} from 'lucide-react';
+import { Music2 } from 'lucide-react';
+import { NAV_ITEMS } from './navItems';
 import { cn } from '@/utils/cn';
 
-const ITEMS = [
-  { to: '/', label: 'Inicio', icon: Home, end: true },
-  { to: '/library', label: 'Biblioteca', icon: Library, end: false },
-  { to: '/albums', label: 'Álbumes', icon: Disc3, end: false },
-  { to: '/artists', label: 'Artistas', icon: UserRound, end: false },
-  { to: '/playlists', label: 'Playlists', icon: ListMusic, end: false },
-  { to: '/favorites', label: 'Favoritos', icon: Heart, end: false },
-  { to: '/history', label: 'Historial', icon: History, end: false },
-  { to: '/downloads', label: 'Descargas', icon: Download, end: false },
-  { to: '/search', label: 'Buscar', icon: Search, end: false },
-  { to: '/settings', label: 'Ajustes', icon: Settings, end: false },
-] as const;
-
 /**
- * Desktop left sidebar (lg+). Mobile keeps the bottom navigation instead.
+ * Desktop left sidebar (lg+). Mobile uses the hamburger drawer instead.
  */
 export default function Sidebar() {
   return (
@@ -38,22 +14,33 @@ export default function Sidebar() {
         <span className="neon-text text-lg font-bold tracking-tight">NeonVibe</span>
       </div>
       <nav className="flex flex-col gap-0.5 px-3 py-2">
-        {ITEMS.map(({ to, label, icon: Icon, end }) => (
+        {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
               cn(
-                'flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors',
+                'relative flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-neon-purple/15 text-neon-cyan'
                   : 'text-text-muted hover:bg-surface-alt hover:text-text',
               )
             }
           >
-            <Icon className="h-4 w-4 shrink-0" aria-hidden />
-            {label}
+            {({ isActive }) => (
+              <>
+                <span
+                  aria-hidden
+                  className={cn(
+                    'absolute left-0 h-6 w-1 rounded-full bg-gradient-to-b from-neon-cyan to-neon-pink transition-opacity duration-200',
+                    isActive ? 'opacity-100' : 'opacity-0',
+                  )}
+                />
+                <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                {label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

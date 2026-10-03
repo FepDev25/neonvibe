@@ -97,7 +97,7 @@ export default function PlayerBar() {
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-30 border-t border-border bg-surface/95 backdrop-blur safe-bottom lg:inset-x-auto lg:bottom-0 lg:left-60 lg:right-0">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur safe-bottom lg:inset-x-auto lg:left-60 lg:right-0">
         <div className="mx-auto flex w-full max-w-5xl flex-col px-3 py-1.5 sm:px-6">
           <SeekBar progress={progress} duration={duration} onSeek={seek} className="mb-1" />
 
