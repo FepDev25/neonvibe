@@ -9,6 +9,7 @@ import java.nio.file.StandardOpenOption;
 
 import com.neonvibe.service.StreamService;
 import com.neonvibe.service.StreamService.StreamResult;
+import com.neonvibe.transcode.Quality;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -43,13 +45,14 @@ public class StreamController {
 
     @GetMapping(value = "/{id}/stream")
     public ResponseEntity<Resource> stream(@PathVariable Long id,
+            @RequestParam(value = "quality", required = false, defaultValue = "original") String quality,
             @RequestHeader(value = HttpHeaders.RANGE, required = false) String rangeHeader) {
         HttpHeaders requestHeaders = new HttpHeaders();
         if (rangeHeader != null) {
             requestHeaders.set(HttpHeaders.RANGE, rangeHeader);
         }
 
-        StreamResult result = streamService.streamFile(id, requestHeaders);
+        StreamResult result = streamService.streamFile(id, Quality.fromParam(quality), requestHeaders);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(result.contentType()));

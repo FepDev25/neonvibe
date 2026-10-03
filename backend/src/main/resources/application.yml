@@ -100,6 +100,15 @@ neonvibe:
     public-key: ${VAPID_PUBLIC_KEY:}
     private-key: ${VAPID_PRIVATE_KEY:}
     subject: ${VAPID_SUBJECT:mailto:admin@neonvibe.local}
+  # Transcodificación on-demand a AAC (quality selector). Requiere FFmpeg; si no
+  # está disponible, se sirve siempre el original.
+  transcode:
+    enabled: ${TRANSCODE_ENABLED:true}
+    ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+    cache-path: ${TRANSCODE_CACHE:./data/transcode}
+    max-cache-mb: ${TRANSCODE_MAX_CACHE_MB:2048}
+    max-concurrent: ${TRANSCODE_MAX_CONCURRENT:1}
+    timeout-seconds: ${TRANSCODE_TIMEOUT:300}
   frontend-base: ${FRONTEND_BASE:http://localhost:5173}
   websocket:
     allowed-origins: "*"

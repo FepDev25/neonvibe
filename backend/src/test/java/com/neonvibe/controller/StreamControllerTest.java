@@ -9,6 +9,7 @@ import com.neonvibe.security.JwtAuthenticationFilter;
 import com.neonvibe.security.JwtTokenProvider;
 import com.neonvibe.service.StreamService;
 import com.neonvibe.service.StreamService.StreamResult;
+import com.neonvibe.transcode.Quality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -63,7 +65,7 @@ class StreamControllerTest {
 
     @Test
     void partialContent_returns206AndHeaders() throws Exception {
-        when(streamService.streamFile(eq(1L), any()))
+        when(streamService.streamFile(eq(1L), any(Quality.class), any()))
                 .thenReturn(new StreamResult(HttpStatus.PARTIAL_CONTENT, audioFile, "audio/mpeg",
                         0, 99, 2048));
 
@@ -79,7 +81,7 @@ class StreamControllerTest {
 
     @Test
     void noRange_returns200AndFullContentLength() throws Exception {
-        when(streamService.streamFile(eq(1L), any()))
+        when(streamService.streamFile(eq(1L), any(Quality.class), any()))
                 .thenReturn(new StreamResult(HttpStatus.OK, audioFile, "audio/mpeg",
                         0, 2047, 2048));
 
@@ -92,7 +94,7 @@ class StreamControllerTest {
 
     @Test
     void unsatisfiableRange_returns416() throws Exception {
-        when(streamService.streamFile(eq(1L), any()))
+        when(streamService.streamFile(eq(1L), any(Quality.class), any()))
                 .thenReturn(new StreamResult(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
                         audioFile, "audio/mpeg", -1, -2, 2048));
 
@@ -104,6 +106,20 @@ class StreamControllerTest {
     }
 
     @Test
+    void qualityParam_isForwardedToService() throws Exception {
+        when(streamService.streamFile(eq(1L), any(Quality.class), any()))
+                .thenReturn(new StreamResult(HttpStatus.OK, audioFile, "audio/mp4", 0, 2047, 2048));
+
+        mockMvc.perform(get("/api/v1/tracks/1/stream")
+                        .header("Authorization", bearerToken)
+                        .param("quality", "normal"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "audio/mp4"));
+
+        verify(streamService).streamFile(eq(1L), eq(Quality.NORMAL), any());
+    }
+
+    @Test
     void withoutToken_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/tracks/1/stream"))
                 .andExpect(status().isUnauthorized());
@@ -112,7 +128,7 @@ class StreamControllerTest {
     @Test
     void tokenAsQueryParam_authenticatesStream() throws Exception {
         String raw = bearerToken.substring("Bearer ".length());
-        when(streamService.streamFile(eq(1L), any()))
+        when(streamService.streamFile(eq(1L), any(Quality.class), any()))
                 .thenReturn(new StreamResult(HttpStatus.OK, audioFile, "audio/mpeg",
                         0, 2047, 2048));
 

@@ -7,6 +7,8 @@ import java.util.Map;
 import com.neonvibe.domain.Track;
 import com.neonvibe.exception.ResourceNotFoundException;
 import com.neonvibe.repository.TrackRepository;
+import com.neonvibe.transcode.Quality;
+import com.neonvibe.transcode.TranscodeService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,9 +40,11 @@ public class StreamService {
     private static final String DEFAULT_MIME = "application/octet-stream";
 
     private final TrackRepository trackRepository;
+    private final TranscodeService transcodeService;
 
-    public StreamService(TrackRepository trackRepository) {
+    public StreamService(TrackRepository trackRepository, TranscodeService transcodeService) {
         this.trackRepository = trackRepository;
+        this.transcodeService = transcodeService;
     }
 
     /**
@@ -51,10 +55,25 @@ public class StreamService {
      * @return a {@link StreamResult} describing status, file and byte window
      */
     public StreamResult streamFile(Long trackId, HttpHeaders requestHeaders) {
+        return streamFile(trackId, Quality.ORIGINAL, requestHeaders);
+    }
+
+    /**
+     * Same as {@link #streamFile(Long, HttpHeaders)} but serving the requested
+     * quality: the original file, or an on-demand cached AAC transcode.
+     */
+    public StreamResult streamFile(Long trackId, Quality quality, HttpHeaders requestHeaders) {
         Track track = requireAvailable(trackId);
-        Path filePath = resolveFile(track);
+        if (track.getFilePath() == null || track.getFilePath().isBlank()) {
+            throw new ResourceNotFoundException("Track has no file path: " + trackId);
+        }
+        TranscodeService.Resolved resolved = transcodeService.resolve(track, quality);
+        Path filePath = resolved.path();
+        if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
+            throw new ResourceNotFoundException("Audio file not found on disk: " + filePath);
+        }
         long fileSize = fileSize(filePath);
-        String contentType = resolveContentType(track);
+        String contentType = resolved.transcoded() ? "audio/mp4" : resolveContentType(track);
 
         String rangeHeader = requestHeaders.getFirst(HttpHeaders.RANGE);
         if (rangeHeader == null) {
@@ -78,17 +97,6 @@ public class StreamService {
             throw new ResourceNotFoundException("Track is not available: " + trackId);
         }
         return track;
-    }
-
-    private Path resolveFile(Track track) {
-        if (track.getFilePath() == null || track.getFilePath().isBlank()) {
-            throw new ResourceNotFoundException("Track has no file path: " + track.getId());
-        }
-        Path path = Path.of(track.getFilePath());
-        if (!Files.exists(path) || !Files.isRegularFile(path)) {
-            throw new ResourceNotFoundException("Audio file not found on disk: " + track.getFilePath());
-        }
-        return path;
     }
 
     private long fileSize(Path filePath) {

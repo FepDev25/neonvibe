@@ -3,11 +3,16 @@ package com.neonvibe.service;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
 
 import com.neonvibe.domain.Track;
 import com.neonvibe.exception.ResourceNotFoundException;
 import com.neonvibe.repository.TrackRepository;
 import com.neonvibe.service.StreamService.StreamResult;
+import com.neonvibe.transcode.FfmpegExecutor;
+import com.neonvibe.transcode.TranscodeProperties;
+import com.neonvibe.transcode.TranscodeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -37,7 +42,7 @@ class StreamServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         trackRepository = mock(TrackRepository.class);
-        service = new StreamService(trackRepository);
+        service = new StreamService(trackRepository, disabledTranscoder());
         // 1024-byte audio file with predictable content.
         byte[] bytes = new byte[1024];
         for (int i = 0; i < bytes.length; i++) {
@@ -45,6 +50,23 @@ class StreamServiceTest {
         }
         audioFile = tempDir.resolve("sample.mp3");
         Files.write(audioFile, bytes);
+    }
+
+    /** Transcoding disabled: streams always resolve to the original file. */
+    private static TranscodeService disabledTranscoder() {
+        TranscodeProperties props = new TranscodeProperties();
+        props.setEnabled(false);
+        return new TranscodeService(props, new FfmpegExecutor() {
+            @Override
+            public boolean isAvailable(String ffmpegPath) {
+                return false;
+            }
+
+            @Override
+            public void transcode(List<String> command, Duration timeout) {
+                throw new UnsupportedOperationException();
+            }
+        });
     }
 
     private Track track(long id, String format, String mimeType, boolean available) {
