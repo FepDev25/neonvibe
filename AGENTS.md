@@ -15,7 +15,7 @@
   **rotación/revocación de refresh token**, **UI de scanner (admin)**, **página de
   historial**, **gestión de descargas** y validación de subida de carátulas.
   Pendiente para v0.3: transcodificación/quality selector, notificaciones nativas,
-  fulltext, Chromecast, social, stats y audiolibros/podcasts (ver §11).
+  Chromecast, social, stats y audiolibros/podcasts (ver §11).
 - **Testing/CI (2026-10-02):** backend con **492 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
   Testcontainers; frontend con **85 tests** (Vitest + Testing Library); CI en
@@ -30,7 +30,7 @@
    (`POST /api/v1/admin/scan`), scrobbling real con claves Last.fm, y el refresh de
    token al expirar el access token (15 min).
 3. **Planificar v0.3** (roadmap en §11): transcodificación/quality selector,
-   notificaciones nativas, fulltext PostgreSQL, social, stats y audiolibros/podcasts.
+   notificaciones nativas, social, stats y audiolibros/podcasts.
 
 ---
 
@@ -316,7 +316,9 @@ ignore sus propios ecos. Ver `websocket/PlayerWebSocketController.java` y
 ### Base de Datos
 - **Nombres:** snake_case para tablas y columnas.
 - **Flyway:** Scripts versionados `V1__init.sql`, `V2__add_lyrics.sql`, etc.
-- **Índices:** Crear índices GIN para búsqueda fulltext en PostgreSQL (futuro, MVP usa LIKE + índices B-tree).
+- **Índices:** Búsqueda case-insensitive "contains" con `pg_trgm` + índices **GIN**
+  (`lower(col) gin_trgm_ops`, migración V10) sobre títulos, artistas y álbumes;
+  el `LIKE '%q%'` usa el índice en lugar de un seq scan.
 
 ---
 
@@ -406,7 +408,7 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 - [ ] Transcodificación / quality selector
 - [ ] Notificaciones nativas
 - [ ] Audiolibros / podcasts
-- [ ] Búsqueda avanzada (fulltext PostgreSQL)
+- [x] Búsqueda avanzada (fulltext PostgreSQL — `pg_trgm` + GIN, V10)
 - [ ] Chromecast / Bluetooth audio routing
 - [ ] Social (followers, actividad)
 - [ ] Stats y analytics personales

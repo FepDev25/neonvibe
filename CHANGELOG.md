@@ -12,6 +12,9 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Búsqueda en las listas:** buscador en `/library` (compartido entre los tabs de
   canciones, álbumes y artistas), `/albums` y `/artists`, con un componente
   reutilizable `SearchInput` y debounce (300 ms) sobre el filtro `q` del backend.
+- **Fulltext (`pg_trgm`):** migración **V10** con la extensión `pg_trgm` e índices
+  **GIN** (`lower(col) gin_trgm_ops`) sobre títulos, artistas y álbumes, para que la
+  búsqueda "contains" use índice en lugar de un seq scan.
 - **Reproductor — "Now Playing":** al pulsar la canción en la barra se abre una
   vista a pantalla completa (funciona en móvil y escritorio) con carátula grande,
   halo ambiental del propio cover, controles, volumen y acciones: favorito, añadir

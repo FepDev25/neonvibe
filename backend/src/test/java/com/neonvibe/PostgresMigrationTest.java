@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Real-PostgreSQL smoke test: boots the full application against a throwaway
- * Postgres container so Flyway applies V1..V9 and Hibernate's
+ * Postgres container so Flyway applies V1..V10 and Hibernate's
  * {@code ddl-auto: validate} proves the entities match the migrated schema.
  *
  * <p>H2 in PostgreSQL mode cannot catch dialect-level mismatches (JSON, native
@@ -57,8 +57,23 @@ class PostgresMigrationTest {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT version, success FROM flyway_schema_history WHERE version IS NOT NULL ORDER BY installed_rank");
 
-        assertThat(rows).hasSize(9);
+        assertThat(rows).hasSize(10);
         assertThat(rows).allSatisfy(row -> assertThat(row.get("success")).isEqualTo(true));
+    }
+
+    @Test
+    void fulltextTrigramIndexesExist() {
+        List<String> indexes = jdbcTemplate.queryForList(
+                "SELECT indexname FROM pg_indexes WHERE indexname LIKE '%_trgm' ORDER BY indexname",
+                String.class);
+
+        assertThat(indexes).containsExactly(
+                "idx_albums_artist_trgm",
+                "idx_albums_name_trgm",
+                "idx_artists_name_trgm",
+                "idx_tracks_album_trgm",
+                "idx_tracks_artist_trgm",
+                "idx_tracks_title_trgm");
     }
 
     @Test

@@ -133,7 +133,7 @@ Auth, streaming, playlists, carátulas, letras, scanner real-time, visualizador,
 
 ### v0.3+
 Transcodificación/quality selector, notificaciones nativas, audiolibros/podcasts,
-búsqueda avanzada fulltext, Chromecast, social y estadísticas personales.
+búsqueda avanzada fulltext (pg_trgm), Chromecast, social y estadísticas personales.
 
 ---
 
