@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   ChevronDown,
   ListMusic,
@@ -18,7 +19,9 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { usePlayerStore, tracksToPlayerQueue } from '@/stores/playerStore';
+import { useQualityStore, QUALITY_OPTIONS, type AudioQuality } from '@/stores/qualityStore';
 import { getRadioSeed } from '@/api/radio';
+import { getTranscodeStatus } from '@/api/transcode';
 import { trackCoverUrl } from '@/api/cover';
 import AlbumCover from './AlbumCover';
 import SeekBar from './SeekBar';
@@ -62,6 +65,23 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
   const cycleRepeat = usePlayerStore((s) => s.cycleRepeat);
   const setVolume = usePlayerStore((s) => s.setVolume);
   const playTrack = usePlayerStore((s) => s.playTrack);
+  const reloadCurrent = usePlayerStore((s) => s.reloadCurrent);
+
+  const quality = useQualityStore((s) => s.quality);
+  const setQuality = useQualityStore((s) => s.setQuality);
+  const transcode = useQuery({
+    queryKey: ['transcodeStatus'],
+    queryFn: getTranscodeStatus,
+    staleTime: 5 * 60_000,
+  });
+
+  const chooseQuality = (next: AudioQuality) => {
+    if (next === quality) {
+      return;
+    }
+    setQuality(next);
+    reloadCurrent();
+  };
 
   const [addOpen, setAddOpen] = useState(false);
   const [lyricsOpen, setLyricsOpen] = useState(false);
@@ -307,6 +327,32 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               <Waves className="h-5 w-5" aria-hidden />
             </button>
           </div>
+
+          {transcode.data?.available && (
+            <div className="mt-5 flex flex-col items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-text-muted">
+                Calidad
+              </span>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {QUALITY_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => chooseQuality(option.id)}
+                    aria-pressed={quality === option.id}
+                    className={cn(
+                      'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
+                      quality === option.id
+                        ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan'
+                        : 'border-border text-text-muted hover:border-neon-cyan/50 hover:text-text',
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mt-5 hidden items-center gap-3 sm:flex">
             <button

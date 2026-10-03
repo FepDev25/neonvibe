@@ -110,6 +110,8 @@ export interface PlayerState {
   setVolume: (volume: number) => void;
   toggleShuffle: () => void;
   cycleRepeat: () => void;
+  /** Reloads the current track (e.g. after a quality change) at the same position. */
+  reloadCurrent: () => void;
   restoreFromServer: () => Promise<void>;
   /** Stops playback and clears all per-user player state (used on logout). */
   reset: () => void;
@@ -123,7 +125,8 @@ export interface PlayerState {
 }
 
 export const usePlayerStore = create<PlayerState>()((set, get) => {
-  const loadAndPlay = async (track: PlayerTrack, positionSeconds = 0, autoplay = true) => {
+  const loadAndPlay = async (track: PlayerTrack, positionSeconds = 0, autoplay = true,
+                             force = false) => {
     const gen = ++loadGen;
     const src = await getPlayableSrc(track.id);
     // A newer load was requested while this one resolved (e.g. user jumped
@@ -135,7 +138,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
     // were the playing one.
     flushDeferredRevokes(track.id);
     const offline = !src.includes('/stream');
-    if (currentLoadId !== track.id || currentSrcOffline !== offline) {
+    if (force || currentLoadId !== track.id || currentSrcOffline !== offline) {
       audio.src = src;
       currentLoadId = track.id;
       pendingSeek = positionSeconds > 0 ? positionSeconds : null;
@@ -381,6 +384,14 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
       const next = order[(order.indexOf(get().repeat) + 1) % order.length];
       set({ repeat: next });
       persistSoon();
+    },
+
+    reloadCurrent: () => {
+      const { currentTrack, isPlaying, progress } = get();
+      if (!currentTrack) {
+        return;
+      }
+      void loadAndPlay(currentTrack, progress, isPlaying, true);
     },
 
     restoreFromServer: async () => {

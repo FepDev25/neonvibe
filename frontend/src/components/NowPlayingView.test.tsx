@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,7 +27,9 @@ const mocks = vi.hoisted(() => ({
     cycleRepeat: vi.fn(),
     setVolume: vi.fn(),
     playTrack: vi.fn(),
+    reloadCurrent: vi.fn(),
   },
+  getTranscodeStatus: vi.fn(),
 }));
 
 vi.mock('@/stores/playerStore', () => ({
@@ -41,6 +44,7 @@ vi.mock('@/stores/favoritesStore', () => ({
 
 vi.mock('@/api/cover', () => ({ trackCoverUrl: (id: number) => `/cover/${id}` }));
 vi.mock('@/api/radio', () => ({ getRadioSeed: vi.fn().mockResolvedValue([]) }));
+vi.mock('@/api/transcode', () => ({ getTranscodeStatus: mocks.getTranscodeStatus }));
 vi.mock('@/components/Visualizer', () => ({ default: () => null }));
 vi.mock('@/components/QueueSheet', () => ({ default: () => null }));
 vi.mock('@/components/LyricsSheet', () => ({ default: () => null }));
@@ -51,20 +55,32 @@ vi.mock('@/components/AddToPlaylistSheet', () => ({
 }));
 
 import NowPlayingView from './NowPlayingView';
+import { useQualityStore } from '@/stores/qualityStore';
+
+function renderView(open = true, onClose = vi.fn()) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <NowPlayingView open={open} onClose={onClose} />
+    </QueryClientProvider>,
+  );
+}
 
 describe('NowPlayingView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.getTranscodeStatus.mockResolvedValue({ available: false, qualities: [] });
+    useQualityStore.setState({ quality: 'original' });
   });
 
   it('renders nothing when closed', () => {
-    const { container } = render(<NowPlayingView open={false} onClose={() => {}} />);
+    const { container } = renderView(false);
     expect(container).toBeEmptyDOMElement();
   });
 
   it('shows the track and exposes transport, favorite and playlist actions', () => {
     const onClose = vi.fn();
-    render(<NowPlayingView open onClose={onClose} />);
+    renderView(true, onClose);
 
     expect(screen.getByText('Alcoholism')).toBeInTheDocument();
     expect(screen.getByText(/Psychonaut 4/)).toBeInTheDocument();
@@ -79,5 +95,15 @@ describe('NowPlayingView', () => {
 
     fireEvent.click(screen.getByLabelText('Cerrar reproductor'));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers the quality selector and reloads the track when it changes', async () => {
+    mocks.getTranscodeStatus.mockResolvedValue({ available: true, qualities: [] });
+    renderView();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Normal · 192' }));
+
+    expect(useQualityStore.getState().quality).toBe('normal');
+    expect(mocks.state.reloadCurrent).toHaveBeenCalled();
   });
 });

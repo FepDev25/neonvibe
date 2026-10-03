@@ -1,10 +1,20 @@
 import { useAuthStore } from '@/stores/authStore';
+import { useQualityStore } from '@/stores/qualityStore';
 import { offlineDb } from '@/offline/offlineDb';
 
 /** Streaming URL with the JWT as a query param (for <audio>/fetch). */
 export function streamUrl(trackId: number): string {
   const token = useAuthStore.getState().token;
-  return `/api/v1/tracks/${trackId}/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  const quality = useQualityStore.getState().quality;
+  const params = new URLSearchParams();
+  if (token) {
+    params.set('token', token);
+  }
+  if (quality !== 'original') {
+    params.set('quality', quality);
+  }
+  const query = params.toString();
+  return `/api/v1/tracks/${trackId}/stream${query ? `?${query}` : ''}`;
 }
 
 // Blob URLs are cached per track id and revoked when replaced.
