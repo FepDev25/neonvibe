@@ -95,7 +95,7 @@ cd frontend && pnpm test         # Vitest + Testing Library (jsdom)
 ```
 
 El backend tiene **508 tests** (cobertura JaCoCo, build falla por debajo de
-**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **94 tests**. El CI de GitHub
+**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **97 tests**. El CI de GitHub
 Actions ejecuta ambos y empaqueta el JAR.
 
 ---

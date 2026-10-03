@@ -15,6 +15,10 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Fulltext (`pg_trgm`):** migración **V10** con la extensión `pg_trgm` e índices
   **GIN** (`lower(col) gin_trgm_ops`) sobre títulos, artistas y álbumes, para que la
   búsqueda "contains" use índice en lugar de un seq scan.
+- **Indicador "now playing":** en todos los listados de canciones (biblioteca,
+  álbumes, playlists, búsqueda, favoritos y cola) la canción actual muestra barras
+  ecualizadoras animadas mientras suena y recupera su número al pausar; respeta
+  `prefers-reduced-motion`.
 - **Notificaciones nativas (Web Push):** migración **V11** (`push_subscriptions`),
   endpoints `/api/v1/push/*` (clave pública, suscribir/desuscribir, prueba) y envío
   con VAPID (`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`). Service worker con handler de
