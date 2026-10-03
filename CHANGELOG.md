@@ -18,15 +18,30 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a playlist, letras, radio y visualizador.
 - **Favorito y añadir a playlist desde la reproducción**, tanto en la vista
   expandida como (en escritorio) en la propia barra.
+- **Descarga de una sola canción:** acción en la vista "Now Playing" (icono de
+  descarga con estados descargar / progreso / eliminar), además de álbumes y
+  playlists completos.
+- **Menú móvil (drawer):** botón de hamburguesa en el header y panel deslizante
+  con todas las rutas (antes la barra inferior ocultaba playlists, álbumes,
+  artistas y favoritos).
 
 ### Changed
 
 - **Barra de reproducción:** la pista ya avanza como una "estela de luz"
   (gradiente cyan→pink) hasta el pulgar, con thumb neón; los controles tienen
   `hover` con fondo y `title` (tooltips) en escritorio.
+- **Navegación móvil:** se reemplaza la barra inferior por el drawer; la
+  navegación (`navItems`) es ahora una única fuente compartida con el sidebar.
 
 ### Fixed
 
+- **PWA móvil — datos obsoletos:** las lecturas de API del service worker pasan a
+  `NetworkFirst` (antes `StaleWhileRevalidate`). Al crear una playlist o cambiar
+  el tema, la recarga del listado/ajustes ya no servía la respuesta cacheada
+  antigua en móvil (en escritorio, sin SW, se veía bien).
+- **Tema (móvil):** la hidratación del tema desde los ajustes del servidor ocurre
+  una sola vez en el shell, no en cada visita a Ajustes, por lo que salir y volver
+  a entrar ya no revierte el tema cambiado desde el header.
 - **Tema:** el toggle del header ya no se revierte al estar en Ajustes. El tema
   se hidrata una sola vez desde los ajustes del servidor y las actualizaciones
   son optimistas en el caché, evitando que un `settings.theme` obsoleto deshaga
@@ -35,6 +50,7 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   devuelven un orden determinista (alfabético, insensible a mayúsculas, con `id`
   como desempate) cuando el cliente no pasa `sort`, en lugar de un orden
   indefinido; se respeta un `sort` explícito si se envía.
+
 
 ## [0.2.0] - 2026-10-02
 
