@@ -30,7 +30,7 @@ echo "==> [1/5] Dependencias (Java 21, PostgreSQL, curl)"
 export DEBIAN_FRONTEND=noninteractive
 if ! command -v java >/dev/null 2>&1; then
   apt-get update -q
-  apt-get install -y -q openjdk-21-jre-headless curl openssl
+  apt-get install -y -q openjdk-21-jre-headless curl openssl ffmpeg
 fi
 if ! command -v psql >/dev/null 2>&1; then
   apt-get install -y -q postgresql postgresql-contrib
@@ -97,6 +97,7 @@ if [ ! -f "$ENV_FILE" ]; then
     echo "SCAN_INTERVAL=0"
     echo "COVERS_CACHE=/var/lib/neonvibe/covers"
     echo "LYRICS_CACHE=/var/lib/neonvibe/lyrics"
+    echo "TRANSCODE_CACHE=/var/lib/neonvibe/transcode"
     echo ""
     echo "# --- Opcionales ---"
     echo "# LASTFM_API_KEY="

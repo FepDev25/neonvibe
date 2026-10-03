@@ -166,6 +166,12 @@ nativas, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`. Genera el pa
 VAPID con `npx web-push generate-vapid-keys`; sin ellas el push queda deshabilitado
 (el toggle de Ajustes aparece desactivado).
 
+**Transcodificación / quality selector:** `setup.sh` instala **FFmpeg**; la caché
+de AAC va a `TRANSCODE_CACHE` (por defecto `/var/lib/neonvibe/transcode`, se crea
+sola). Ajustes opcionales: `TRANSCODE_ENABLED` (default `true`),
+`TRANSCODE_MAX_CACHE_MB` (2048), `TRANSCODE_MAX_CONCURRENT` (1), `FFMPEG_PATH`.
+Si FFmpeg no está disponible, el stream sirve siempre el original.
+
 `setup.sh` **genera** `/opt/neonvibe/neonvibe.env` con `JWT_SECRET` y `DB_PASSWORD`
 reales y deja `GOOGLE_CLIENT_ID`, `ALLOWED_EMAILS` y `ADMIN_EMAILS` con `CHANGE_ME`:
 **debes editarlas** o el servicio no arranca (falla rápido con el motivo en el journal).
