@@ -44,6 +44,7 @@ vi.mock('@/api/radio', () => ({ getRadioSeed: vi.fn().mockResolvedValue([]) }));
 vi.mock('@/components/Visualizer', () => ({ default: () => null }));
 vi.mock('@/components/QueueSheet', () => ({ default: () => null }));
 vi.mock('@/components/LyricsSheet', () => ({ default: () => null }));
+vi.mock('@/components/TrackDownloadButton', () => ({ default: () => null }));
 vi.mock('@/components/AddToPlaylistSheet', () => ({
   default: ({ open, trackId }: { open: boolean; trackId: number }) =>
     open ? <div>Añadir panel {trackId}</div> : null,

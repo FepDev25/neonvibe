@@ -43,7 +43,7 @@ export default function DownloadsPage() {
         <div className="flex flex-col items-center gap-3 py-12 text-center">
           <Download className="h-10 w-10 text-text-muted" aria-hidden />
           <p className="text-sm text-text-muted">
-            No tienes descargas. Usa el botón Descargar en un álbum o playlist.
+            No tienes descargas. Usa el botón Descargar en una canción, álbum o playlist.
           </p>
         </div>
       ) : (

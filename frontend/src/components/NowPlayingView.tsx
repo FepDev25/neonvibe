@@ -23,6 +23,7 @@ import { trackCoverUrl } from '@/api/cover';
 import AlbumCover from './AlbumCover';
 import SeekBar from './SeekBar';
 import FavoriteButton from './FavoriteButton';
+import TrackDownloadButton from './TrackDownloadButton';
 import AddToPlaylistSheet from './AddToPlaylistSheet';
 import LyricsSheet from './LyricsSheet';
 import QueueSheet from './QueueSheet';
@@ -256,7 +257,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
             </button>
           </div>
 
-          <div className="mt-5 flex items-center justify-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             <FavoriteButton entityType="TRACK" entityId={currentTrack.id} size="lg" className={TILE} />
 
             <button
@@ -268,6 +269,8 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
             >
               <Plus className="h-5 w-5" aria-hidden />
             </button>
+
+            <TrackDownloadButton track={currentTrack} className={cn(TILE, 'text-text-muted hover:text-neon-cyan')} />
 
             <button
               type="button"
