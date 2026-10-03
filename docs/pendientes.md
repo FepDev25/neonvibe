@@ -4,6 +4,23 @@
 
 ---
 
+## v0.3 — COMPLETADO (2026-10-03)
+
+Cierre de v0.3: **búsqueda fulltext (pg_trgm)**, **notificaciones nativas (Web
+Push + VAPID)**, **quality selector (transcodificación AAC cacheada)** y **stats
+personales**, más mejoras de frontend (buscadores, "Now Playing", menú drawer
+móvil, indicador now-playing, orbs animados, descarga de canción suelta) y fixes
+(SW network-first, tema, orden determinista, stats en Postgres). Backend 541
+tests, frontend 109.
+
+Pendiente en servidor:
+- [ ] `sudo apt-get install -y ffmpeg` (transcodificación) y
+  `TRANSCODE_CACHE=/var/lib/neonvibe/transcode` en `neonvibe.env`.
+- [ ] Claves `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` para el push.
+- [ ] Verificar Stats (`/stats`) y burbujas tras el redeploy y un reload (SW).
+
+---
+
 ## Hardening v0.2 — COMPLETADO (2026-10-02)
 
 Pasada de corrección por bloques (seguridad, concurrencia, lógica funcional,
@@ -260,4 +277,4 @@ Desarrollo movido a esta PC (2026-08-06). Infra local lista:
 
 ---
 
-*Última actualización: 2026-10-02*
+*Última actualización: 2026-10-03*

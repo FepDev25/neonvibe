@@ -47,6 +47,8 @@
 - **Mapeo DB:** Spring Data JPA + Hibernate
 - **Migrations:** Flyway
 - **API:** REST JSON + WebSocket events
+- **Transcodificación:** FFmpeg on-demand a AAC (caché LRU; opcional, degrada a original)
+- **Notificaciones:** Web Push VAPID (librería `nl.martijndwars:web-push`)
 
 ### Frontend
 - **Runtime:** Node.js (LTS)
@@ -160,7 +162,7 @@ neonvibe/
 
 **Track**
 - id, file_path (único), title, artist, album, album_artist, year, genre, track_number, disc_number, duration_seconds, bitrate, format, mime_type, has_lyrics, is_available, cover_art_path, album_id, artist_id, created_at, updated_at
-- Índices: artist, album, genre, title (B-tree, para filtros y búsqueda LIKE)
+- Índices: B-tree (artist, album, genre, title) + GIN `pg_trgm` (V10) sobre `lower(title/artist/album)` para búsqueda "contains"
 
 **Album**
 - id, name, artist, year, genre, cover_art_path, cover_fetched_at, created_at
@@ -186,6 +188,10 @@ neonvibe/
 - id, user_id, entity_type (enum ALBUM/ARTIST/TRACK), entity_id, created_at
 - Unique: (user_id, entity_type, entity_id)
 
+**PushSubscription**
+- id, user_id, endpoint (único), p256dh, auth, created_at
+- Una fila por dispositivo/navegador suscrito a notificaciones Web Push (V11)
+
 ---
 
 ## 6. Endpoints API (REST)
@@ -201,7 +207,7 @@ Auth:
 Tracks:
 - `GET /tracks` — Listado paginado (query: q, artist, album, genre, year)
 - `GET /tracks/:id` — Detalle
-- `GET /tracks/:id/stream` — Stream del archivo (range requests obligatorio)
+- `GET /tracks/:id/stream` — Stream del archivo (range requests obligatorio). Acepta `?quality=original|high|normal|data` (transcodificación AAC cacheada on-demand)
 - `GET /tracks/:id/lyrics` — Letras
 - `GET /tracks/:id/cover` — Carátula (redirect a cache o generar)
 
@@ -265,6 +271,21 @@ Last.fm:
 Scanner (solo admin, vía `ADMIN_EMAILS`):
 - `POST /admin/scan` — Trigger manual scan (202)
 - `GET /admin/scan/status` — Estado del scanner
+
+Stats (por usuario):
+- `GET /stats/overview?range=` — Totales (tiempo, plays, completadas) y distintos
+- `GET /stats/top?type=&range=&limit=` — Top tracks/albums/artists/genres
+- `GET /stats/timeline?range=&bucket=&tz=` — Actividad por día/semana/mes
+- `GET /stats/hours?range=&tz=` — Reproducciones por hora del día
+
+Transcodificación (quality selector):
+- `GET /transcode/status` — Si FFmpeg está disponible + presets soportados
+
+Notificaciones nativas (Web Push):
+- `GET /push/public-key` — Clave VAPID pública + `configured`
+- `POST /push/subscribe` — Registra una suscripción del navegador
+- `POST /push/unsubscribe` — Elimina una suscripción
+- `POST /push/test` — Notificación de prueba (503 si no hay VAPID)
 
 ---
 
@@ -420,13 +441,16 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 - [x] Transcodificación / quality selector (se traslada a v0.3)
 - [x] Notificaciones nativas (se traslada a v0.3)
 
-### v0.3
+### v0.3 (cerrada)
 - [x] Transcodificación / quality selector (cache-transcode AAC)
 - [x] Notificaciones nativas (Web Push + VAPID)
-- [ ] Audiolibros / podcasts
 - [x] Búsqueda avanzada (fulltext PostgreSQL — `pg_trgm` + GIN, V10)
-- [ ] Chromecast / Bluetooth audio routing
 - [x] Stats y analytics personales
+
+### v0.4 (planificado)
+- [ ] Audiolibros / podcasts
+- [ ] Chromecast / Bluetooth audio routing
+- Social **descartado** (proyecto de un solo usuario).
 
 ---
 
@@ -477,4 +501,4 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 
 ---
 
-*Última actualización: 2026-10-02*
+*Última actualización: 2026-10-03*

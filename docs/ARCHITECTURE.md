@@ -13,7 +13,8 @@ WebSocket. Se ejecuta como un único proceso en un servidor Debian Trixie
 bare-metal, detrás de Cloudflare, contra PostgreSQL.
 
 La biblioteca de audio se lee directamente del filesystem (`/srv/Music`); no hay
-copia ni transcodificación.
+copia permanente. Opcionalmente se generan **derivados AAC cacheados on-demand**
+(quality selector) en un directorio aparte, sin tocar los originales.
 
 ## 2. Contexto del sistema
 
@@ -97,6 +98,9 @@ Módulos backend (`com.neonvibe.*`):
 | `security` | `JwtAuthenticationFilter`, emisión/validación de JWT |
 | `scanner` | WatchService + extracción de metadatos (jaudiotagger) |
 | `websocket` | `@MessageMapping` de reproductor/cola y bridge de scanner |
+| `transcode` | Transcodificación AAC on-demand (FFmpeg) con caché LRU |
+| `push` | Notificaciones nativas Web Push (VAPID) |
+| `stats` | Enums de rango/bucket/tipo para las estadísticas |
 | `config` | Seguridad, CORS, WebSocket (STOMP), Jackson |
 | `infra` | Clientes HTTP: iTunes, MusicBrainz, Last.fm, LRCLIB |
 | `dto`, `domain`, `mapper` | Contratos de API, entidades JPA, mapeo |
@@ -156,6 +160,9 @@ sequenceDiagram
 
 - El endpoint responde `206` y procesa `Range`, lo que habilita el seek del
   reproductor. Sin esto, arrastrar la barra de progreso reinicia la canción.
+- Con `?quality=high|normal|data` y FFmpeg disponible, sirve un **derivado AAC**
+  generado y cacheado (misma mecánica de `Range`); si el origen ya cumple la
+  calidad pedida, o FFmpeg no está, sirve el original.
 - El JWT viaja en query param solo en los endpoints de media
   (`/stream`, `/cover`).
 
@@ -233,4 +240,4 @@ flowchart TB
 | Validación `id_token` contra `tokeninfo` | Claves JWK locales | Más simple; trade-off: requiere salida a Internet |
 | Scanner con WatchService | Polling periódico | Detección en tiempo real sin coste de barrido |
 | Frontend embebido en el JAR | Frontend separado en CDN/Nginx | Un solo artefacto, despliegue trivial |
-| Stream por HTTP Range sin transcodificación | FFmpeg on-the-fly | MVP; transcodificar queda para el quality selector |
+| Transcodificación AAC on-demand con caché | FFmpeg en vivo / HLS | El seek se resuelve reutilizando HTTP Range; el primer play genera el fichero |

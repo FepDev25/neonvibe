@@ -11,13 +11,18 @@ NeonVibe es un reproductor de música self-hosted diseñado para quienes tienen 
 - **Biblioteca propia:** Escaneo en tiempo real de tu colección local (MP3, FLAC, AAC, OGG, WAV).
 - **Experiencia neón:** Interfaz inspirada en cyberpunk con modo oscuro predeterminado y modo claro alternativo.
 - **Reproductor avanzado:** Cola persistente, historial de reproducción, shuffle, repeat, crossfade.
+- **Vista "Now Playing":** carátula grande, ambiente neón animado, controles y acciones (favorito, añadir a playlist, letras, radio, visualizador, descarga).
+- **Calidad seleccionable:** transcodificación AAC on-demand (Original · 320 · 192 · 128) con caché.
+- **Búsqueda instantánea:** filtros por texto en biblioteca, álbumes y artistas (índices `pg_trgm`).
+- **Estadísticas:** tiempo escuchado, actividad, top de artistas/canciones/álbumes/géneros y por hora.
+- **Notificaciones nativas:** Web Push (VAPID), con aviso al completar un escaneo.
 - **Playlists:** Crea, edita y comparte tus playlists.
 - **Letras en vivo:** Sincronización con LRCLIB (con caché local).
 - **Carátulas automáticas:** Descarga desde múltiples fuentes (iTunes, MusicBrainz, Last.fm) con caché local y subida manual.
 - **Radio por similitud:** Descubre música de tu biblioteca basada en lo que estás escuchando.
 - **Scrobbling:** Integración con Last.fm (conecta tu cuenta desde Ajustes).
 - **Historial:** Página con tus reproducciones recientes.
-- **Descargas offline:** Descarga álbumes/playlists y gestiónalos desde Ajustes.
+- **Descargas offline:** Descarga canciones, álbumes o playlists y gestiónalas desde Ajustes.
 - **Sesiones robustas:** Refresh token con rotación y revocación.
 - **Multi-usuario:** Autenticación con Google OAuth y allowlist de cuentas/administradores.
 - **PWA:** Instalable en mobile como aplicación nativa.
@@ -34,6 +39,8 @@ NeonVibe es un reproductor de música self-hosted diseñado para quienes tienen 
 | Base de datos | PostgreSQL 15+ |
 | Auth | Google OAuth2 + JWT |
 | Tiempo real | WebSockets (STOMP) |
+| Media | FFmpeg (transcodificación AAC on-demand) |
+| Push | Web Push + VAPID |
 | Build | Maven (backend) + pnpm (frontend) |
 
 ---
