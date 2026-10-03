@@ -101,6 +101,10 @@ if [ ! -f "$ENV_FILE" ]; then
     echo "# --- Opcionales ---"
     echo "# LASTFM_API_KEY="
     echo "# LASTFM_API_SECRET="
+    echo "# Notificaciones nativas (Web Push); genera con: npx web-push generate-vapid-keys"
+    echo "# VAPID_PUBLIC_KEY="
+    echo "# VAPID_PRIVATE_KEY="
+    echo "# VAPID_SUBJECT=mailto:tu-correo@gmail.com"
   } > "$ENV_FILE"
   # systemd lee el env como root ANTES de bajar privilegios; 0640 root:neonvibe.
   chown root:"$SERVICE_USER" "$ENV_FILE"

@@ -161,7 +161,10 @@ Variables **obligatorias**:
 | `ALLOWED_EMAILS` | `tu-correo@gmail.com` | Allowlist separada por comas. Sin ella, cualquier cuenta de Google entraría |
 | `ADMIN_EMAILS` | `tu-correo@gmail.com` | Allowlist de administradores (scanner, subida de carátulas). Sin ella, cualquier usuario autenticado sería admin |
 
-Opcionales: `LASTFM_API_KEY`, `LASTFM_API_SECRET`.
+Opcionales: `LASTFM_API_KEY`, `LASTFM_API_SECRET` y, para las notificaciones
+nativas, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`. Genera el par
+VAPID con `npx web-push generate-vapid-keys`; sin ellas el push queda deshabilitado
+(el toggle de Ajustes aparece desactivado).
 
 `setup.sh` **genera** `/opt/neonvibe/neonvibe.env` con `JWT_SECRET` y `DB_PASSWORD`
 reales y deja `GOOGLE_CLIENT_ID`, `ALLOWED_EMAILS` y `ADMIN_EMAILS` con `CHANGE_ME`:
