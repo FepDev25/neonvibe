@@ -77,25 +77,25 @@ public interface PlayHistoryRepository extends JpaRepository<PlayHistory, Long> 
                    COALESCE(SUM(ph.durationListenedSeconds), 0) AS listenedSeconds,
                    COALESCE(SUM(CASE WHEN ph.completed = true THEN 1 ELSE 0 END), 0) AS completed
             FROM PlayHistory ph
-            WHERE ph.userId = :userId AND (:from IS NULL OR ph.playedAt >= :from)
+            WHERE ph.userId = :userId AND ph.playedAt >= :from
             """)
     StatsTotals totals(@Param("userId") UUID userId, @Param("from") Instant from);
 
     @Query("""
             SELECT COUNT(DISTINCT t.id) FROM PlayHistory ph JOIN ph.track t
-            WHERE ph.userId = :userId AND (:from IS NULL OR ph.playedAt >= :from)
+            WHERE ph.userId = :userId AND ph.playedAt >= :from
             """)
     long countDistinctTracks(@Param("userId") UUID userId, @Param("from") Instant from);
 
     @Query("""
             SELECT COUNT(DISTINCT t.artist) FROM PlayHistory ph JOIN ph.track t
-            WHERE ph.userId = :userId AND (:from IS NULL OR ph.playedAt >= :from)
+            WHERE ph.userId = :userId AND ph.playedAt >= :from
             """)
     long countDistinctArtists(@Param("userId") UUID userId, @Param("from") Instant from);
 
     @Query("""
             SELECT COUNT(DISTINCT t.album) FROM PlayHistory ph JOIN ph.track t
-            WHERE ph.userId = :userId AND (:from IS NULL OR ph.playedAt >= :from)
+            WHERE ph.userId = :userId AND ph.playedAt >= :from
             """)
     long countDistinctAlbums(@Param("userId") UUID userId, @Param("from") Instant from);
 
@@ -103,7 +103,7 @@ public interface PlayHistoryRepository extends JpaRepository<PlayHistory, Long> 
             SELECT t.id AS id, t.title AS name, t.artist AS subtitle,
                    COUNT(ph) AS plays, COALESCE(SUM(ph.durationListenedSeconds), 0) AS listenedSeconds
             FROM PlayHistory ph JOIN ph.track t
-            WHERE ph.userId = :userId AND (:from IS NULL OR ph.playedAt >= :from)
+            WHERE ph.userId = :userId AND ph.playedAt >= :from
             GROUP BY t.id, t.title, t.artist
             ORDER BY COUNT(ph) DESC, t.title ASC
             """)
@@ -114,7 +114,7 @@ public interface PlayHistoryRepository extends JpaRepository<PlayHistory, Long> 
             SELECT a.id AS id, a.name AS name, a.artist AS subtitle,
                    COUNT(ph) AS plays, COALESCE(SUM(ph.durationListenedSeconds), 0) AS listenedSeconds
             FROM PlayHistory ph JOIN ph.track t LEFT JOIN t.albumEntity a
-            WHERE ph.userId = :userId AND (:from IS NULL OR ph.playedAt >= :from)
+            WHERE ph.userId = :userId AND ph.playedAt >= :from
             GROUP BY a.id, a.name, a.artist
             ORDER BY COUNT(ph) DESC, a.name ASC
             """)
@@ -125,7 +125,7 @@ public interface PlayHistoryRepository extends JpaRepository<PlayHistory, Long> 
             SELECT ar.id AS id, ar.name AS name, '' AS subtitle,
                    COUNT(ph) AS plays, COALESCE(SUM(ph.durationListenedSeconds), 0) AS listenedSeconds
             FROM PlayHistory ph JOIN ph.track t LEFT JOIN t.artistEntity ar
-            WHERE ph.userId = :userId AND (:from IS NULL OR ph.playedAt >= :from)
+            WHERE ph.userId = :userId AND ph.playedAt >= :from
             GROUP BY ar.id, ar.name
             ORDER BY COUNT(ph) DESC, ar.name ASC
             """)
@@ -136,7 +136,7 @@ public interface PlayHistoryRepository extends JpaRepository<PlayHistory, Long> 
             SELECT t.genre AS name, '' AS subtitle,
                    COUNT(ph) AS plays, COALESCE(SUM(ph.durationListenedSeconds), 0) AS listenedSeconds
             FROM PlayHistory ph JOIN ph.track t
-            WHERE ph.userId = :userId AND (:from IS NULL OR ph.playedAt >= :from)
+            WHERE ph.userId = :userId AND ph.playedAt >= :from
               AND t.genre IS NOT NULL AND t.genre <> ''
             GROUP BY t.genre
             ORDER BY COUNT(ph) DESC, t.genre ASC
@@ -147,7 +147,7 @@ public interface PlayHistoryRepository extends JpaRepository<PlayHistory, Long> 
     @Query("""
             SELECT ph.playedAt AS playedAt, ph.durationListenedSeconds AS listenedSeconds
             FROM PlayHistory ph
-            WHERE ph.userId = :userId AND (:from IS NULL OR ph.playedAt >= :from)
+            WHERE ph.userId = :userId AND ph.playedAt >= :from
             """)
     List<PlayRow> playRows(@Param("userId") UUID userId, @Param("from") Instant from);
 }

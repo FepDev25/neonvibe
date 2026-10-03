@@ -19,9 +19,9 @@ public enum StatsRange {
         this.days = days;
     }
 
-    /** Lower bound (null for {@link #ALL}). */
+    /** Lower bound; {@link #ALL} uses the epoch to avoid a null-bound SQL parameter. */
     public Instant from() {
-        return days > 0 ? Instant.now().minus(days, ChronoUnit.DAYS) : null;
+        return days > 0 ? Instant.now().minus(days, ChronoUnit.DAYS) : Instant.EPOCH;
     }
 
     /** Lenient parse: {@code 7d|30d|90d|all} (aliases accepted); defaults to month. */

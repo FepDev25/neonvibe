@@ -109,14 +109,14 @@ class PlayHistoryStatsQueryTest {
     void totalsAndDistinctCounts() {
         seedPlays();
 
-        StatsTotals totals = historyRepository.totals(userId, null);
+        StatsTotals totals = historyRepository.totals(userId, Instant.EPOCH);
 
         assertThat(totals.getPlays()).isEqualTo(4);
         assertThat(totals.getListenedSeconds()).isEqualTo(500);
         assertThat(totals.getCompleted()).isEqualTo(3);
-        assertThat(historyRepository.countDistinctTracks(userId, null)).isEqualTo(3);
-        assertThat(historyRepository.countDistinctArtists(userId, null)).isEqualTo(2);
-        assertThat(historyRepository.countDistinctAlbums(userId, null)).isEqualTo(2);
+        assertThat(historyRepository.countDistinctTracks(userId, Instant.EPOCH)).isEqualTo(3);
+        assertThat(historyRepository.countDistinctArtists(userId, Instant.EPOCH)).isEqualTo(2);
+        assertThat(historyRepository.countDistinctAlbums(userId, Instant.EPOCH)).isEqualTo(2);
     }
 
     @Test
@@ -132,7 +132,7 @@ class PlayHistoryStatsQueryTest {
     void topTracksOrdersByPlayCount() {
         seedPlays();
 
-        List<StatsTopRow> top = historyRepository.topTracks(userId, null, PageRequest.of(0, 10));
+        List<StatsTopRow> top = historyRepository.topTracks(userId, Instant.EPOCH, PageRequest.of(0, 10));
 
         assertThat(top).extracting(StatsTopRow::getName)
                 .containsExactly("Song A", "Song B", "Song C");
@@ -143,14 +143,14 @@ class PlayHistoryStatsQueryTest {
     void topArtistsAlbumsAndGenres() {
         seedPlays();
 
-        List<StatsTopRow> artists = historyRepository.topArtists(userId, null, PageRequest.of(0, 10));
+        List<StatsTopRow> artists = historyRepository.topArtists(userId, Instant.EPOCH, PageRequest.of(0, 10));
         assertThat(artists).extracting(StatsTopRow::getName).containsExactly("Artist A", "Artist B");
         assertThat(artists.get(0).getPlays()).isEqualTo(3);
 
-        List<StatsTopRow> albums = historyRepository.topAlbums(userId, null, PageRequest.of(0, 10));
+        List<StatsTopRow> albums = historyRepository.topAlbums(userId, Instant.EPOCH, PageRequest.of(0, 10));
         assertThat(albums).extracting(StatsTopRow::getName).containsExactly("Album One", "Album Two");
 
-        List<StatsTopRow> genres = historyRepository.topGenres(userId, null, PageRequest.of(0, 10));
+        List<StatsTopRow> genres = historyRepository.topGenres(userId, Instant.EPOCH, PageRequest.of(0, 10));
         assertThat(genres).extracting(StatsTopRow::getName).containsExactly("Rock", "Pop");
         assertThat(genres.get(0).getPlays()).isEqualTo(3);
     }

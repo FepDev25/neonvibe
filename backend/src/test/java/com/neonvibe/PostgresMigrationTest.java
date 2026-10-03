@@ -1,9 +1,13 @@
 package com.neonvibe;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.neonvibe.domain.Track;
+import com.neonvibe.repository.PlayHistoryRepository;
 import com.neonvibe.repository.TrackRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +56,9 @@ class PostgresMigrationTest {
     @Autowired
     private TrackRepository trackRepository;
 
+    @Autowired
+    private PlayHistoryRepository playHistoryRepository;
+
     @Test
     void flyway_appliesAllMigrationsSuccessfully() {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
@@ -93,5 +100,26 @@ class PostgresMigrationTest {
 
         assertThat(page.getTotalElements()).isEqualTo(1);
         assertThat(page.getContent().get(0).getTitle()).isEqualTo("Postgres Song");
+    }
+
+    /**
+     * Executes every stats aggregation on real Postgres (empty result is fine):
+     * catches dialect-level SQL errors that H2 would not surface.
+     */
+    @Test
+    void statsAggregationsExecuteOnPostgres() {
+        UUID userId = UUID.randomUUID();
+        Instant from = Instant.now().minus(30, ChronoUnit.DAYS);
+
+        assertThat(playHistoryRepository.totals(userId, from).getPlays()).isZero();
+        assertThat(playHistoryRepository.totals(userId, Instant.EPOCH).getPlays()).isZero();
+        assertThat(playHistoryRepository.countDistinctTracks(userId, from)).isZero();
+        assertThat(playHistoryRepository.countDistinctArtists(userId, from)).isZero();
+        assertThat(playHistoryRepository.countDistinctAlbums(userId, from)).isZero();
+        assertThat(playHistoryRepository.topTracks(userId, from, PageRequest.of(0, 10))).isEmpty();
+        assertThat(playHistoryRepository.topAlbums(userId, from, PageRequest.of(0, 10))).isEmpty();
+        assertThat(playHistoryRepository.topArtists(userId, from, PageRequest.of(0, 10))).isEmpty();
+        assertThat(playHistoryRepository.topGenres(userId, from, PageRequest.of(0, 10))).isEmpty();
+        assertThat(playHistoryRepository.playRows(userId, from)).isEmpty();
     }
 }
