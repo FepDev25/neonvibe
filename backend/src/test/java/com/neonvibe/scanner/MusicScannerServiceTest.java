@@ -36,7 +36,7 @@ class MusicScannerServiceTest {
     private final ScannerStatus status = new ScannerStatus();
     private final FileWatcherService watcher = mock(FileWatcherService.class);
     private final com.neonvibe.websocket.ScannerWsBridge wsBridge = mock(com.neonvibe.websocket.ScannerWsBridge.class);
-    private final MusicScannerService scanner = new MusicScannerService(config, extractor, sync, status, watcher, wsBridge);
+    private final MusicScannerService scanner = new MusicScannerService(config, extractor, sync, status, watcher, wsBridge, null);
 
     private Path mp3;
     private Path flac;

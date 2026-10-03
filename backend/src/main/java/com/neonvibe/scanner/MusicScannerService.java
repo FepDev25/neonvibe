@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.neonvibe.service.PushNotificationService;
 import com.neonvibe.websocket.ScannerWsBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ public class MusicScannerService {
     private final ScannerStatus status;
     private final FileWatcherService fileWatcher;
     private final ScannerWsBridge wsBridge;
+    private final PushNotificationService pushNotifications;
 
     private ScheduledExecutorService periodicScheduler;
 
@@ -69,13 +71,15 @@ public class MusicScannerService {
                                LibrarySyncService librarySyncService,
                                ScannerStatus status,
                                FileWatcherService fileWatcher,
-                               @Autowired(required = false) ScannerWsBridge wsBridge) {
+                               @Autowired(required = false) ScannerWsBridge wsBridge,
+                               @Autowired(required = false) PushNotificationService pushNotifications) {
         this.config = config;
         this.metadataExtractor = metadataExtractor;
         this.librarySyncService = librarySyncService;
         this.status = status;
         this.fileWatcher = fileWatcher;
         this.wsBridge = wsBridge;
+        this.pushNotifications = pushNotifications;
     }
 
     @PostConstruct
@@ -174,17 +178,25 @@ public class MusicScannerService {
     }
 
     /**
-     * Broadcasts scanner progress and newly added tracks over WebSocket (best effort).
+     * Broadcasts scanner progress and newly added tracks over WebSocket and, when
+     * configured, sends a native "scan finished" push (best effort).
      */
     private void publishScanEvents() {
-        if (wsBridge == null) {
-            return;
+        List<Long> newTrackIds = librarySyncService.drainNewTrackIds();
+        if (wsBridge != null) {
+            try {
+                wsBridge.publishProgress(status);
+                wsBridge.publishNewTracks(newTrackIds);
+            } catch (Exception ex) {
+                log.debug("Could not publish scanner WS events: {}", ex.getMessage());
+            }
         }
-        try {
-            wsBridge.publishProgress(status);
-            wsBridge.publishNewTracks(librarySyncService.drainNewTrackIds());
-        } catch (Exception ex) {
-            log.debug("Could not publish scanner WS events: {}", ex.getMessage());
+        if (pushNotifications != null) {
+            try {
+                pushNotifications.notifyScanCompleted(newTrackIds.size(), status.getFailed());
+            } catch (Exception ex) {
+                log.debug("Could not send scan push notification: {}", ex.getMessage());
+            }
         }
     }
 

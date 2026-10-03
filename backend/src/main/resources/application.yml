@@ -95,6 +95,11 @@ neonvibe:
   lastfm:
     api-key: ${LASTFM_API_KEY:}
     api-secret: ${LASTFM_API_SECRET:}
+  # Web Push (native notifications). Empty keys => feature disabled.
+  push:
+    public-key: ${VAPID_PUBLIC_KEY:}
+    private-key: ${VAPID_PRIVATE_KEY:}
+    subject: ${VAPID_SUBJECT:mailto:admin@neonvibe.local}
   frontend-base: ${FRONTEND_BASE:http://localhost:5173}
   websocket:
     allowed-origins: "*"
