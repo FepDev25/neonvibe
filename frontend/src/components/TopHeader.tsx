@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Sun, Moon, Music2, WifiOff } from 'lucide-react';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
-import { updateSettings } from '@/api/settings';
+import { useUpdateSettings } from '@/hooks/useSettings';
 import { useOnline } from '@/offline/useOnline';
 import IconButton from './IconButton';
 import { cn } from '@/utils/cn';
@@ -17,12 +17,14 @@ export default function TopHeader() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const online = useOnline();
+  const updateSettings = useUpdateSettings();
 
   const handleToggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     toggleTheme();
-    // Persist to the DB too, so the choice is not just a local override.
-    void updateSettings({ theme: next }).catch(() => undefined);
+    // Persist to the DB too, so the choice is not just a local override. Uses
+    // the shared mutation so the settings cache updates optimistically.
+    updateSettings.mutate({ theme: next });
   };
 
   const initials = user?.name

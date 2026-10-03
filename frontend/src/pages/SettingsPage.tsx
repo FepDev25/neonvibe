@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Sun,
@@ -65,11 +65,18 @@ export default function SettingsPage() {
   const [disconnecting, setDisconnecting] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [cleared, setCleared] = useState<number | null>(null);
+  const hydratedTheme = useRef(false);
 
-  // Apply the persisted theme on load (settings win over localStorage).
+  // Hydrate the local theme from the server settings exactly once, on load
+  // (settings win over localStorage for cross-device consistency). After that,
+  // local interactions are authoritative: reconciling on every change would
+  // revert a header toggle because the settings query is momentarily stale.
   useEffect(() => {
-    if (settings?.theme && settings.theme !== theme) {
-      setTheme(settings.theme);
+    if (!hydratedTheme.current && settings?.theme) {
+      hydratedTheme.current = true;
+      if (settings.theme !== theme) {
+        setTheme(settings.theme);
+      }
     }
   }, [settings, theme, setTheme]);
 
@@ -177,8 +184,10 @@ export default function SettingsPage() {
             variant={theme === 'dark' ? 'primary' : 'secondary'}
             size="sm"
             onClick={() => {
-              setTheme('dark');
-              set({ theme: 'dark' });
+              if (theme !== 'dark') {
+                setTheme('dark');
+                set({ theme: 'dark' });
+              }
             }}
           >
             Oscuro
@@ -187,8 +196,10 @@ export default function SettingsPage() {
             variant={theme === 'light' ? 'primary' : 'secondary'}
             size="sm"
             onClick={() => {
-              setTheme('light');
-              set({ theme: 'light' });
+              if (theme !== 'light') {
+                setTheme('light');
+                set({ theme: 'light' });
+              }
             }}
           >
             Claro
