@@ -20,6 +20,7 @@ import com.neonvibe.repository.TrackRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class ArtistService {
+
+    /** Stable, case-insensitive order by artist name. */
+    private static final Sort DEFAULT_SORT = Sort.by(
+            Sort.Order.asc("name").ignoreCase(),
+            Sort.Order.asc("id"));
 
     private final ArtistRepository artistRepository;
     private final TrackRepository trackRepository;
@@ -52,14 +58,15 @@ public class ArtistService {
 
     @Transactional(readOnly = true)
     public Page<ArtistResponse> search(String q, Pageable pageable) {
+        Pageable sorted = PageableSorts.withDefault(pageable, DEFAULT_SORT);
         Page<Artist> page;
         if (q != null && !q.isBlank()) {
-            page = artistRepository.findByNameContainingIgnoreCase(q.trim(), pageable);
+            page = artistRepository.findByNameContainingIgnoreCase(q.trim(), sorted);
         } else {
-            page = artistRepository.findAll(pageable);
+            page = artistRepository.findAll(sorted);
         }
         List<ArtistResponse> dtos = page.getContent().stream().map(artistMapper::toResponse).toList();
-        return new PageImpl<>(dtos, pageable, page.getTotalElements());
+        return new PageImpl<>(dtos, sorted, page.getTotalElements());
     }
 
     @Transactional(readOnly = true)

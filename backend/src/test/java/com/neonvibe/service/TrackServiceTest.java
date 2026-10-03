@@ -9,10 +9,12 @@ import com.neonvibe.exception.ResourceNotFoundException;
 import com.neonvibe.mapper.TrackMapper;
 import com.neonvibe.repository.TrackRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -55,7 +57,7 @@ class TrackServiceTest {
 
     @Test
     void search_withoutFilters_listsAvailableTracks() {
-        when(repository.findAllByIsAvailableTrue(pageable))
+        when(repository.findAllByIsAvailableTrue(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(track(1L, "A")), pageable, 1));
 
         Page<TrackResponse> result = service.search(null, null, null, null, null, pageable);
@@ -66,24 +68,51 @@ class TrackServiceTest {
 
     @Test
     void search_blankFilters_areTreatedAsNoFilter() {
-        when(repository.findAllByIsAvailableTrue(pageable))
+        when(repository.findAllByIsAvailableTrue(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
         service.search("  ", "", null, " ", null, pageable);
 
-        verify(repository).findAllByIsAvailableTrue(pageable);
+        verify(repository).findAllByIsAvailableTrue(any(Pageable.class));
         verify(repository, never()).search(any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void search_withFilter_usesSearchQuery() {
-        when(repository.search(eq("q"), isNull(), isNull(), isNull(), isNull(), eq(pageable)))
+        when(repository.search(eq("q"), isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(track(1L, "Q")), pageable, 1));
 
         Page<TrackResponse> result = service.search("q", null, null, null, null, pageable);
 
         assertThat(result.getContent()).extracting(TrackResponse::title).containsExactly("Q");
         verify(repository, never()).findAllByIsAvailableTrue(any());
+    }
+
+    @Test
+    void search_appliesDefaultSortWhenNoneRequested() {
+        when(repository.findAllByIsAvailableTrue(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        service.search(null, null, null, null, null, pageable);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(repository).findAllByIsAvailableTrue(captor.capture());
+        Sort.Order title = captor.getValue().getSort().getOrderFor("title");
+        assertThat(title).isNotNull();
+        assertThat(title.isIgnoreCase()).isTrue();
+        assertThat(title.getDirection()).isEqualTo(Sort.Direction.ASC);
+        assertThat(captor.getValue().getSort().getOrderFor("id")).isNotNull();
+    }
+
+    @Test
+    void search_respectsExplicitClientSort() {
+        Pageable sorted = PageRequest.of(0, 20, Sort.by("artist"));
+        when(repository.findAllByIsAvailableTrue(sorted))
+                .thenReturn(new PageImpl<>(List.of(), sorted, 0));
+
+        service.search(null, null, null, null, null, sorted);
+
+        verify(repository).findAllByIsAvailableTrue(sorted);
     }
 
     @Test

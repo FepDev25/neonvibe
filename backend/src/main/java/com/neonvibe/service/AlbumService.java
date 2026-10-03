@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class AlbumService {
+
+    /** Stable order: album name, then artist, then id. */
+    private static final Sort DEFAULT_SORT = Sort.by(
+            Sort.Order.asc("name").ignoreCase(),
+            Sort.Order.asc("artist").ignoreCase(),
+            Sort.Order.asc("id"));
 
     private final AlbumRepository albumRepository;
     private final TrackRepository trackRepository;
@@ -44,18 +51,19 @@ public class AlbumService {
 
     @Transactional(readOnly = true)
     public Page<AlbumResponse> search(String q, String artist, Pageable pageable) {
+        Pageable sorted = PageableSorts.withDefault(pageable, DEFAULT_SORT);
         Page<Album> page;
         boolean hasText = (q != null && !q.isBlank());
         boolean hasArtist = (artist != null && !artist.isBlank());
         if (hasText && hasArtist) {
             // Both filters applied, not just the text one.
-            page = albumRepository.searchByNameAndArtist(q.trim(), artist.trim(), pageable);
+            page = albumRepository.searchByNameAndArtist(q.trim(), artist.trim(), sorted);
         } else if (hasText) {
-            page = albumRepository.findByNameContainingIgnoreCase(q.trim(), pageable);
+            page = albumRepository.findByNameContainingIgnoreCase(q.trim(), sorted);
         } else if (hasArtist) {
-            page = albumRepository.findByArtistContainingIgnoreCase(artist.trim(), pageable);
+            page = albumRepository.findByArtistContainingIgnoreCase(artist.trim(), sorted);
         } else {
-            page = albumRepository.findAll(pageable);
+            page = albumRepository.findAll(sorted);
         }
         return page(page);
     }

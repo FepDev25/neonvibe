@@ -11,6 +11,7 @@ import com.neonvibe.repository.TrackRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -20,6 +21,11 @@ import org.springframework.util.StringUtils;
  */
 @Service
 public class TrackService {
+
+    /** Stable, predictable order for the library listing and search results. */
+    private static final Sort DEFAULT_SORT = Sort.by(
+            Sort.Order.asc("title").ignoreCase(),
+            Sort.Order.asc("id"));
 
     private final TrackRepository trackRepository;
     private final TrackMapper trackMapper;
@@ -36,14 +42,15 @@ public class TrackService {
     @Transactional(readOnly = true)
     public Page<TrackResponse> search(String q, String artist, String album,
                                       String genre, Integer year, Pageable pageable) {
+        Pageable sorted = PageableSorts.withDefault(pageable, DEFAULT_SORT);
         Page<Track> page;
         if (noneGiven(q, artist, album, genre, year)) {
-            page = trackRepository.findAllByIsAvailableTrue(pageable);
+            page = trackRepository.findAllByIsAvailableTrue(sorted);
         } else {
-            page = trackRepository.search(q, artist, album, genre, year, pageable);
+            page = trackRepository.search(q, artist, album, genre, year, sorted);
         }
         List<TrackResponse> dtos = page.getContent().stream().map(trackMapper::toResponse).toList();
-        return new PageImpl<>(dtos, pageable, page.getTotalElements());
+        return new PageImpl<>(dtos, sorted, page.getTotalElements());
     }
 
     @Transactional(readOnly = true)

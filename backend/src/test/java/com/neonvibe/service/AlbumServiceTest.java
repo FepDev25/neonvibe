@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -78,45 +79,70 @@ class AlbumServiceTest {
 
     @Test
     void search_textAndArtist_usesCombinedSearch() {
-        when(albumRepository.searchByNameAndArtist(eq("q"), eq("artist"), eq(pageable)))
+        when(albumRepository.searchByNameAndArtist(eq("q"), eq("artist"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(album(1L, "A", "X", List.of())), pageable, 1));
 
         var result = service.search(" q ", " artist ", pageable);
 
-        verify(albumRepository).searchByNameAndArtist("q", "artist", pageable);
+        verify(albumRepository).searchByNameAndArtist(eq("q"), eq("artist"), any(Pageable.class));
         verify(albumRepository, never()).findByNameContainingIgnoreCase(any(), any());
         assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
     @Test
     void search_textOnly_usesNameSearch() {
-        when(albumRepository.findByNameContainingIgnoreCase(eq("q"), eq(pageable)))
+        when(albumRepository.findByNameContainingIgnoreCase(eq("q"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
         service.search("q", null, pageable);
 
-        verify(albumRepository).findByNameContainingIgnoreCase("q", pageable);
+        verify(albumRepository).findByNameContainingIgnoreCase(eq("q"), any(Pageable.class));
         verify(albumRepository, never()).findByArtistContainingIgnoreCase(any(), any());
     }
 
     @Test
     void search_artistOnly_usesArtistSearch() {
-        when(albumRepository.findByArtistContainingIgnoreCase(eq("artist"), eq(pageable)))
+        when(albumRepository.findByArtistContainingIgnoreCase(eq("artist"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
         service.search(null, "artist", pageable);
 
-        verify(albumRepository).findByArtistContainingIgnoreCase("artist", pageable);
+        verify(albumRepository).findByArtistContainingIgnoreCase(eq("artist"), any(Pageable.class));
         verify(albumRepository, never()).findByNameContainingIgnoreCase(any(), any());
     }
 
     @Test
     void search_noFilters_findsAll() {
-        when(albumRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
+        when(albumRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
         service.search(null, null, pageable);
 
-        verify(albumRepository).findAll(pageable);
+        verify(albumRepository).findAll(any(Pageable.class));
+    }
+
+    @Test
+    void search_appliesDefaultSortWhenNoneRequested() {
+        when(albumRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        service.search(null, null, pageable);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(albumRepository).findAll(captor.capture());
+        Sort sort = captor.getValue().getSort();
+        assertThat(sort.getOrderFor("name")).isNotNull();
+        assertThat(sort.getOrderFor("name").isIgnoreCase()).isTrue();
+        assertThat(sort.getOrderFor("artist")).isNotNull();
+        assertThat(sort.getOrderFor("id")).isNotNull();
+    }
+
+    @Test
+    void search_respectsExplicitClientSort() {
+        Pageable sorted = PageRequest.of(0, 20, Sort.by("year").descending());
+        when(albumRepository.findAll(sorted)).thenReturn(new PageImpl<>(List.of(), sorted, 0));
+
+        service.search(null, null, sorted);
+
+        verify(albumRepository).findAll(sorted);
     }
 
     private static TrackRepository.AlbumTrackCount count(long albumId, long value) {

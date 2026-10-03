@@ -18,9 +18,11 @@ import com.neonvibe.repository.AlbumRepository;
 import com.neonvibe.repository.ArtistRepository;
 import com.neonvibe.repository.TrackRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -95,23 +97,49 @@ class ArtistServiceTest {
 
     @Test
     void search_withQuery_usesNameSearch() {
-        when(artistRepository.findByNameContainingIgnoreCase(eq("q"), eq(pageable)))
+        when(artistRepository.findByNameContainingIgnoreCase(eq("q"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(artist(1L, "A")), pageable, 1));
 
         var result = service.search(" q ", pageable);
 
-        verify(artistRepository).findByNameContainingIgnoreCase("q", pageable);
+        verify(artistRepository).findByNameContainingIgnoreCase(eq("q"), any(Pageable.class));
         assertThat(result.getContent()).extracting(ArtistResponse::name).containsExactly("A");
     }
 
     @Test
     void search_withoutQuery_findsAll() {
-        when(artistRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
+        when(artistRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
         service.search(null, pageable);
 
-        verify(artistRepository).findAll(pageable);
+        verify(artistRepository).findAll(any(Pageable.class));
         verify(artistRepository, never()).findByNameContainingIgnoreCase(any(), any());
+    }
+
+    @Test
+    void search_appliesDefaultSortWhenNoneRequested() {
+        when(artistRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        service.search(null, pageable);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(artistRepository).findAll(captor.capture());
+        Sort.Order name = captor.getValue().getSort().getOrderFor("name");
+        assertThat(name).isNotNull();
+        assertThat(name.isIgnoreCase()).isTrue();
+        assertThat(captor.getValue().getSort().getOrderFor("id")).isNotNull();
+    }
+
+    @Test
+    void search_respectsExplicitClientSort() {
+        Pageable sorted = PageRequest.of(0, 20, Sort.by("name").descending());
+        when(artistRepository.findAll(sorted)).thenReturn(new PageImpl<>(List.of(), sorted, 0));
+
+        service.search(null, sorted);
+
+        verify(artistRepository).findAll(sorted);
     }
 
     @Test
