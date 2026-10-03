@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Music2, Loader2, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { fetchMe, loginWithGoogle } from '@/api/auth';
@@ -26,6 +26,50 @@ export default function LoginPage() {
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+  const renderButton = useCallback(() => {
+    if (!buttonRef.current || !window.google?.accounts?.id || !clientId) {
+      return;
+    }
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async (response) => {
+        setBusy(true);
+        setError(null);
+        try {
+          const auth = await loginWithGoogle(response.credential);
+          // Store the token first so the request interceptor attaches the
+          // Authorization header when fetchMe() runs (setAuth, which also
+          // stores the token, comes after fetchMe).
+          setToken(auth.access_token);
+          const me = await fetchMe();
+          setAuth(me, auth.access_token, auth.refresh_token);
+          navigate('/', { replace: true });
+        } catch (err) {
+          // fetchMe() failed (e.g. 401): clear the half-established session so
+          // we don't navigate into the app as an authenticated ghost.
+          useAuthStore.getState().logout();
+          // 403 = cuenta válida pero fuera de la allowlist del servidor
+          // (ALLOWED_EMAILS); distinguirlo evita reintentos inútiles.
+          const status = (err as { response?: { status?: number } })?.response?.status;
+          setError(
+            status === 403
+              ? 'Esta cuenta no está autorizada en este servidor.'
+              : 'No se pudo iniciar sesión con Google. Inténtalo de nuevo.',
+          );
+          console.warn('[login] failed', err);
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
+    window.google.accounts.id.renderButton(buttonRef.current, {
+      theme: 'filled_black',
+      size: 'large',
+      width: 280,
+    });
+  }, [clientId, navigate, setAuth, setToken]);
+
+  // Load the GIS script (or detect it already loaded) and flip `scriptLoaded`.
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/', { replace: true });
@@ -34,66 +78,29 @@ export default function LoginPage() {
     if (!clientId) {
       return; // config missing: show the setup notice
     }
-    const render = () => {
-      if (buttonRef.current && window.google?.accounts?.id) {
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: async (response) => {
-            setBusy(true);
-            setError(null);
-            try {
-              const auth = await loginWithGoogle(response.credential);
-              // Store the token first so the request interceptor attaches the
-              // Authorization header when fetchMe() runs (setAuth, which also
-              // stores the token, comes after fetchMe).
-              setToken(auth.access_token);
-              const me = await fetchMe();
-              setAuth(me, auth.access_token, auth.refresh_token);
-              navigate('/', { replace: true });
-            } catch (err) {
-              // fetchMe() failed (e.g. 401): clear the half-established session so
-              // we don't navigate into the app as an authenticated ghost.
-              useAuthStore.getState().logout();
-              // 403 = cuenta válida pero fuera de la allowlist del servidor
-              // (ALLOWED_EMAILS); distinguirlo evita reintentos inútiles.
-              const status = (err as { response?: { status?: number } })?.response?.status;
-              setError(
-                status === 403
-                  ? 'Esta cuenta no está autorizada en este servidor.'
-                  : 'No se pudo iniciar sesión con Google. Inténtalo de nuevo.',
-              );
-              console.warn('[login] failed', err);
-            } finally {
-              setBusy(false);
-            }
-          },
-        });
-        window.google.accounts.id.renderButton(buttonRef.current, {
-          theme: 'filled_black',
-          size: 'large',
-          width: 280,
-        });
-      }
-    };
-
     if (window.google?.accounts?.id) {
       setScriptLoaded(true);
-      render();
       return;
     }
     const script = document.createElement('script');
     script.src = GIS_SCRIPT;
     script.async = true;
     script.defer = true;
-    script.onload = () => {
-      setScriptLoaded(true);
-      render();
-    };
+    script.onload = () => setScriptLoaded(true);
     document.head.appendChild(script);
     return () => {
       script.remove();
     };
-  }, [clientId, isAuthenticated, navigate, setAuth, setToken]);
+  }, [clientId, isAuthenticated, navigate]);
+
+  // Render the button only once `scriptLoaded` is true, i.e. after React has
+  // committed the button container to the DOM (otherwise buttonRef is null and
+  // renderButton silently does nothing).
+  useEffect(() => {
+    if (scriptLoaded) {
+      renderButton();
+    }
+  }, [scriptLoaded, renderButton]);
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-bg px-4 text-center">
@@ -131,15 +138,15 @@ export default function LoginPage() {
             Consulta <span className="text-neon-cyan">docs/DEPLOY.md</span>.
           </p>
         </div>
-      ) : !scriptLoaded ? (
-        <p className="text-sm text-text-muted">Cargando Google Sign-In…</p>
       ) : (
-        <div ref={buttonRef} />
+        <div className="flex min-h-[44px] items-center justify-center">
+          {!scriptLoaded && (
+            <p className="text-sm text-text-muted">Cargando Google Sign-In…</p>
+          )}
+          {/* Always mounted so renderButton() finds the ref once the script loads. */}
+          <div ref={buttonRef} />
+        </div>
       )}
-
-      <Link to="/" className="text-xs text-text-muted hover:text-neon-cyan">
-        Volver al inicio
-      </Link>
     </div>
   );
 }
