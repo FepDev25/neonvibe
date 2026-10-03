@@ -7,27 +7,66 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-02
+
+Segunda versión: hardening de seguridad, concurrencia, rendimiento y
+accesibilidad, más features de sesión, historial, scanner y descargas.
+
 ### Added
 
-- **Testing backend:** suite ampliada de 123 a 428 tests (JUnit 5 + Mockito +
-  Spring Boot Test) cubriendo seguridad, scanner, servicios de biblioteca,
-  controladores, clientes externos, repositorios, mappers, excepciones y
-  configuración.
-- **Testing frontend:** Vitest + Testing Library (jsdom) con tests de utilidades,
-  hooks, stores y componentes.
-- **PostgreSQL real:** smoke test con Testcontainers que aplica las migraciones
-  Flyway V1–V7 y valida el esquema con `ddl-auto: validate`; se salta
-  automáticamente cuando no hay Docker.
-- **Cobertura:** JaCoCo con reporte HTML/CSV y umbral en el build (líneas ≥ 82%,
-  ramas ≥ 63%).
-- **CI:** GitHub Actions (`.github/workflows/ci.yml`) con tests de backend, tests
-  y build de frontend y empaquetado del JAR; publica los artefactos de cobertura
-  y del JAR.
-- **Fixtures de audio** (MP3 con tags ID3 y artwork embebido) para probar la
-  extracción real de metadatos de jaudiotagger.
+- **Sesión:** rotación y **revocación de refresh tokens** (`POST /auth/logout`
+  sube `users.token_version`); el frontend renueva el access token al recibir un
+  `401` y reintenta la petición (un solo refresh compartido entre 401 concurrentes).
+- **Administración:** allowlist `ADMIN_EMAILS` y `AdminGuard`; el escaneo manual y
+  la subida de carátulas requieren rol admin.
+- **UI de scanner** en Ajustes (disparar escaneo, contadores y eventos
+  `SCANNER_PROGRESS`/`NEW_TRACKS` por WebSocket).
+- **Página de historial** (`/history`) y **gestión de descargas offline**
+  (`/downloads`).
+- `GET /history` devuelve entradas enriquecidas con título/artista/álbum (fetch
+  join, sin N+1).
+- **Testing:** backend 486 tests y frontend 65 tests.
+
+### Security
+
+- springdoc/OpenAPI ya no se expone en producción: las claves estaban anidadas
+  bajo `spring:` y se ignoraban (la spec y Swagger UI quedaban públicos).
+- Subida de carátulas: **solo admin**, tipo real detectado por **magic bytes**
+  (PNG/JPEG/WebP), **SVG rechazado** y cabecera `X-Content-Type-Options: nosniff`.
+- `JWT_SECRET` sin valor por defecto en la configuración base (fail-fast).
+- `filePath` y `coverArtPath` excluidos del JSON (`@JsonIgnore`) para no exponer
+  rutas absolutas del servidor.
+- El principal autenticado transporta `email`/`name` desde los claims del JWT.
+
+### Changed
+
+- `PlayQueue` con **optimistic locking** (`version`) y reintentos ante conflictos
+  o carreras de creación.
+- El escaneo completo es **exclusivo** (no se solapan watcher, scheduler y admin).
+- **N+1** eliminados: conteos por álbum/artista con una query agrupada y
+  `@BatchSize` en playlists; la radio usa consultas acotadas en vez de cargar toda
+  la biblioteca.
+- Se eliminó la colección inversa `Album.tracks` (código muerto y semántica de
+  borrado engañosa).
+- `AuthService` y `LyricsService` ya no mantienen una transacción durante llamadas
+  HTTP externas; `AuthService` usa el `externalRestClient` con timeouts.
+- `NEXT`/`PREV` aceptan el `track_id` elegido por el cliente (shuffle coherente
+  multi-dispositivo).
+- `GET /queue` responde `204` cuando no hay cola.
 
 ### Fixed
 
+- Scrobbling de tracks completados (el dedupe se evaluaba después de insertar y se
+  bloqueaba a sí mismo).
+- Historial vía WebSocket: registra el track **saliente**, no el nuevo.
+- Logout: cierra el WebSocket y limpia cola/favoritos/cachés del usuario anterior.
+- El tema claro persiste al recargar; el toggle del header también lo guarda en BD.
+- El seek remoto no fuerza `is_playing=true`; el historial usa la duración real.
+- Frontend: orden de sync (`QUEUE_UPDATED` antes de `PLAY`), shuffle cliente-autoritativo,
+  reintento de carátula al cambiar de `src`, `SeekBar` al soltar fuera, MIME real en
+  descargas, `openDb` reintentable, modales con foco/Escape, tabs `tablist`, label de
+  búsqueda, tarjetas sin `<button>` dentro de `<a>`, y ruptura del import circular
+  `playerStore ⇄ audioGraph`.
 - Scanner: leer cada archivo una sola vez (metadata + artwork embebido) en lugar
   de dos, que ralentizaba y hacía fallar escaneos grandes.
 - Scanner: el hilo del watcher ya no muere con `ClosedWatchServiceException` al
@@ -38,6 +77,25 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Last.fm: `track.scrobble` se firma correctamente y el `api_sig` excluye
   `format`/`callback`, según la especificación oficial (auth y scrobbling
   estaban rotos).
+
+### Testing
+
+- **Testing backend:** suite de 123 a 486 tests (JUnit 5 + Mockito +
+  Spring Boot Test) cubriendo seguridad, scanner, servicios de biblioteca,
+  controladores, clientes externos, repositorios, mappers, excepciones y
+  configuración.
+- **Testing frontend:** Vitest + Testing Library (jsdom) con tests de utilidades,
+  hooks, stores y componentes.
+- **PostgreSQL real:** smoke test con Testcontainers que aplica las migraciones
+  Flyway V1–V9 y valida el esquema con `ddl-auto: validate`; se salta
+  automáticamente cuando no hay Docker.
+- **Cobertura:** JaCoCo con reporte HTML/CSV y umbral en el build (líneas ≥ 82%,
+  ramas ≥ 63%).
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) con tests de backend, tests
+  y build de frontend y empaquetado del JAR; publica los artefactos de cobertura
+  y del JAR.
+- **Fixtures de audio** (MP3 con tags ID3 y artwork embebido) para probar la
+  extracción real de metadatos de jaudiotagger.
 
 ## [0.1.0] - 2026-08-12
 

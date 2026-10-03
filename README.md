@@ -12,11 +12,14 @@ NeonVibe es un reproductor de música self-hosted diseñado para quienes tienen 
 - **Experiencia neón:** Interfaz inspirada en cyberpunk con modo oscuro predeterminado y modo claro alternativo.
 - **Reproductor avanzado:** Cola persistente, historial de reproducción, shuffle, repeat, crossfade.
 - **Playlists:** Crea, edita y comparte tus playlists.
-- **Letras en vivo:** Sincronización con LRCLIB y Genius.
-- **Carátulas automáticas:** Descarga desde múltiples fuentes (MusicBrainz, Last.fm, iTunes) con caché local.
+- **Letras en vivo:** Sincronización con LRCLIB (con caché local).
+- **Carátulas automáticas:** Descarga desde múltiples fuentes (iTunes, MusicBrainz, Last.fm) con caché local y subida manual.
 - **Radio por similitud:** Descubre música de tu biblioteca basada en lo que estás escuchando.
 - **Scrobbling:** Integración con Last.fm (conecta tu cuenta desde Ajustes).
-- **Multi-usuario:** Autenticación con Google OAuth.
+- **Historial:** Página con tus reproducciones recientes.
+- **Descargas offline:** Descarga álbumes/playlists y gestiónalos desde Ajustes.
+- **Sesiones robustas:** Refresh token con rotación y revocación.
+- **Multi-usuario:** Autenticación con Google OAuth y allowlist de cuentas/administradores.
 - **PWA:** Instalable en mobile como aplicación nativa.
 - **Web & Mobile:** Diseño responsive pensado primero para teléfonos.
 
@@ -26,7 +29,7 @@ NeonVibe es un reproductor de música self-hosted diseñado para quienes tienen 
 
 | Capa | Tecnología |
 |---|---|
-| Backend | Java 21 + Spring Boot 3.x |
+| Backend | Java 21 + Spring Boot 3.4.x |
 | Frontend | React 18 + TypeScript + Vite + Tailwind CSS |
 | Base de datos | PostgreSQL 15+ |
 | Auth | Google OAuth2 + JWT |
@@ -91,8 +94,8 @@ cd backend && ./mvnw test        # JUnit 5 + Mockito (+ PostgreSQL vía Testcont
 cd frontend && pnpm test         # Vitest + Testing Library (jsdom)
 ```
 
-La cobertura del backend se mide con JaCoCo (`backend/target/site/jacoco`) y el
-build falla por debajo de **líneas ≥ 82%** y **ramas ≥ 63%**. El CI de GitHub
+El backend tiene **486 tests** (cobertura JaCoCo, build falla por debajo de
+**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **65 tests**. El CI de GitHub
 Actions ejecuta ambos y empaqueta el JAR.
 
 ---
@@ -121,13 +124,16 @@ Auth, streaming, playlists, carátulas, letras, scanner real-time, visualizador,
 - [x] Radio por similitud
 - [x] Sync multi-dispositivo vía WebSocket
 - [x] Compartir playlists
-- [x] Descarga offline (PWA)
+- [x] Descarga offline (PWA) y gestión de descargas
 - [x] Background playback (MediaSession API)
-- [ ] Quality selector / transcodificación
-- [ ] Notificaciones nativas
+- [x] Refresh token con rotación/revocación
+- [x] UI de scanner (admin) y página de historial
+- [ ] Quality selector / transcodificación (v0.3)
+- [ ] Notificaciones nativas (v0.3)
 
 ### v0.3+
-Audiolibros/podcasts, búsqueda avanzada fulltext, Chromecast, estadísticas personales.
+Transcodificación/quality selector, notificaciones nativas, audiolibros/podcasts,
+búsqueda avanzada fulltext, Chromecast, social y estadísticas personales.
 
 ---
 

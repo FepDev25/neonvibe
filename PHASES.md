@@ -2,9 +2,11 @@
 
 > Roadmap de fases. Cada fase es un sprint cerrado con entregables validables. No avanzamos a la siguiente hasta que la actual esté estable.
 
-**Estado (2026-08-12):** las 11 fases (0-11) están implementadas y el MVP está
-desplegado en producción (`https://neonvibe.fepdev.app`). Este documento se
-mantiene como referencia del trabajo realizado; los pendientes activos viven en
+**Estado (2026-10-02):** las 11 fases (0-11) están implementadas y el MVP está
+desplegado en producción (`https://neonvibe.fepdev.app`), con una pasada de
+hardening y features de v0.2. Este documento se mantiene como referencia
+histórica del trabajo realizado; los planes/specs/reviews originales están
+archivados en `docs/archive/` y los pendientes activos viven en
 `docs/pendientes.md`.
 
 ---
@@ -209,7 +211,7 @@ mantiene como referencia del trabajo realizado; los pendientes activos viven en
 - [x] Cache de imágenes en filesystem (`./data/covers/` o ruta configurable)
 - [x] Endpoint `GET /tracks/:id/cover` y `GET /albums/:id/cover` (serve file o redirect)
 - [x] Frontend: mostrar carátulas reales en AlbumCard, ArtistCard, PlayerBar
-- [x] Servicio de letras: LRCLIB API (primaria), Genius (fallback)
+- [x] Servicio de letras: LRCLIB API (Genius quedó fuera del alcance)
 - [x] Endpoint `GET /tracks/:id/lyrics` — retorna texto plano o sincronizado (`.lrc`)
 - [x] Vista "Letras" en el reproductor (panel deslizable o overlay)
 - [x] Visualizador de audio: Web Audio API (`AnalyserNode`) + Canvas 2D con barras/ondas neón
@@ -327,4 +329,4 @@ mantiene como referencia del trabajo realizado; los pendientes activos viven en
 
 ---
 
-*Última actualización: 2026-08-12*
+*Última actualización: 2026-10-02*

@@ -2,7 +2,7 @@
 
 > Despliega NeonVibe en tu servidor Debian Trixie (bare-metal) como un único JAR servido por systemd, detrás de Cloudflare. El frontend va embebido en el JAR.
 
-**Estado (2026-08-12):** NeonVibe está desplegado en `https://neonvibe.fepdev.app`.
+**Estado (2026-10-02):** NeonVibe está desplegado en `https://neonvibe.fepdev.app`.
 Esta guía describe el proceso de despliegue y operación tal como se ejecutó.
 
 ---
@@ -74,6 +74,10 @@ ALLOWED_EMAILS=tu-correo@gmail.com,otra-persona@gmail.com
 La app **no arranca** en prod si está vacío. Una cuenta fuera de la lista recibe
 403 y ve "Esta cuenta no está autorizada en este servidor".
 
+`ADMIN_EMAILS` es una segunda allowlist para operaciones de administración
+(escaneo manual y subida de carátulas globales). También es obligatoria en prod;
+sin ella cualquier usuario autenticado sería admin.
+
 ---
 
 ## 4. Generar el JAR (máquina de desarrollo o servidor)
@@ -137,7 +141,8 @@ usermod -aG felipep neonvibe
 
 ## 6. Secrets — `/opt/neonvibe/neonvibe.env`
 
-Edita el archivo (propiedad `neonvibe:neonvibe`, modo `0600`):
+Edita el archivo (propiedad `root:neonvibe`, modo `0640`; systemd lo lee como root
+antes de bajar privilegios):
 
 ```bash
 sudo nano /opt/neonvibe/neonvibe.env
@@ -150,15 +155,17 @@ Variables **obligatorias**:
 | `JWT_SECRET` | `openssl rand -base64 32` | Secreto HS256 |
 | `DB_PASSWORD` | password de PostgreSQL | El user es `neonvibe` por defecto |
 | `CORS_ALLOWED_ORIGINS` | `https://tudominio.com` | Lista separada por comas |
-| `WS_ORIGINS` | `https://tudominio.com` | Patrón único para WebSocket |
+| `WS_ORIGINS` | `https://tudominio.com` | Lista separada por comas de patrones WebSocket |
 | `FRONTEND_BASE` | `https://tudominio.com` | URL pública (callbacks) |
 | `GOOGLE_CLIENT_ID` | `xxxx.apps.googleusercontent.com` | Verifica el `aud` del id_token. Igual que `VITE_GOOGLE_CLIENT_ID` |
 | `ALLOWED_EMAILS` | `tu-correo@gmail.com` | Allowlist separada por comas. Sin ella, cualquier cuenta de Google entraría |
+| `ADMIN_EMAILS` | `tu-correo@gmail.com` | Allowlist de administradores (scanner, subida de carátulas). Sin ella, cualquier usuario autenticado sería admin |
 
 Opcionales: `LASTFM_API_KEY`, `LASTFM_API_SECRET`.
 
-`setup.sh` deja `GOOGLE_CLIENT_ID` y `ALLOWED_EMAILS` con `CHANGE_ME`: **debes
-editarlas** o el servicio no arranca (falla rápido con el motivo en el journal).
+`setup.sh` **genera** `/opt/neonvibe/neonvibe.env` con `JWT_SECRET` y `DB_PASSWORD`
+reales y deja `GOOGLE_CLIENT_ID`, `ALLOWED_EMAILS` y `ADMIN_EMAILS` con `CHANGE_ME`:
+**debes editarlas** o el servicio no arranca (falla rápido con el motivo en el journal).
 
 > El JWT usa un **secret único** por usuario; escribe `JWT_SECRET` con cuidado
 > porque invalidarás las sesiones si lo cambias.
@@ -209,7 +216,7 @@ El script:
 
 ### Primer arranque
 
-- **Flyway** aplica las migraciones `V1..V7` automáticamente. Si la base ya tenía
+- **Flyway** aplica las migraciones `V1..V9` automáticamente. Si la base ya tenía
   datos de una versión anterior, haz backup antes del primer deploy.
 - **Escaneo**: dispara el primer scan manual:
 
@@ -282,6 +289,8 @@ antiguo, las migraciones nuevas ya aplicadas se ignoran (no se revierten).
 | Login de Google no aparece | Falta `VITE_GOOGLE_CLIENT_ID` en el build | Rebuild con la variable (sección 4) |
 | `failed` con "GOOGLE_CLIENT_ID is not configured" | Sigue en `CHANGE_ME` | Edita `neonvibe.env` (sección 3) |
 | `failed` con "ALLOWED_EMAILS is empty" | Sin allowlist | Añade tu correo a `ALLOWED_EMAILS` |
+| `failed` con "ADMIN_EMAILS is empty" | Sin allowlist de admin | Añade tu correo a `ADMIN_EMAILS` |
+| `403` al escanear o subir carátula | No eres admin | Añade tu correo a `ADMIN_EMAILS` y reinicia |
 | `403` "cuenta no autorizada" al entrar | Ese correo no está en `ALLOWED_EMAILS` | Añádelo y `sudo systemctl restart neonvibe` |
 | `401` "not issued for this application" | `GOOGLE_CLIENT_ID` ≠ `VITE_GOOGLE_CLIENT_ID` | Deben ser idénticos; rebuild o corrige el env |
 | Scanner no ve música | Permisos | Verifica `/srv/Music` legible por `neonvibe` (sección 5) |
@@ -294,7 +303,7 @@ antiguo, las migraciones nuevas ya aplicadas se ignoran (no se revierten).
 
 ## 12. Seguridad (notas)
 
-- `neonvibe.env` es `0600` y nunca se commitea (solo existe `neonvibe.env.example`).
+- `neonvibe.env` es `0640 root:neonvibe` y nunca se commitea (solo existe `neonvibe.env.example`).
 - El JWT viaja en query param solo para media (`/stream`, `/cover`); evita exponerlo
   en logs (Cloudflare Flexible loguea la ruta, no el query si configuras redaction).
 - Recomendado: restringir firewall a los puertos 80/443 (Cloudflare) y 5432 solo a localhost.
@@ -302,4 +311,4 @@ antiguo, las migraciones nuevas ya aplicadas se ignoran (no se revierten).
 
 ---
 
-*Guía de despliegue — NeonVibe. Fecha: 2026-08-12.*
+*Guía de despliegue — NeonVibe. Fecha: 2026-10-02.*

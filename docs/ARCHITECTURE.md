@@ -26,8 +26,8 @@ flowchart LR
     Music[(/srv/Music)]
     GIS[Google Identity Services]
     LastFM[Last.fm API]
-    LRC[LRCLIB / Genius]
-    Covers[MusicBrainz / iTunes]
+    LRC[LRCLIB]
+    Covers[MusicBrainz / iTunes / Last.fm]
 
     Browser -->|HTTPS / WSS| CF
     CF -->|HTTP :8080| Server
@@ -98,7 +98,7 @@ Módulos backend (`com.neonvibe.*`):
 | `scanner` | WatchService + extracción de metadatos (jaudiotagger) |
 | `websocket` | `@MessageMapping` de reproductor/cola y bridge de scanner |
 | `config` | Seguridad, CORS, WebSocket (STOMP), Jackson |
-| `infra` | Clientes HTTP: MusicBrainz, Last.fm, LRCLIB |
+| `infra` | Clientes HTTP: iTunes, MusicBrainz, Last.fm, LRCLIB |
 | `dto`, `domain`, `mapper` | Contratos de API, entidades JPA, mapeo |
 
 ## 4. Autenticación (Google + JWT)
@@ -126,7 +126,9 @@ sequenceDiagram
 Decisiones relevantes:
 
 - **Sesión stateless:** access token de 15 min + refresh de 7 días. El backend no
-  guarda sesiones en memoria.
+  guarda sesiones en memoria. El refresh token incluye el `token_version` del
+  usuario y **rota** en cada `/auth/refresh`; `POST /auth/logout` sube la versión y
+  revoca todos los refresh emitidos.
 - **Verificación del `aud`:** `tokeninfo` prueba que el token es auténtico, no que
   se emitiera para esta app. Sin este chequeo, un `id_token` de cualquier otra
   web con Google Sign-In serviría para entrar.
@@ -173,9 +175,10 @@ sequenceDiagram
 ```
 
 - Detección en tiempo real mediante `java.nio.file.WatchService`; además existe
-  un trigger manual (`POST /api/v1/admin/scan`).
+  un trigger manual (`POST /api/v1/admin/scan`, **solo admin**).
 - El escaneo corre fuera del hilo de requests (`@Async` / executor); no bloquea
-  la API.
+  la API. Un `AtomicBoolean` garantiza que **solo un escaneo completo** corre a la
+  vez (watcher, scheduler y admin se coordinan).
 - Los archivos borrados se marcan `is_available=false` (no se eliminan registros).
 
 ## 7. Sync multi-dispositivo (WebSocket)

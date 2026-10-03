@@ -4,13 +4,39 @@
 
 ---
 
+## Hardening v0.2 — COMPLETADO (2026-10-02)
+
+Pasada de corrección por bloques (seguridad, concurrencia, lógica funcional,
+rendimiento, bugs frontend, accesibilidad) más features de v0.2. Todo con tests.
+
+- [x] **Seguridad:** springdoc deshabilitado en prod, `AdminGuard` (`ADMIN_EMAILS`)
+  para escaneo y subida de carátulas, validación de carátulas por magic bytes,
+  refresh token con rotación/revocación (`/auth/logout`), `JWT_SECRET` sin fallback,
+  `filePath`/`coverArtPath` fuera del JSON.
+- [x] **Concurrencia:** `FileWatcherService.keyToDir` concurrente, carreras
+  find-or-create (409/reuso), `PlayQueue` con optimistic locking.
+- [x] **Funcional:** búsqueda de álbumes con artista, shuffle backend, `RepeatMode.ONE`
+  reinicia posición, `/queue` 204, broadcast de cola en una query, `clearCache` limpia
+  rutas en BD, radio acotada.
+- [x] **Rendimiento:** concurrencia acotada al resolver colas, álbum con >100 tracks
+  completo, búsqueda paginada.
+- [x] **Frontend:** orden de sync, shuffle cliente-autoritativo, historial del track
+  saliente, tema persistente, seek sin forzar play, modales accesibles, tabs, etc.
+- [x] **Features v0.2:** refresh token en frontend, UI de scanner, página de historial,
+  gestión de descargas.
+- [x] **Testing:** backend 486 tests, frontend 65 tests.
+- [ ] **Verificación end-to-end en servidor:** escaneo real de `/srv/Music`, scrobbling
+  real con claves Last.fm y refresh de token al expirar el access (15 min).
+
+---
+
 ## Testing y CI — COMPLETADO (2026-09-23)
 
-- [x] **Backend:** 428 tests (`./mvnw test`); cobertura 84.8% líneas / 66.0% ramas,
+- [x] **Backend:** 486 tests (`./mvnw test`); cobertura 84.8% líneas / 66.0% ramas,
   con JaCoCo forzando el umbral (líneas ≥ 82%, ramas ≥ 63%).
 - [x] **PostgreSQL real:** `PostgresMigrationTest` (Testcontainers) aplica Flyway
-  `V1..V7` y valida el esquema con `ddl-auto: validate`.
-- [x] **Frontend:** Vitest + Testing Library (jsdom), 24 tests.
+  `V1..V9` y valida el esquema con `ddl-auto: validate`.
+- [x] **Frontend:** Vitest + Testing Library (jsdom), 65 tests.
 - [x] **CI:** GitHub Actions (`.github/workflows/ci.yml`): backend tests, frontend
   tests/build y empaquetado del JAR.
 - [x] **Bugs corregidos durante el testing:** doble lectura del scanner, cierre del
@@ -234,4 +260,4 @@ Desarrollo movido a esta PC (2026-08-06). Infra local lista:
 
 ---
 
-*Última actualización: 2026-09-23*
+*Última actualización: 2026-10-02*

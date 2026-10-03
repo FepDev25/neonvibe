@@ -39,17 +39,26 @@ tunnel. The following controls are part of its security posture:
   rejected.
 - **Authorization:** logins are gated by `ALLOWED_EMAILS`. Accounts outside the
   allowlist receive `403`. An empty allowlist is only acceptable in development.
+  Administrative operations (manual scans, global cover uploads) additionally
+  require an entry in `ADMIN_EMAILS`.
 - **Sessions:** stateless JWT (access + refresh) with short-lived access tokens.
-  The signing secret (`JWT_SECRET`) must be unique per deployment.
+  Refresh tokens carry the user's `token_version` and rotate on every
+  `/auth/refresh`; `POST /auth/logout` bumps the version and revokes all issued
+  refresh tokens. The signing secret (`JWT_SECRET`) must be unique per deployment.
+- **Uploads:** cover uploads are admin-only, validated by magic bytes
+  (PNG/JPEG/WebP), reject SVG and are served with `X-Content-Type-Options: nosniff`.
+- **Data exposure:** server filesystem paths (`filePath`, `coverArtPath`) are not
+  serialized in API responses.
 - **Secrets:** all runtime secrets come from environment variables
   (`/opt/neonvibe/neonvibe.env`). The Google OAuth client secret is kept outside
   the repository. Nothing secret is committed.
 - **Production startup guard:** the application refuses to start in the `prod`
-  profile without `JWT_SECRET`, `GOOGLE_CLIENT_ID`, and `ALLOWED_EMAILS`.
+  profile without `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `ALLOWED_EMAILS`, and
+  `ADMIN_EMAILS`.
 
 ## Deployment Hardening
 
-- Keep `/opt/neonvibe/neonvibe.env` mode `0600` and out of version control.
+- Keep `/opt/neonvibe/neonvibe.env` mode `0640` (`root:neonvibe`) and out of version control.
 - Restrict firewall access to ports `80`/`443` (Cloudflare) and keep PostgreSQL
   bound to localhost.
 - Update the deployed JAR regularly and review `journalctl -u neonvibe` after

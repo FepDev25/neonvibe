@@ -10,27 +10,27 @@
 - **Tipo:** Servidor de música personal (self-hosted)
 - **Inspiración visual:** Spotify + cyberpunk neón (retrowave/cyberpunk)
 - **Objetivo:** Reproductor web/mobile-first con playlist, carátulas, letras, scrobbling y radio por similitud.
-- **Estado:** MVP desplegado en producción (Debian Trixie bare-metal). v0.2 implementado
-  salvo transcodificación y notificaciones nativas. El JAR desplegado no incluye
-  todavía springdoc/OpenAPI (solo dev, ver §13).
-- **Testing/CI (2026-09-23):** backend con **428 tests** (`./mvnw test`) y JaCoCo
+- **Estado:** v0.2 desplegada en producción (Debian Trixie bare-metal) y endurecida
+  con una pasada de seguridad, concurrencia, accesibilidad y rendimiento. Incluye
+  **rotación/revocación de refresh token**, **UI de scanner (admin)**, **página de
+  historial**, **gestión de descargas** y validación de subida de carátulas.
+  Pendiente para v0.3: transcodificación/quality selector, notificaciones nativas,
+  fulltext, Chromecast, social, stats y audiolibros/podcasts (ver §11).
+- **Testing/CI (2026-10-02):** backend con **486 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **24 tests** (Vitest + Testing Library); CI en
+  Testcontainers; frontend con **65 tests** (Vitest + Testing Library); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
-### Próximos pasos: deploy y v0.3
+### Próximos pasos
 
-1. **Rebuild + deploy del JAR** (incluye springdoc solo-dev y todos los fixes):
-   `VITE_GOOGLE_CLIENT_ID="285886976623-3k6e7r74666u0ahpmv8kjmo8me52i3fp.apps.googleusercontent.com" ./deploy/build.sh`
-   → `scp dist/neonvibe.jar ssh.fepdev.app:/tmp/` → `sudo /tmp/deploy.sh /tmp/neonvibe.jar`.
-2. **Verificar en producción:** login de Google, álbum y artista (sin React #310),
-   `GET /ws/info` 200 (SockJS), `GET /actuator/health` UP, y **escaneo real de
-   `/srv/Music`** (`POST /api/v1/admin/scan`).
-3. **Verificar el scrobbling real** con claves Last.fm (el firmado ya está corregido).
-4. **Planificar v0.3** (roadmap en §11): quality selector, notificaciones nativas,
-   fulltext, social y stats.
-5. **Cubrir huecos de cobertura** (opcional): `CoverArtService`, `PlayHistoryService`,
-   `PlayQueueService`, uploads de `CoverController` y `ScanService`.
+1. **Rebuild + deploy del JAR** con todos los fixes y features:
+   `VITE_GOOGLE_CLIENT_ID="<client-id>.apps.googleusercontent.com" ./deploy/build.sh`
+   → `scp dist/neonvibe.jar <host>:/tmp/` → `sudo /tmp/deploy.sh /tmp/neonvibe.jar`.
+2. **Verificar en producción:** login de Google, escaneo real de `/srv/Music`
+   (`POST /api/v1/admin/scan`), scrobbling real con claves Last.fm, y el refresh de
+   token al expirar el access token (15 min).
+3. **Planificar v0.3** (roadmap en §11): transcodificación/quality selector,
+   notificaciones nativas, fulltext PostgreSQL, social, stats y audiolibros/podcasts.
 
 ---
 
@@ -38,7 +38,7 @@
 
 ### Backend
 - **Lenguaje:** Java 21 (LTS)
-- **Framework:** Spring Boot 3.x
+- **Framework:** Spring Boot 3.4.x (actual: 3.4.13)
 - **Build:** Maven
 - **Base de datos:** PostgreSQL 15+
 - **Mensajería en tiempo real:** WebSockets (STOMP sobre SockJS o Spring WebSocket nativo)
@@ -130,14 +130,15 @@ neonvibe/
 │       ├── main.tsx
 │       ├── App.tsx
 │       ├── components/      # UI reusable
-│       ├── pages/           # Vistas (Home, Library, Player, Settings)
+│       ├── pages/           # Vistas (Home, Library, History, Downloads, Settings)
 │       ├── hooks/           # Custom hooks
-│       ├── stores/          # Zustand stores
-│       ├── api/             # TanStack Query + fetch wrappers
+│       ├── stores/          # Zustand stores (auth, player, theme, favorites)
+│       ├── player/          # Motor de audio, sync STOMP, MediaSession
+│       ├── offline/         # IndexedDB + estado de descargas
+│       ├── api/             # Cliente axios + TanStack Query wrappers
 │       ├── types/           # TypeScript interfaces
-│       ├── styles/          # Tailwind config + globals
 │       └── utils/           # Helpers
-└── docs/                    # ADRs, diagramas, guías
+└── docs/                    # Arquitectura, despliegue, API y planes históricos
 ```
 
 ---
@@ -150,7 +151,8 @@ neonvibe/
 ### Entidades principales
 
 **User**
-- id (UUID), email, name, avatar_url, google_id, lastfm_session_key, lastfm_username, created_at, updated_at
+- id (UUID), email, name, avatar_url, google_id, lastfm_session_key, lastfm_username,
+  token_version (revocación de refresh tokens), created_at, updated_at
 
 **UserSettings**
 - user_id (UUID, PK), theme, cover_sources, notifications_enabled, scrobble_enabled, updated_at
@@ -174,7 +176,7 @@ neonvibe/
 - Unique: (playlist_id, track_id)
 
 **PlayQueue**
-- id, user_id (único), current_track_id, position_seconds, shuffle_enabled, repeat_mode (enum ALL/NONE/ONE), tracks_order (texto JSON), updated_at
+- id, user_id (único), current_track_id, position_seconds, shuffle_enabled, repeat_mode (enum ALL/NONE/ONE), tracks_order (texto JSON), version (optimistic locking), updated_at
 
 **PlayHistory**
 - id, user_id, track_id, played_at, completed, duration_listened_seconds
@@ -191,7 +193,8 @@ Base: `/api/v1`
 
 Auth:
 - `POST /auth/google` — Login con token de Google
-- `POST /auth/refresh` — Refresh JWT
+- `POST /auth/refresh` — Refresh JWT (rota el refresh token; valida `token_version`)
+- `POST /auth/logout` — Revoca los refresh tokens del usuario (sube `token_version`)
 - `GET /auth/me` — Usuario actual
 
 Tracks:
@@ -206,7 +209,7 @@ Albums:
 - `GET /albums/:id`
 - `GET /albums/:id/tracks`
 - `GET /albums/:id/cover`
-- `POST /albums/:id/cover` — Upload manual (multipart)
+- `POST /albums/:id/cover` — Upload manual (multipart, **solo admin**; valida PNG/JPEG/WebP por magic bytes, rechaza SVG)
 
 Artists:
 - `GET /artists`
@@ -214,7 +217,7 @@ Artists:
 - `GET /artists/:id/albums`
 - `GET /artists/:id/tracks`
 - `GET /artists/:id/cover`
-- `POST /artists/:id/cover` — Upload manual (multipart)
+- `POST /artists/:id/cover` — Upload manual (multipart, **solo admin**; misma validación)
 
 Playlists:
 - `GET /playlists` — Mis playlists + públicas
@@ -234,7 +237,7 @@ Queue:
 - `PUT /queue` — Actualizar cola completa
 
 History:
-- `GET /history`
+- `GET /history` — Paginado, enriquecido con título/artista/álbum del track
 - `POST /history` — Registrar reproducción
 
 Favorites:
@@ -258,8 +261,8 @@ Last.fm:
 - `GET /lastfm/callback` — Callback de conexión
 - `POST /lastfm/disconnect`
 
-Scanner:
-- `POST /admin/scan` — Trigger manual scan (admin only)
+Scanner (solo admin, vía `ADMIN_EMAILS`):
+- `POST /admin/scan` — Trigger manual scan (202)
 - `GET /admin/scan/status` — Estado del scanner
 
 ---
@@ -299,7 +302,7 @@ ignore sus propios ecos. Ver `websocket/PlayerWebSocketController.java` y
 ### Frontend (React + TS)
 - **Funcional components + hooks.** No class components.
 - **TypeScript estricto.** No `any` sin justificación documentada.
-- **Rutas:** `/`, `/home`, `/library`, `/albums`, `/album/:id`, `/artists`, `/artist/:id`, `/playlists`, `/playlist/:id`, `/favorites`, `/search`, `/settings`, `/p/:id`
+- **Rutas:** `/`, `/home`, `/library`, `/albums`, `/album/:id`, `/artists`, `/artist/:id`, `/playlists`, `/playlist/:id`, `/favorites`, `/history`, `/downloads`, `/search`, `/settings`, `/p/:id`
 - **Mobile-first.** Diseñar para pantallas <400px, escalar a desktop.
 - **PWA:** `manifest.json`, service worker mínimo para cache de assets.
 - **Visualizador:** Web Audio API + Canvas 2D. Fallback si no hay soporte.
@@ -321,10 +324,10 @@ ignore sus propios ecos. Ver `websocket/PlayerWebSocketController.java` y
 
 | Función | API | Notas |
 |---|---|---|
-| Carátulas | MusicBrainz, Last.fm, iTunes, Spotify (sin auth para imágenes) | Fallback cascade |
-| Letras | LRCLIB (primaria), Genius (fallback) | Cache local |
+| Carátulas | iTunes, MusicBrainz, Last.fm | Fallback cascade (más artwork embebido y placeholder) |
+| Letras | LRCLIB | Cache local (Genius no implementado) |
 | Scrobbling | Last.fm API | Configurable por usuario |
-| Auth | Google Identity Services + verificación `id_token` | `spring-security-oauth2-client` no se usa para login; se valida el `aud` con `GOOGLE_CLIENT_ID` |
+| Auth | Google Identity Services + verificación `id_token` | No se usa `spring-security-oauth2-client`; se valida el `aud` con `GOOGLE_CLIENT_ID` |
 
 ---
 
@@ -342,6 +345,8 @@ neonvibe:
       tokeninfo-url: https://oauth2.googleapis.com/tokeninfo
       client-id: ${GOOGLE_CLIENT_ID}
     allowed-emails: ${ALLOWED_EMAILS}
+  # Allowlist de administradores (scanner, subida de carátulas). Obligatorio en prod.
+  admin-emails: ${ADMIN_EMAILS:}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
   music:
@@ -390,8 +395,10 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 - [x] Radio por similitud
 - [x] WebSocket sync multi-device
 - [x] Compartir playlists
-- [x] Offline download (IndexedDB/cache)
+- [x] Offline download (IndexedDB/cache) + gestión de descargas
 - [x] Background playback (via PWA/MediaSession API)
+- [x] Refresh token con rotación y revocación
+- [x] UI de scanner (admin) y página de historial
 - [ ] Transcodificación / quality selector (se traslada a v0.3)
 - [ ] Notificaciones nativas (se traslada a v0.3)
 
@@ -411,18 +418,19 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 - **Siempre usa DTOs.** Nunca expongas `@Entity` directamente en controllers.
 - **Los endpoints de stream** (`/tracks/:id/stream`) deben soportar HTTP Range Requests para que el reproductor pueda hacer seek.
 - **El scanner no debe bloquear** la app. Usar `@Async` o `ExecutorService`.
-- **Carátulas:** si no se encuentra online, usar placeholder generado con color dominante del álbum.
+- **Carátulas:** si no se encuentra online, usar un placeholder SVG con gradiente determinista (no hay imagen de la que extraer color dominante).
 - **Frontend mobile:** la barra de reproducción debe estar fija abajo, con altura mínima 64px.
-- **Zustand stores separados:** `playerStore`, `queueStore`, `authStore`, `libraryStore`.
+- **Zustand stores separados:** `playerStore`, `authStore`, `themeStore`, `favoritesStore`.
 - **Commits:** mensajes en inglés, formato conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`.
 
 ---
 
 ## 13. Documentación de la API (OpenAPI / springdoc)
 
-- springdoc-openapi está en el classpath. En perfil `dev`, la spec vive en
-  `/v3/api-docs` y Swagger UI en `/swagger-ui`. En `prod` está **deshabilitado**
-  (`springdoc.api-docs.enabled=false` y `swagger-ui.enabled=false`).
+- springdoc-openapi está en el classpath y **se empaqueta en el JAR**; lo que se
+  deshabilita en `prod` es su exposición HTTP (`springdoc.api-docs.enabled=false`
+  y `swagger-ui.enabled=false`, claves de **raíz**, no bajo `spring:`). En `dev`
+  la spec vive en `/v3/api-docs` y Swagger UI en `/swagger-ui`.
 - Snapshot de referencia commiteado: `docs/api/openapi.yaml` (se regenera desde
   `/v3/api-docs.yaml`). Si cambian endpoints o DTOs, regenerar y actualizar el snapshot.
 - Metadata y esquema de seguridad Bearer: `config/OpenApiConfig.java`.
@@ -433,7 +441,7 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 
 - **Backend:** `cd backend && ./mvnw test`. JUnit 5 + Mockito + Spring Boot Test.
   Incluye `PostgresMigrationTest` (Testcontainers) que arranca un PostgreSQL real,
-  aplica Flyway `V1..V7` y verifica `ddl-auto: validate`; se **salta solo** si no
+  aplica Flyway `V1..V9` y verifica `ddl-auto: validate`; se **salta solo** si no
   hay Docker.
 - **Cobertura:** JaCoCo genera `backend/target/site/jacoco` (HTML + CSV/XML) y el
   build **falla** por debajo de **líneas ≥ 82%** y **ramas ≥ 63%**. Para subir el
@@ -452,4 +460,4 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 
 ---
 
-*Última actualización: 2026-09-23*
+*Última actualización: 2026-10-02*
