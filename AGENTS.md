@@ -14,11 +14,11 @@
   con una pasada de seguridad, concurrencia, accesibilidad y rendimiento. Incluye
   **rotación/revocación de refresh token**, **UI de scanner (admin)**, **página de
   historial**, **gestión de descargas** y validación de subida de carátulas.
-  Pendiente para v0.3: transcodificación/quality selector, notificaciones nativas,
+  Pendiente para v0.3: transcodificación/quality selector,
   Chromecast, social, stats y audiolibros/podcasts (ver §11).
-- **Testing/CI (2026-10-02):** backend con **492 tests** (`./mvnw test`) y JaCoCo
+- **Testing/CI (2026-10-02):** backend con **508 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **85 tests** (Vitest + Testing Library); CI en
+  Testcontainers; frontend con **94 tests** (Vitest + Testing Library); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
 ### Próximos pasos
@@ -30,7 +30,7 @@
    (`POST /api/v1/admin/scan`), scrobbling real con claves Last.fm, y el refresh de
    token al expirar el access token (15 min).
 3. **Planificar v0.3** (roadmap en §11): transcodificación/quality selector,
-   notificaciones nativas, social, stats y audiolibros/podcasts.
+   social, stats y audiolibros/podcasts.
 
 ---
 
@@ -364,6 +364,12 @@ neonvibe:
   lastfm:
     api-key: ${LASTFM_API_KEY:}
     api-secret: ${LASTFM_API_SECRET:}
+  # Web Push nativo. Claves VAPID en base64url (vacías = función deshabilitada).
+  # Generar: npx web-push generate-vapid-keys
+  push:
+    public-key: ${VAPID_PUBLIC_KEY:}
+    private-key: ${VAPID_PRIVATE_KEY:}
+    subject: ${VAPID_SUBJECT:mailto:admin@neonvibe.local}
   frontend-base: ${FRONTEND_BASE}
   websocket:
     allowed-origins: ${WS_ORIGINS:"*"}        # Restringir en prod
@@ -406,7 +412,7 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 
 ### v0.3
 - [ ] Transcodificación / quality selector
-- [ ] Notificaciones nativas
+- [x] Notificaciones nativas (Web Push + VAPID)
 - [ ] Audiolibros / podcasts
 - [x] Búsqueda avanzada (fulltext PostgreSQL — `pg_trgm` + GIN, V10)
 - [ ] Chromecast / Bluetooth audio routing
