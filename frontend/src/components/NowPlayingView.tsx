@@ -158,8 +158,9 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
             style={{ backgroundImage: `url(${coverSrc})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-bg/70 via-bg/85 to-bg" />
-          <div className="absolute -top-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-neon-purple/25 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-neon-cyan/15 blur-3xl" />
+          <div className="np-orb np-orb--purple np-orb--a left-[12%] top-[-12%] h-80 w-80" />
+          <div className="np-orb np-orb--cyan np-orb--b bottom-[-14%] right-[-10%] h-72 w-72" />
+          <div className="np-orb np-orb--pink np-orb--c left-[-14%] top-[42%] h-64 w-64" />
         </div>
 
         <div

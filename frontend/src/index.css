@@ -252,3 +252,61 @@
     transition: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Now Playing ambient orbs — drifting colored "bubbles"               */
+/* ------------------------------------------------------------------ */
+.np-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.5;
+  will-change: transform;
+  animation: np-float 22s ease-in-out infinite;
+}
+
+/* Soften the glow on the light theme so it reads as pastel, not muddy. */
+:root:not(.dark) .np-orb {
+  opacity: 0.34;
+}
+
+.np-orb--purple {
+  background: var(--color-neon-purple);
+}
+.np-orb--cyan {
+  background: var(--color-neon-cyan);
+}
+.np-orb--pink {
+  background: var(--color-neon-pink);
+}
+
+.np-orb--a {
+  animation-duration: 20s;
+}
+.np-orb--b {
+  animation-duration: 27s;
+  animation-delay: -6s;
+}
+.np-orb--c {
+  animation-duration: 32s;
+  animation-delay: -13s;
+}
+
+@keyframes np-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(8%, -10%, 0) scale(1.15);
+  }
+  66% {
+    transform: translate3d(-6%, 8%, 0) scale(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .np-orb {
+    animation: none;
+  }
+}

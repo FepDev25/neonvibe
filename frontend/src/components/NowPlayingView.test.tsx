@@ -78,6 +78,11 @@ describe('NowPlayingView', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('renders the animated ambient orbs', () => {
+    const { container } = renderView();
+    expect(container.querySelectorAll('.np-orb')).toHaveLength(3);
+  });
+
   it('shows the track and exposes transport, favorite and playlist actions', () => {
     const onClose = vi.fn();
     renderView(true, onClose);

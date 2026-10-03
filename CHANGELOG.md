@@ -19,6 +19,8 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   álbumes, playlists, búsqueda, favoritos y cola) la canción actual muestra barras
   ecualizadoras animadas mientras suena y recupera su número al pausar; respeta
   `prefers-reduced-motion`.
+- **Vista "Now Playing":** burbujas de luz animadas (orbs neón que flotan y
+  escalan) en el fondo, en ambos temas; respetan `prefers-reduced-motion`.
 - **Stats y analytics personales:** página `/stats` con resumen (tiempo escuchado,
   reproducciones, artistas/canciones distintas), actividad en el tiempo, top de
   artistas/canciones/álbumes/géneros y reproducciones por hora. Backend con

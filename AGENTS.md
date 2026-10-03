@@ -19,7 +19,7 @@
   y Chromecast (ver §11).
 - **Testing/CI (2026-10-02):** backend con **540 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **107 tests** (Vitest + Testing Library); CI en
+  Testcontainers; frontend con **108 tests** (Vitest + Testing Library); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
 ### Próximos pasos
