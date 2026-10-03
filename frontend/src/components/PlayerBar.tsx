@@ -28,6 +28,7 @@ import LyricsSheet from './LyricsSheet';
 import AddToPlaylistSheet from './AddToPlaylistSheet';
 import NowPlayingView from './NowPlayingView';
 import FavoriteButton from './FavoriteButton';
+import TrackDownloadButton from './TrackDownloadButton';
 import Visualizer from './Visualizer';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { cn } from '@/utils/cn';
@@ -141,6 +142,11 @@ export default function PlayerBar() {
             >
               <Plus className="h-4 w-4" aria-hidden />
             </button>
+
+            <TrackDownloadButton
+              track={currentTrack}
+              className={cn(controlBtn, 'hidden sm:flex')}
+            />
 
             <button
               type="button"

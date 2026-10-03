@@ -46,7 +46,12 @@ export default function TrackDownloadButton({ track, className }: TrackDownloadB
           void downloadTrack(track);
         }
       }}
-      className={cn(className, (downloading || done) && 'text-neon-cyan')}
+      className={cn(
+        className,
+        downloading || done
+          ? 'text-neon-cyan'
+          : 'text-text-muted hover:text-neon-cyan',
+      )}
     >
       {done ? (
         <Check className="h-5 w-5" aria-hidden />

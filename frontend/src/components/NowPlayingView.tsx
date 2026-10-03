@@ -270,7 +270,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               <Plus className="h-5 w-5" aria-hidden />
             </button>
 
-            <TrackDownloadButton track={currentTrack} className={cn(TILE, 'text-text-muted hover:text-neon-cyan')} />
+            <TrackDownloadButton track={currentTrack} className={TILE} />
 
             <button
               type="button"

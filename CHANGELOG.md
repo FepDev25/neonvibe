@@ -18,9 +18,9 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a playlist, letras, radio y visualizador.
 - **Favorito y añadir a playlist desde la reproducción**, tanto en la vista
   expandida como (en escritorio) en la propia barra.
-- **Descarga de una sola canción:** acción en la vista "Now Playing" (icono de
-  descarga con estados descargar / progreso / eliminar), además de álbumes y
-  playlists completos.
+- **Descarga de una sola canción:** acción en la vista "Now Playing" y en la barra
+  de reproducción (escritorio), con estados descargar / progreso / eliminar,
+  además de álbumes y playlists completos.
 - **Menú móvil (drawer):** botón de hamburguesa en el header y panel deslizante
   con todas las rutas (antes la barra inferior ocultaba playlists, álbumes,
   artistas y favoritos).
