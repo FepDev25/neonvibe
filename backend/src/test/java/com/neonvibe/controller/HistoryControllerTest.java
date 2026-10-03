@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neonvibe.config.SecurityConfig;
+import com.neonvibe.dto.HistoryEntryResponse;
 import com.neonvibe.dto.PlayHistoryRequest;
 import com.neonvibe.dto.PlayHistoryResponse;
 import com.neonvibe.security.JwtAuthenticationFilter;
@@ -60,14 +61,20 @@ class HistoryControllerTest {
         return new PlayHistoryResponse(1L, 10L, Instant.now(), true, 210);
     }
 
+    private HistoryEntryResponse entry() {
+        return new HistoryEntryResponse(1L, 10L, "Song", "Artist", "Album",
+                Instant.now(), true, 210);
+    }
+
     @Test
     void list_returnsPagedPayload() throws Exception {
         when(playHistoryService.listForUser(any(), any()))
-                .thenReturn(new PageImpl<>(List.of(history()), PageRequest.of(0, 20), 1));
+                .thenReturn(new PageImpl<>(List.of(entry()), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/v1/history").header("Authorization", bearerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].track_id").value(10))
+                .andExpect(jsonPath("$.content[0].title").value("Song"))
                 .andExpect(jsonPath("$.total_elements").value(1));
     }
 

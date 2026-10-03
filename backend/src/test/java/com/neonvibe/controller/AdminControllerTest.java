@@ -5,7 +5,9 @@ import java.util.UUID;
 
 import com.neonvibe.config.SecurityConfig;
 import com.neonvibe.dto.ScanStatusResponse;
+import com.neonvibe.exception.ForbiddenException;
 import com.neonvibe.scanner.ScannerStatus;
+import com.neonvibe.security.AdminGuard;
 import com.neonvibe.security.JwtAuthenticationFilter;
 import com.neonvibe.security.JwtTokenProvider;
 import com.neonvibe.service.ScanService;
@@ -17,6 +19,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -40,6 +44,9 @@ class AdminControllerTest {
 
     @MockBean
     private ScanService scanService;
+
+    @MockBean
+    private AdminGuard adminGuard;
 
     private String bearerToken;
 
@@ -73,5 +80,15 @@ class AdminControllerTest {
     void withoutToken_returns401() throws Exception {
         mockMvc.perform(post("/api/v1/admin/scan"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void triggerScan_nonAdmin_returns403() throws Exception {
+        doThrow(new ForbiddenException("Admin privileges required"))
+                .when(adminGuard).requireAdmin(any());
+
+        mockMvc.perform(post("/api/v1/admin/scan").header("Authorization", bearerToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("forbidden"));
     }
 }

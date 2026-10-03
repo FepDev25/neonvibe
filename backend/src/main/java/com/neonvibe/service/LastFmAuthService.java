@@ -41,6 +41,8 @@ public class LastFmAuthService {
         if (!lastFmClient.configured()) {
             return null;
         }
+        // Evict tokens that were never completed so the map cannot grow forever.
+        purgeExpired();
         String token = lastFmClient.requestToken();
         if (token == null) {
             return null;
@@ -80,6 +82,11 @@ public class LastFmAuthService {
             user.setLastfmUsername(null);
             userRepository.save(user);
         });
+    }
+
+    private void purgeExpired() {
+        long now = System.currentTimeMillis();
+        pending.entrySet().removeIf(e -> now - e.getValue().createdAt() > PENDING_TTL_MS);
     }
 
     private record PendingAuth(UUID userId, long createdAt) {

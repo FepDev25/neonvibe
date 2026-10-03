@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.neonvibe.websocket.ScannerWsBridge;
 import org.slf4j.Logger;
@@ -43,6 +44,19 @@ public class MusicScannerService {
 
     private ScheduledExecutorService periodicScheduler;
 
+    /**
+     * Guards {@link #scanAll()}: a full scan can be triggered from the watcher
+     * (ROOT/OVERFLOW), the periodic scheduler and the admin endpoint at the same
+     * time. Only one may run, otherwise they race on the shared {@link ScannerStatus}
+     * counters and the {@code newTrackIds} drain.
+     */
+    private final AtomicBoolean scanRunning = new AtomicBoolean(false);
+
+    /**
+     * Dedicated single-thread pool for manual scans. Kept separate from the
+     * watcher's {@code scannerExecutor} on purpose: a full scan is long-running
+     * and would starve the per-file watcher events queued on the shared pool.
+     */
     private final java.util.concurrent.ExecutorService scanAsyncExecutor =
             java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
                 Thread t = new Thread(r, "neonvibe-manual-scan");
@@ -120,10 +134,19 @@ public class MusicScannerService {
 
     /**
      * Full recursive scan of all configured roots.
+     *
+     * <p>Exclusive: if another full scan is already running, this trigger is
+     * ignored (the in-flight scan already covers the tree; new files are also
+     * picked up by the per-file watcher events). This keeps the shared
+     * {@link ScannerStatus} counters consistent.</p>
      */
     public void scanAll() {
-        status.markScanning(Instant.now());
+        if (!scanRunning.compareAndSet(false, true)) {
+            log.info("Full scan already in progress; ignoring overlapping trigger");
+            return;
+        }
         try {
+            status.markScanning(Instant.now());
             for (String root : config.getPaths()) {
                 Path rootPath = Path.of(root);
                 if (!Files.exists(rootPath)) {
@@ -143,8 +166,11 @@ public class MusicScannerService {
             status.incFailed("<tree>", ex.getMessage());
         } finally {
             status.markIdle(Instant.now());
+            // Publish before releasing the guard so the drained new-track ids
+            // belong entirely to this scan (publishScanEvents never throws).
+            publishScanEvents();
+            scanRunning.set(false);
         }
-        publishScanEvents();
     }
 
     /**
@@ -222,7 +248,9 @@ public class MusicScannerService {
     }
 
     /**
-     * Synchronous scan used by {@code POST /admin/scan}. Returns the final status.
+     * Synchronous full scan. Returns the status after the scan completes (or the
+     * in-flight status if another scan was already running). The admin endpoint
+     * uses {@link #scanAsync()} instead so the HTTP request returns immediately.
      */
     public ScannerStatus triggerManualScan() {
         scanAll();
@@ -231,9 +259,14 @@ public class MusicScannerService {
 
     /**
      * Asynchronous scan: schedules a full scan on the scanner worker pool and
-     * returns immediately.
+     * returns immediately. Ignored if a full scan is already running, so rapid
+     * admin triggers do not pile up redundant work.
      */
     public void scanAsync() {
+        if (scanRunning.get()) {
+            log.info("Full scan already in progress; ignoring async trigger");
+            return;
+        }
         scanAsyncExecutor.submit(this::scanAllSafely);
     }
 

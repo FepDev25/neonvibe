@@ -9,15 +9,21 @@ import com.neonvibe.security.UserPrincipal;
 import com.neonvibe.service.PlayHistoryService;
 import com.neonvibe.service.PlayQueueService;
 import com.neonvibe.websocket.dto.PlayerActionMessage;
+import com.neonvibe.websocket.dto.PlayerSyncMessage;
 import com.neonvibe.websocket.dto.QueueUpdateRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -84,20 +90,96 @@ class PlayerWebSocketControllerTest {
     }
 
     @Test
-    void next_advancesAndBroadcastsSyncAndQueue() {
+    void seek_preservesPausedStateFromSender() {
+        PlayQueue q = queue(2L, 45);
+        when(playQueueService.syncCurrentTrack(eq(userId), isNull(), eq(45))).thenReturn(q);
+
+        controller.seek(new PlayerActionMessage("SEEK", 45, false, null), principal);
+
+        ArgumentCaptor<PlayerSyncMessage> captor = ArgumentCaptor.forClass(PlayerSyncMessage.class);
+        verify(messagingTemplate).convertAndSend(eq("/topic/sync/" + userId), captor.capture());
+        assertFalse(captor.getValue().isPlaying());
+    }
+
+    @Test
+    void seek_defaultsToPlayingWhenStateOmitted() {
+        PlayQueue q = queue(2L, 45);
+        when(playQueueService.syncCurrentTrack(eq(userId), isNull(), eq(45))).thenReturn(q);
+
+        controller.seek(new PlayerActionMessage("SEEK", 45, null, null), principal);
+
+        ArgumentCaptor<PlayerSyncMessage> captor = ArgumentCaptor.forClass(PlayerSyncMessage.class);
+        verify(messagingTemplate).convertAndSend(eq("/topic/sync/" + userId), captor.capture());
+        assertTrue(captor.getValue().isPlaying());
+    }
+
+    @Test
+    void next_recordsOutgoingTrackThenAdvancesAndBroadcasts() {
+        // Before advancing, the current track is 2L at position 40 (the outgoing one).
         PlayQueue q = queue(3L, 0);
         when(playQueueService.advanceTrack(userId)).thenReturn(q);
         when(playQueueService.getOrderList(userId)).thenReturn(List.of(1L, 2L, 3L));
-        com.neonvibe.dto.PlayQueueResponse resp = new com.neonvibe.dto.PlayQueueResponse(
-                5L, 3L, 0, false, null, List.of(1L, 2L, 3L), null);
-        when(playQueueService.getForUser(userId)).thenReturn(resp);
+        com.neonvibe.dto.PlayQueueResponse outgoing = new com.neonvibe.dto.PlayQueueResponse(
+                5L, 2L, 40, false, null, List.of(1L, 2L, 3L), null);
+        when(playQueueService.getForUser(userId)).thenReturn(outgoing);
 
         controller.next(new PlayerActionMessage("NEXT", null, null), principal);
 
+        verify(playHistoryService).recordIfSignificant(eq(userId), eq(2L), eq(40), eq(false));
         verify(messagingTemplate).convertAndSend(eq("/topic/sync/" + userId),
                 any(com.neonvibe.websocket.dto.PlayerSyncMessage.class));
         verify(messagingTemplate).convertAndSend(eq("/topic/sync/" + userId),
                 any(com.neonvibe.websocket.dto.QueueUpdateMessage.class));
+        // broadcastQueue uses a single getForUser query, not getOrderList + 2x getForUser.
+        verify(playQueueService, never()).getOrderList(any());
+    }
+
+    @Test
+    void next_prefersActionPositionWhenProvided() {
+        when(playQueueService.advanceTrack(userId)).thenReturn(queue(3L, 0));
+        when(playQueueService.getOrderList(userId)).thenReturn(List.of(1L, 2L, 3L));
+        com.neonvibe.dto.PlayQueueResponse outgoing = new com.neonvibe.dto.PlayQueueResponse(
+                5L, 2L, 10, false, null, List.of(1L, 2L, 3L), null);
+        when(playQueueService.getForUser(userId)).thenReturn(outgoing);
+
+        controller.next(new PlayerActionMessage("NEXT", 55, null), principal);
+
+        verify(playHistoryService).recordIfSignificant(eq(userId), eq(2L), eq(55), eq(false));
+    }
+
+    @Test
+    void next_withoutCurrentTrack_doesNotRecordHistory() {
+        when(playQueueService.advanceTrack(userId)).thenReturn(queue(null, 0));
+        when(playQueueService.getForUser(userId)).thenReturn(null);
+
+        controller.next(new PlayerActionMessage("NEXT", null, null), principal);
+
+        verify(playHistoryService, never()).recordIfSignificant(any(), any(), any(), anyBoolean());
+    }
+
+    @Test
+    void next_withTargetTrack_syncsToChosenTrackInsteadOfAdvancing() {
+        when(playQueueService.getForUser(userId)).thenReturn(new com.neonvibe.dto.PlayQueueResponse(
+                5L, 2L, 40, false, null, List.of(1L, 2L, 3L), null));
+        when(playQueueService.syncCurrentTrack(eq(userId), eq(5L), eq(0))).thenReturn(queue(5L, 0));
+
+        controller.next(new PlayerActionMessage("NEXT", 0, null, 5L, null), principal);
+
+        verify(playQueueService).syncCurrentTrack(userId, 5L, 0);
+        verify(playQueueService, never()).advanceTrack(userId);
+    }
+
+    @Test
+    void prev_recordsOutgoingTrackThenRetreats() {
+        when(playQueueService.retreatTrack(userId)).thenReturn(queue(1L, 0));
+        when(playQueueService.getOrderList(userId)).thenReturn(List.of(1L, 2L, 3L));
+        com.neonvibe.dto.PlayQueueResponse outgoing = new com.neonvibe.dto.PlayQueueResponse(
+                5L, 2L, 40, false, null, List.of(1L, 2L, 3L), null);
+        when(playQueueService.getForUser(userId)).thenReturn(outgoing);
+
+        controller.prev(new PlayerActionMessage("PREV", 40, null), principal);
+
+        verify(playHistoryService).recordIfSignificant(eq(userId), eq(2L), eq(40), eq(false));
     }
 
     @Test

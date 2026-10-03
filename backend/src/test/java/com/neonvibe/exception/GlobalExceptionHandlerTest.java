@@ -71,10 +71,28 @@ class GlobalExceptionHandlerTest {
     @Test
     void accountNotAllowed_returnsForbidden() {
         ResponseEntity<Map<String, Object>> response =
-                handler.handleAccountNotAllowed(new AccountNotAllowedException("not allowed"));
+                handler.handleForbidden(new AccountNotAllowedException("not allowed"));
 
         assertThat(response.getStatusCode().value()).isEqualTo(403);
         assertThat(response.getBody().get("error")).isEqualTo("forbidden");
+    }
+
+    @Test
+    void forbidden_returnsForbidden() {
+        ResponseEntity<Map<String, Object>> response =
+                handler.handleForbidden(new ForbiddenException("Admin privileges required"));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(403);
+        assertThat(response.getBody().get("error")).isEqualTo("forbidden");
+    }
+
+    @Test
+    void dataIntegrityViolation_returnsConflict() {
+        ResponseEntity<Map<String, Object>> response = handler.handleDataIntegrity(
+                new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody().get("error")).isEqualTo("conflict");
     }
 
     @Test

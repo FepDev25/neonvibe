@@ -30,7 +30,9 @@ public class QueueController {
     @GetMapping
     public ResponseEntity<PlayQueueResponse> get() {
         UserPrincipal user = SecurityUtils.currentUser();
-        return ResponseEntity.ok(playQueueService.getForUser(user.id()));
+        PlayQueueResponse queue = playQueueService.getForUser(user.id());
+        // 204 (not 200 with an empty body) when the user has no queue yet.
+        return queue == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(queue);
     }
 
     @PutMapping

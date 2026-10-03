@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Real-PostgreSQL smoke test: boots the full application against a throwaway
- * Postgres container so Flyway applies V1..V7 and Hibernate's
+ * Postgres container so Flyway applies V1..V9 and Hibernate's
  * {@code ddl-auto: validate} proves the entities match the migrated schema.
  *
  * <p>H2 in PostgreSQL mode cannot catch dialect-level mismatches (JSON, native
@@ -57,7 +57,7 @@ class PostgresMigrationTest {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT version, success FROM flyway_schema_history WHERE version IS NOT NULL ORDER BY installed_rank");
 
-        assertThat(rows).hasSize(7);
+        assertThat(rows).hasSize(9);
         assertThat(rows).allSatisfy(row -> assertThat(row.get("success")).isEqualTo(true));
     }
 

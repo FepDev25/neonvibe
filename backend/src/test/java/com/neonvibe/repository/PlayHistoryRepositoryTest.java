@@ -32,6 +32,9 @@ class PlayHistoryRepositoryTest {
     @Autowired
     private TrackRepository trackRepository;
 
+    @Autowired
+    private org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager entityManager;
+
     private UUID userId;
     private Long trackId;
 
@@ -69,21 +72,53 @@ class PlayHistoryRepositoryTest {
     }
 
     @Test
-    void exists_completedAfter_returnsTrue() {
+    void exists_anyPlayAfterWindow_returnsTrue() {
         Instant played = Instant.parse("2026-03-01T00:00:00Z");
         historyRepository.save(history(played, true));
 
-        assertThat(historyRepository.existsByUserIdAndTrackIdAndCompletedTrueAndPlayedAtAfter(
+        assertThat(historyRepository.existsByUserIdAndTrackIdAndPlayedAtAfter(
                 userId, trackId, played.minusSeconds(60))).isTrue();
-        assertThat(historyRepository.existsByUserIdAndTrackIdAndCompletedTrueAndPlayedAtAfter(
+        assertThat(historyRepository.existsByUserIdAndTrackIdAndPlayedAtAfter(
                 userId, trackId, played.plusSeconds(60))).isFalse();
     }
 
     @Test
-    void exists_ignoresIncompletePlays() {
-        historyRepository.save(history(Instant.now(), false));
+    void exists_matchesIncompletePlaysToo() {
+        Instant played = Instant.now();
+        historyRepository.save(history(played, false));
 
-        assertThat(historyRepository.existsByUserIdAndTrackIdAndCompletedTrueAndPlayedAtAfter(
-                userId, trackId, Instant.now().minusSeconds(3600))).isFalse();
+        // The dedupe must catch skips (completed=false) as well, otherwise the
+        // REST and WebSocket paths can both scrobble the same play.
+        assertThat(historyRepository.existsByUserIdAndTrackIdAndPlayedAtAfter(
+                userId, trackId, played.minusSeconds(30))).isTrue();
+    }
+
+    @Test
+    void findFirstRecent_returnsMostRecentWithinWindow() {
+        Instant older = Instant.parse("2026-03-01T00:00:00Z");
+        Instant newer = Instant.parse("2026-03-01T00:05:00Z");
+        historyRepository.save(history(older, false));
+        historyRepository.save(history(newer, true));
+
+        var found = historyRepository.findFirstByUserIdAndTrackIdAndPlayedAtAfterOrderByPlayedAtDesc(
+                userId, trackId, older.minusSeconds(1));
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getPlayedAt()).isEqualTo(newer);
+    }
+
+    @Test
+    void findWithTrackByUserId_eagerlyLoadsTrack() {
+        historyRepository.save(history(Instant.now(), true));
+        // Clear the persistence context so the fetch join (not the cached null
+        // association) is what loads the track.
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = historyRepository.findWithTrackByUserId(userId, PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getTrack()).isNotNull();
+        assertThat(page.getContent().get(0).getTrack().getTitle()).isEqualTo("History Song");
     }
 }

@@ -18,6 +18,8 @@ import com.neonvibe.repository.UserRepository;
 import com.neonvibe.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ public class AuthService {
 
     private final JwtTokenProvider tokenProvider;
     private final UserRepository userRepository;
+    private final RestClient externalRestClient;
     private final boolean googleEnabled;
     private final String tokenInfoUrl;
     private final String googleClientId;
@@ -41,12 +44,14 @@ public class AuthService {
 
     public AuthService(JwtTokenProvider tokenProvider,
                        UserRepository userRepository,
+                       @Qualifier("externalRestClient") RestClient externalRestClient,
                        @Value("${neonvibe.auth.google.enabled:true}") boolean googleEnabled,
                        @Value("${neonvibe.auth.google.tokeninfo-url:https://oauth2.googleapis.com/tokeninfo}") String tokenInfoUrl,
                        @Value("${neonvibe.auth.google.client-id:}") String googleClientId,
                        @Value("${neonvibe.auth.allowed-emails:}") String allowedEmails) {
         this.tokenProvider = tokenProvider;
         this.userRepository = userRepository;
+        this.externalRestClient = externalRestClient;
         this.googleEnabled = googleEnabled;
         this.tokenInfoUrl = tokenInfoUrl;
         this.googleClientId = googleClientId == null ? "" : googleClientId.trim();
@@ -70,8 +75,11 @@ public class AuthService {
 
     /**
      * Validates a Google id_token, creates or updates the user and issues tokens.
+     *
+     * <p>Deliberately NOT {@code @Transactional}: validating the token performs an
+     * outbound HTTP call to Google, which must not hold a database connection.
+     * The only write is the single user upsert inside {@code issueTokens}.</p>
      */
-    @Transactional
     public AuthResponse googleLogin(GoogleTokenRequest request) {
         GoogleUserInfo info = resolveGoogleUser(request.idToken());
         assertAllowed(info.email());
@@ -99,25 +107,42 @@ public class AuthService {
      */
     @Transactional
     public AuthResponse refresh(RefreshTokenRequest request) {
-        String subject;
+        JwtTokenProvider.RefreshClaims claims;
         try {
-            subject = tokenProvider.validateRefreshToken(request.refreshToken());
+            claims = tokenProvider.validateRefreshTokenClaims(request.refreshToken());
         } catch (Exception ex) {
             throw new InvalidTokenException("Invalid or expired refresh token", ex);
         }
         UUID userId;
         try {
-            userId = UUID.fromString(subject);
+            userId = UUID.fromString(claims.subject());
         } catch (IllegalArgumentException ex) {
             throw new InvalidTokenException("Invalid refresh token subject", ex);
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new InvalidTokenException("User for refresh token not found"));
+        // Revocation: a token minted before the last logout carries a stale version.
+        if (claims.version() != user.getTokenVersion()) {
+            throw new InvalidTokenException("Refresh token has been revoked");
+        }
+        // Rotation: issue a fresh refresh token bound to the current version.
         return new AuthResponse(
                 tokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getName()),
-                request.refreshToken(),
+                tokenProvider.generateRefreshToken(user.getId(), user.getEmail(), user.getTokenVersion()),
                 "Bearer",
                 tokenProvider.getAccessTokenExpirationMs());
+    }
+
+    /**
+     * Revokes every outstanding refresh token for the user by bumping their token
+     * version. Access tokens stay valid until they expire (max 15 minutes).
+     */
+    @Transactional
+    public void logout(UUID userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setTokenVersion(user.getTokenVersion() + 1);
+            userRepository.save(user);
+        });
     }
 
     /**
@@ -152,8 +177,7 @@ public class AuthService {
         }
         Map<?, ?> payload;
         try {
-            RestClient client = RestClient.create();
-            payload = client.get()
+            payload = externalRestClient.get()
                     .uri(tokenInfoUrl, uri -> uri.queryParam("id_token", idToken).build())
                     .retrieve()
                     .body(Map.class);
@@ -210,10 +234,35 @@ public class AuthService {
     }
 
     private AuthResponse issueTokens(User user) {
-        User saved = userRepository.save(user);
+        User saved = saveUser(user);
         String access = tokenProvider.generateAccessToken(saved.getId(), saved.getEmail(), saved.getName());
-        String refresh = tokenProvider.generateRefreshToken(saved.getId(), saved.getEmail());
+        String refresh = tokenProvider.generateRefreshToken(
+                saved.getId(), saved.getEmail(), saved.getTokenVersion());
         return new AuthResponse(access, refresh, "Bearer", tokenProvider.getAccessTokenExpirationMs());
+    }
+
+    /**
+     * Persists the user, tolerating a concurrent login that inserted the same
+     * account first: the unique (google_id / email) violation is swallowed and the
+     * already-created row is reused instead of failing the login with a 409.
+     */
+    private User saveUser(User user) {
+        try {
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            return findExisting(user).orElseThrow(() -> ex);
+        }
+    }
+
+    private java.util.Optional<User> findExisting(User user) {
+        if (user.getGoogleId() != null) {
+            var byGoogle = userRepository.findByGoogleId(user.getGoogleId());
+            if (byGoogle.isPresent()) {
+                return byGoogle;
+            }
+        }
+        return user.getEmail() != null ? userRepository.findByEmail(user.getEmail())
+                : java.util.Optional.empty();
     }
 
     private UserResponse toResponse(User user) {

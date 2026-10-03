@@ -62,7 +62,6 @@ class CoverArtServiceTest {
         a.setId(id);
         a.setName("Neon Dreams");
         a.setArtist("Synthwave Kid");
-        a.setTracks(new ArrayList<>());
         return a;
     }
 

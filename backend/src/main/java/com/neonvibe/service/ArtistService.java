@@ -2,10 +2,11 @@ package com.neonvibe.service;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.neonvibe.domain.Album;
 import com.neonvibe.domain.Artist;
-import com.neonvibe.domain.Track;
 import com.neonvibe.dto.AlbumResponse;
 import com.neonvibe.dto.ArtistResponse;
 import com.neonvibe.dto.TrackResponse;
@@ -75,13 +76,24 @@ public class ArtistService {
         // Exact match (case-insensitive): Album.artist is a denormalized string
         // set to the track artist name by the scanner.
         List<Album> albums = albumRepository.findByArtistIgnoreCase(name);
+        Map<Long, Long> counts = countsFor(albums);
         return albums.stream().map(album -> {
             AlbumResponse r = albumMapper.toResponse(album);
-            long count = album.getTracks() == null ? 0
-                    : album.getTracks().stream().filter(Track::isAvailable).count();
             return new AlbumResponse(r.id(), r.name(), r.artist(), r.year(),
-                    r.genre(), r.coverArtPath(), r.createdAt(), count);
+                    r.genre(), r.coverArtPath(), r.createdAt(),
+                    counts.getOrDefault(album.getId(), 0L));
         }).toList();
+    }
+
+    /** One grouped COUNT query for all the artist's albums instead of one each. */
+    private Map<Long, Long> countsFor(List<Album> albums) {
+        List<Long> ids = albums.stream().map(Album::getId).toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return trackRepository.countAvailableByAlbumIds(ids).stream()
+                .collect(Collectors.toMap(TrackRepository.AlbumTrackCount::getAlbumId,
+                        TrackRepository.AlbumTrackCount::getTrackCount));
     }
 
     @Transactional(readOnly = true)

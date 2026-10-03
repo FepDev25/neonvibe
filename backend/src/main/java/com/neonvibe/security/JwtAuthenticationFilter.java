@@ -49,9 +49,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                String subject = tokenProvider.validateAccessToken(token);
-                UUID userId = UUID.fromString(subject);
-                var principal = new UserPrincipal(userId, null, null);
+                var claims = tokenProvider.validateAccessTokenClaims(token);
+                UUID userId = UUID.fromString(claims.subject());
+                // Carry email/name from the token so authorization (e.g. AdminGuard)
+                // does not need an extra DB lookup per request.
+                var principal = new UserPrincipal(userId, claims.email(), claims.name());
                 var authentication = new UsernamePasswordAuthenticationToken(
                         principal, null, java.util.List.of());
                 SecurityContextHolder.getContext().setAuthentication(authentication);

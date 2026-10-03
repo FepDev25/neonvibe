@@ -84,9 +84,12 @@ public class StreamController {
             if (start > 0) {
                 channel.position(start);
             }
-            int intLength = (int) Math.min(length, Integer.MAX_VALUE);
+            // Keep the bound as a long: capping to Integer.MAX_VALUE would report
+            // the full Content-Length but send only 2 GiB, hanging clients on
+            // files/ranges larger than that.
+            long boundedLength = Math.max(0, length);
             InputStream bounded = new java.io.FilterInputStream(Channels.newInputStream(channel)) {
-                private long remaining = Math.max(0, intLength);
+                private long remaining = boundedLength;
 
                 @Override
                 public int read() throws IOException {

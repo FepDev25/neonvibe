@@ -8,6 +8,7 @@ import org.springframework.web.socket.config.annotation.SockJsServiceRegistratio
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.StompWebSocketEndpointRegistration;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -31,7 +32,7 @@ class WebSocketConfigTest {
         StompEndpointRegistry registry = mock(StompEndpointRegistry.class);
         when(registry.addEndpoint("/ws")).thenReturn(registration);
         when(registration.setHandshakeHandler(handshakeHandler)).thenReturn(registration);
-        when(registration.setAllowedOriginPatterns(anyString())).thenReturn(registration);
+        when(registration.setAllowedOriginPatterns(any(String[].class))).thenReturn(registration);
         when(registration.withSockJS()).thenReturn(mock(SockJsServiceRegistration.class));
         return registry;
     }
@@ -68,6 +69,17 @@ class WebSocketConfigTest {
         config.registerStompEndpoints(registryWith(handshakeHandler));
 
         verify(registration).setAllowedOriginPatterns("*");
+    }
+
+    @Test
+    void registerStompEndpoints_splitsCommaSeparatedOrigins() {
+        UserPrincipalHandshakeHandler handshakeHandler = mock(UserPrincipalHandshakeHandler.class);
+        WebSocketConfig config = new WebSocketConfig(mock(WebSocketAuthInterceptor.class), handshakeHandler,
+                "https://a.example, https://b.example");
+
+        config.registerStompEndpoints(registryWith(handshakeHandler));
+
+        verify(registration).setAllowedOriginPatterns("https://a.example", "https://b.example");
     }
 
     @Test

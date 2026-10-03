@@ -54,8 +54,8 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.UNAUTHORIZED, "unauthorized", ex.getMessage());
     }
 
-    @ExceptionHandler(AccountNotAllowedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccountNotAllowed(AccountNotAllowedException ex) {
+    @ExceptionHandler({AccountNotAllowedException.class, ForbiddenException.class})
+    public ResponseEntity<Map<String, Object>> handleForbidden(RuntimeException ex) {
         return build(HttpStatus.FORBIDDEN, "forbidden", ex.getMessage());
     }
 
@@ -64,9 +64,30 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, "not_found", ex.getMessage());
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
-    public ResponseEntity<Map<String, Object>> handleBadRequest(Exception ex) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
         return build(HttpStatus.BAD_REQUEST, "bad_request", ex.getMessage());
+    }
+
+    /**
+     * State conflicts (e.g. a favorite that already exists) are a 409, not a 400:
+     * the request itself is valid, it just conflicts with existing state.
+     */
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
+        return build(HttpStatus.CONFLICT, "conflict", ex.getMessage());
+    }
+
+    /**
+     * Unique-constraint violations from a find-or-create race (two requests
+     * inserting the same favorite/playlist-track/... at once) are a 409, not a
+     * 500. The pre-checks in the services handle the normal case; this covers the
+     * concurrent one.
+     */
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrity(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+        return build(HttpStatus.CONFLICT, "conflict", "The resource already exists or conflicts with existing data");
     }
 
     /**

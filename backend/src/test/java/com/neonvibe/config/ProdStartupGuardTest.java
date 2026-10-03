@@ -16,9 +16,14 @@ class ProdStartupGuardTest {
             "a-very-long-and-random-production-secret-value-1234";
     private static final String VALID_CLIENT_ID = "1234567890.apps.googleusercontent.com";
     private static final String VALID_EMAILS = "me@example.com";
+    private static final String VALID_ADMINS = "me@example.com";
 
     private ProdStartupGuard guard(String secret, String clientId, String emails) {
-        return new ProdStartupGuard(secret, clientId, emails);
+        return new ProdStartupGuard(secret, clientId, emails, VALID_ADMINS);
+    }
+
+    private ProdStartupGuard guard(String secret, String clientId, String emails, String admins) {
+        return new ProdStartupGuard(secret, clientId, emails, admins);
     }
 
     @Test
@@ -74,5 +79,12 @@ class ProdStartupGuardTest {
         assertThatThrownBy(() -> guard(VALID_SECRET, VALID_CLIENT_ID, "CHANGE_ME").validate())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("ALLOWED_EMAILS");
+    }
+
+    @Test
+    void blankAdminEmails_fails() {
+        assertThatThrownBy(() -> guard(VALID_SECRET, VALID_CLIENT_ID, VALID_EMAILS, "").validate())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ADMIN_EMAILS");
     }
 }

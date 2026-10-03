@@ -1,5 +1,6 @@
 package com.neonvibe.controller;
 
+import com.neonvibe.dto.HistoryEntryResponse;
 import com.neonvibe.dto.PlayHistoryRequest;
 import com.neonvibe.dto.PlayHistoryResponse;
 import com.neonvibe.security.SecurityUtils;
@@ -31,7 +32,7 @@ public class HistoryController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<PlayHistoryResponse>> list(@PageableDefault(size = 20) Pageable pageable) {
+    public ResponseEntity<Page<HistoryEntryResponse>> list(@PageableDefault(size = 20) Pageable pageable) {
         UserPrincipal user = SecurityUtils.currentUser();
         return ResponseEntity.ok(playHistoryService.listForUser(user.id(), pageable));
     }

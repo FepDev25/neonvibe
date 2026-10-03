@@ -2,6 +2,7 @@ package com.neonvibe.domain;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -35,6 +36,9 @@ import lombok.Setter;
         @Index(name = "idx_tracks_genre", columnList = "genre"),
         @Index(name = "idx_tracks_title", columnList = "title")
 })
+// Batch-fetch tracks by id: when playlist rows initialize their `track` proxy,
+// Hibernate loads up to 50 in a single query instead of one per row (N+1).
+@BatchSize(size = 50)
 @Getter
 @Setter
 @NoArgsConstructor

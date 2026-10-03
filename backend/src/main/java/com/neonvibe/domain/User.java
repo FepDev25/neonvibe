@@ -56,6 +56,13 @@ public class User {
     @Column(name = "lastfm_session_key", length = 255)
     private String lastfmSessionKey;
 
+    /**
+     * Bumped on logout; refresh tokens embed the version at issue time, so an
+     * increment invalidates every outstanding refresh token for this user.
+     */
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

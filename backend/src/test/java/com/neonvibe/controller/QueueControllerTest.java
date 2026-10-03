@@ -71,6 +71,14 @@ class QueueControllerTest {
     }
 
     @Test
+    void get_noQueue_returns204() throws Exception {
+        when(playQueueService.getForUser(any())).thenReturn(null);
+
+        mockMvc.perform(get("/api/v1/queue").header("Authorization", bearerToken))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
     void update_returnsQueue() throws Exception {
         when(playQueueService.saveForUser(any(), any(PlayQueueRequest.class))).thenReturn(queue());
 

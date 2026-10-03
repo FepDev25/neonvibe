@@ -75,7 +75,7 @@ public class FavoriteService {
         validateEntity(request.entityType(), request.entityId());
         if (favoriteRepository.existsByUserIdAndEntityTypeAndEntityId(
                 userId, request.entityType(), request.entityId())) {
-            throw new IllegalStateException("Favorite already exists");
+            throw new com.neonvibe.exception.ConflictException("Favorite already exists");
         }
         Favorite favorite = Favorite.builder()
                 .userId(userId)

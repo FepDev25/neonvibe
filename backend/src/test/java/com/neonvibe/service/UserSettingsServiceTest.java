@@ -12,6 +12,9 @@ import com.neonvibe.domain.User;
 import com.neonvibe.domain.UserSettings;
 import com.neonvibe.dto.SettingsRequest;
 import com.neonvibe.dto.SettingsResponse;
+import com.neonvibe.repository.AlbumRepository;
+import com.neonvibe.repository.ArtistRepository;
+import com.neonvibe.repository.TrackRepository;
 import com.neonvibe.repository.UserRepository;
 import com.neonvibe.repository.UserSettingsRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,13 +39,17 @@ class UserSettingsServiceTest {
 
     private final UserSettingsRepository settingsRepository = mock(UserSettingsRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
+    private final AlbumRepository albumRepository = mock(AlbumRepository.class);
+    private final ArtistRepository artistRepository = mock(ArtistRepository.class);
+    private final TrackRepository trackRepository = mock(TrackRepository.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private UserSettingsService service;
 
     @BeforeEach
     void setUp() {
-        service = new UserSettingsService(settingsRepository, userRepository, objectMapper,
+        service = new UserSettingsService(settingsRepository, userRepository,
+                albumRepository, artistRepository, trackRepository, objectMapper,
                 tempDir.resolve("covers").toString(), tempDir.resolve("lyrics").toString());
         when(settingsRepository.save(any(UserSettings.class))).thenAnswer(inv -> inv.getArgument(0));
     }
@@ -163,5 +170,9 @@ class UserSettingsServiceTest {
         assertThat(Files.exists(covers.resolve("1.jpg"))).isFalse();
         assertThat(Files.exists(covers.resolve("2.png"))).isFalse();
         assertThat(Files.exists(lyrics.resolve("1.lrc"))).isFalse();
+        // The DB pointers must be cleared too, not just the files.
+        verify(albumRepository).clearCoverArt();
+        verify(artistRepository).clearCoverArt();
+        verify(trackRepository).clearCoverArt();
     }
 }

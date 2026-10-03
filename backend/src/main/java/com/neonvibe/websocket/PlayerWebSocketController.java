@@ -1,9 +1,11 @@
 package com.neonvibe.websocket;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 import com.neonvibe.domain.PlayQueue;
+import com.neonvibe.dto.PlayQueueResponse;
 import com.neonvibe.security.UserPrincipal;
 import com.neonvibe.service.PlayHistoryService;
 import com.neonvibe.service.PlayQueueService;
@@ -60,15 +62,20 @@ public class PlayerWebSocketController {
     public void seek(PlayerActionMessage action, Principal principal) {
         UUID userId = userId(principal);
         Integer position = action != null ? action.positionSeconds() : 0;
+        // A seek must not change the play/pause state: use the sender's state.
+        // Default to playing only for legacy clients that omit it.
+        boolean isPlaying = action == null || action.isPlaying() == null || action.isPlaying();
         PlayQueue queue = playQueueService.syncCurrentTrack(userId, null, position);
-        broadcastSync(userId, queue, true, originator(action));
+        broadcastSync(userId, queue, isPlaying, originator(action));
     }
 
     @MessageMapping("/player/next")
     public void next(PlayerActionMessage action, Principal principal) {
         UUID userId = userId(principal);
-        PlayQueue queue = playQueueService.advanceTrack(userId);
-        recordIfUseful(userId, queue);
+        // Record the outgoing track BEFORE advancing; afterwards the current
+        // track is the new one and the played track would be lost.
+        recordCurrentTrack(userId, action);
+        PlayQueue queue = moveTo(userId, action, true);
         broadcastSync(userId, queue, true, originator(action));
         broadcastQueue(userId, originator(action));
     }
@@ -76,9 +83,22 @@ public class PlayerWebSocketController {
     @MessageMapping("/player/prev")
     public void prev(PlayerActionMessage action, Principal principal) {
         UUID userId = userId(principal);
-        PlayQueue queue = playQueueService.retreatTrack(userId);
+        recordCurrentTrack(userId, action);
+        PlayQueue queue = moveTo(userId, action, false);
         broadcastSync(userId, queue, true, originator(action));
         broadcastQueue(userId, originator(action));
+    }
+
+    /**
+     * When the client sends the chosen track id (e.g. it shuffled locally), set
+     * that exact track so the server does not advance/shuffle to a different one.
+     * Otherwise fall back to the server-driven next/prev.
+     */
+    private PlayQueue moveTo(UUID userId, PlayerActionMessage action, boolean forward) {
+        if (action != null && action.trackId() != null) {
+            return playQueueService.syncCurrentTrack(userId, action.trackId(), 0);
+        }
+        return forward ? playQueueService.advanceTrack(userId) : playQueueService.retreatTrack(userId);
     }
 
     @MessageMapping("/queue/update")
@@ -91,13 +111,21 @@ public class PlayerWebSocketController {
         broadcastQueue(userId, request != null ? request.originator() : null);
     }
 
-    private void recordIfUseful(UUID userId, PlayQueue queue) {
-        if (queue.getCurrentTrackId() == null) {
-            return;
-        }
+    /**
+     * Records history for the track the user is about to leave. The action's
+     * position (when provided) is preferred; otherwise the position last synced
+     * to the queue is used. Best-effort: never breaks the sync broadcast.
+     */
+    private void recordCurrentTrack(UUID userId, PlayerActionMessage action) {
         try {
-            playHistoryService.recordIfSignificant(
-                    userId, queue.getCurrentTrackId(), queue.getPositionSeconds(), false);
+            var current = playQueueService.getForUser(userId);
+            if (current == null || current.currentTrackId() == null) {
+                return;
+            }
+            int position = action != null && action.positionSeconds() != null && action.positionSeconds() > 0
+                    ? action.positionSeconds()
+                    : (current.positionSeconds() != null ? current.positionSeconds() : 0);
+            playHistoryService.recordIfSignificant(userId, current.currentTrackId(), position, false);
         } catch (Exception ex) {
             // History is best-effort during player sync.
         }
@@ -110,9 +138,10 @@ public class PlayerWebSocketController {
     }
 
     private void broadcastQueue(UUID userId, String originator) {
-        var order = playQueueService.getOrderList(userId);
-        Long current = playQueueService.getForUser(userId) != null
-                ? playQueueService.getForUser(userId).currentTrackId() : null;
+        // One query: getForUser already carries both the order and the current track.
+        PlayQueueResponse queue = playQueueService.getForUser(userId);
+        List<Long> order = queue != null ? queue.tracksOrder() : List.of();
+        Long current = queue != null ? queue.currentTrackId() : null;
         messagingTemplate.convertAndSend(SYNC_TOPIC + userId,
                 new QueueUpdateMessage(userId, order, current, originator));
     }

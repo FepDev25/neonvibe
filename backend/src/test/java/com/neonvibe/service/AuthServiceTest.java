@@ -16,6 +16,8 @@ import com.neonvibe.exception.InvalidTokenException;
 import com.neonvibe.repository.UserRepository;
 import com.neonvibe.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.client.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -51,7 +53,7 @@ class AuthServiceTest {
         tokenProvider = new JwtTokenProvider(JWT_SECRET, 900_000, 604_800_000);
         // google disabled -> mock mode for deterministic tests; empty allowlist
         // keeps the legacy dev behaviour (any account accepted).
-        authService = new AuthService(tokenProvider, userRepository, false,
+        authService = new AuthService(tokenProvider, userRepository, RestClient.create(), false,
                 "https://oauth2.googleapis.com/tokeninfo", CLIENT_ID, "");
     }
 
@@ -80,6 +82,26 @@ class AuthServiceTest {
     }
 
     @Test
+    void googleLogin_concurrentCreation_reusesExistingUser() {
+        User existing = new User();
+        existing.setId(UUID.randomUUID());
+        existing.setEmail("dev@neonvibe.local");
+        existing.setName("Dev User");
+        // 1st lookup (findOrCreate) misses; 2nd (after the unique violation) hits.
+        when(userRepository.findByGoogleId("mock-token"))
+                .thenReturn(Optional.empty(), Optional.of(existing));
+        when(userRepository.findByEmail(any())).thenReturn(Optional.empty());
+        when(userRepository.save(any()))
+                .thenThrow(new DataIntegrityViolationException("uq_users_email"));
+
+        AuthResponse response = authService.googleLogin(new GoogleTokenRequest("mock-token"));
+
+        assertThat(response.accessToken()).isNotBlank();
+        assertThat(tokenProvider.validateAccessToken(response.accessToken()))
+                .isEqualTo(existing.getId().toString());
+    }
+
+    @Test
     void googleLogin_blankIdTokenThrows() {
         assertThatThrownBy(() -> authService.googleLogin(new GoogleTokenRequest("   ")))
                 .isInstanceOf(InvalidTokenException.class);
@@ -97,8 +119,44 @@ class AuthServiceTest {
         AuthResponse response = authService.refresh(new RefreshTokenRequest(refreshToken));
 
         assertThat(response.accessToken()).isNotBlank();
-        assertThat(response.refreshToken()).isEqualTo(refreshToken);
+        // Rotation: a fresh refresh token is issued (not the same one).
+        assertThat(response.refreshToken()).isNotBlank();
         assertThat(response.tokenType()).isEqualTo("Bearer");
+    }
+
+    @Test
+    void refresh_withStaleVersion_throws() {
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        user.setEmail("user@example.com");
+        user.setName("Test User");
+        user.setTokenVersion(2);
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        String stale = tokenProvider.generateRefreshToken(user.getId(), user.getEmail(), 1);
+
+        assertThatThrownBy(() -> authService.refresh(new RefreshTokenRequest(stale)))
+                .isInstanceOf(InvalidTokenException.class)
+                .hasMessageContaining("revoked");
+    }
+
+    @Test
+    void logout_bumpsVersionRevokingOldRefreshToken() {
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        user.setEmail("user@example.com");
+        user.setName("Test User");
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        String oldRefresh = tokenProvider.generateRefreshToken(
+                user.getId(), user.getEmail(), user.getTokenVersion());
+
+        authService.logout(user.getId());
+
+        assertThat(user.getTokenVersion()).isEqualTo(1);
+        assertThatThrownBy(() -> authService.refresh(new RefreshTokenRequest(oldRefresh)))
+                .isInstanceOf(InvalidTokenException.class);
     }
 
     @Test
@@ -123,7 +181,7 @@ class AuthServiceTest {
 
     @Test
     void googleLogin_rejectsAccountOutsideAllowlist() {
-        AuthService restricted = new AuthService(tokenProvider, userRepository, false,
+        AuthService restricted = new AuthService(tokenProvider, userRepository, RestClient.create(), false,
                 "https://oauth2.googleapis.com/tokeninfo", CLIENT_ID, "felipe@example.com");
 
         // Mock mode derives a dev-*@neonvibe.local email, which is not allowlisted.
@@ -136,7 +194,7 @@ class AuthServiceTest {
 
     @Test
     void googleLogin_whenClientIdMissing_refusesToValidate() {
-        AuthService unconfigured = new AuthService(tokenProvider, userRepository, true,
+        AuthService unconfigured = new AuthService(tokenProvider, userRepository, RestClient.create(), true,
                 "https://oauth2.googleapis.com/tokeninfo", "", "");
 
         assertThatThrownBy(() -> unconfigured.googleLogin(new GoogleTokenRequest("some-token")))
@@ -149,7 +207,7 @@ class AuthServiceTest {
         // An authentic Google token, but minted for a different application.
         withTokenInfoStub("{\"aud\":\"someone-else.apps.googleusercontent.com\","
                 + "\"sub\":\"123\",\"email\":\"attacker@example.com\",\"email_verified\":\"true\"}", url -> {
-            AuthService svc = new AuthService(tokenProvider, userRepository, true, url, CLIENT_ID, "");
+            AuthService svc = new AuthService(tokenProvider, userRepository, RestClient.create(), true, url, CLIENT_ID, "");
             assertThatThrownBy(() -> svc.googleLogin(new GoogleTokenRequest("stolen-token")))
                     .isInstanceOf(InvalidTokenException.class)
                     .hasMessageContaining("not issued for this application");
@@ -161,7 +219,7 @@ class AuthServiceTest {
     void googleLogin_rejectsUnverifiedEmail() throws Exception {
         withTokenInfoStub("{\"aud\":\"" + CLIENT_ID + "\",\"sub\":\"123\","
                 + "\"email\":\"felipe@example.com\",\"email_verified\":\"false\"}", url -> {
-            AuthService svc = new AuthService(tokenProvider, userRepository, true, url, CLIENT_ID, "");
+            AuthService svc = new AuthService(tokenProvider, userRepository, RestClient.create(), true, url, CLIENT_ID, "");
             assertThatThrownBy(() -> svc.googleLogin(new GoogleTokenRequest("token")))
                     .isInstanceOf(InvalidTokenException.class)
                     .hasMessageContaining("not verified");
@@ -181,7 +239,7 @@ class AuthServiceTest {
         withTokenInfoStub("{\"aud\":\"" + CLIENT_ID + "\",\"sub\":\"google-123\","
                 + "\"email\":\"Felipe@Example.com\",\"email_verified\":\"true\",\"name\":\"Felipe\"}", url -> {
             // Allowlist is lowercase; the claim is mixed case.
-            AuthService svc = new AuthService(tokenProvider, userRepository, true, url, CLIENT_ID,
+            AuthService svc = new AuthService(tokenProvider, userRepository, RestClient.create(), true, url, CLIENT_ID,
                     "felipe@example.com");
 
             AuthResponse response = svc.googleLogin(new GoogleTokenRequest("good-token"));

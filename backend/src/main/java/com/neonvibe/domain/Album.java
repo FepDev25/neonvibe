@@ -1,19 +1,15 @@
 package com.neonvibe.domain;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -67,7 +63,9 @@ public class Album {
     @CreationTimestamp
     private Instant createdAt;
 
-    @OneToMany(mappedBy = "albumEntity", fetch = FetchType.LAZY, orphanRemoval = false)
-    @Builder.Default
-    private List<Track> tracks = new ArrayList<>();
+    // No inverse `tracks` collection: tracks reference the album via the owning
+    // Track.albumEntity FK, and album track counts are queried directly
+    // (TrackRepository.countAvailableByAlbumId*) instead of loading a lazy
+    // collection. This avoids the misleading orphanRemoval semantics an inverse
+    // collection would carry.
 }

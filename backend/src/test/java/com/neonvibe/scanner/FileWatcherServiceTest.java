@@ -81,6 +81,32 @@ class FileWatcherServiceTest {
     }
 
     @Test
+    void watchLoop_registersNewDirectoriesConcurrently() throws Exception {
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        FileWatcherService watcher = new FileWatcherService(configFor(tempDir), pool);
+        CountDownLatch created = new CountDownLatch(1);
+        watcher.setEventHandler((path, type) -> {
+            if (type == FileWatcherService.EventType.CREATE) {
+                created.countDown();
+            }
+        });
+        watcher.init();
+        Thread thread = new Thread(watcher::watchLoop, "test-watch-dir");
+        thread.setDaemon(true);
+        thread.start();
+
+        try {
+            // registerTree() runs on the watcher thread here, mutating keyToDir
+            // concurrently with init()'s registration (must not corrupt it).
+            Files.createDirectory(tempDir.resolve("sub"));
+            assertThat(created.await(5, TimeUnit.SECONDS)).isTrue();
+        } finally {
+            watcher.close();
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
     void watchLoop_exitsQuietlyWhenWatchServiceIsClosed() throws Exception {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         FileWatcherService watcher = new FileWatcherService(configFor(tempDir), pool);

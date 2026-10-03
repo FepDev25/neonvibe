@@ -38,9 +38,30 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setHandshakeHandler(handshakeHandler)
-                .setAllowedOriginPatterns(allowedOrigins == null || allowedOrigins.isBlank()
-                        ? "*" : allowedOrigins)
+                .setAllowedOriginPatterns(parseOrigins(allowedOrigins))
                 .withSockJS();
+    }
+
+    /**
+     * Splits a comma-separated origins list into the varargs expected by
+     * {@code setAllowedOriginPatterns}. A blank/null list falls back to {@code *}.
+     * Passing the raw string (as before) made a multi-origin value a single,
+     * invalid pattern that rejected every real origin.
+     */
+    private static String[] parseOrigins(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return new String[]{"*"};
+        }
+        String[] parts = raw.split(",");
+        String[] out = new String[parts.length];
+        int n = 0;
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                out[n++] = trimmed;
+            }
+        }
+        return n == 0 ? new String[]{"*"} : java.util.Arrays.copyOf(out, n);
     }
 
     @Override

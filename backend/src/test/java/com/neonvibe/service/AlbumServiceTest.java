@@ -59,11 +59,12 @@ class AlbumServiceTest {
     private final Pageable pageable = PageRequest.of(0, 20);
 
     private Album album(Long id, String name, String artist, List<Track> tracks) {
+        // `tracks` is retained only to keep call sites readable; track counts now
+        // come from TrackRepository (mocked), not from a lazy collection.
         Album album = new Album();
         album.setId(id);
         album.setName(name);
         album.setArtist(artist);
-        album.setTracks(new ArrayList<>(tracks));
         return album;
     }
 
@@ -76,13 +77,14 @@ class AlbumServiceTest {
     }
 
     @Test
-    void search_textAndArtist_usesNameSearch() {
-        when(albumRepository.findByNameContainingIgnoreCase(eq("q"), eq(pageable)))
+    void search_textAndArtist_usesCombinedSearch() {
+        when(albumRepository.searchByNameAndArtist(eq("q"), eq("artist"), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(album(1L, "A", "X", List.of())), pageable, 1));
 
-        var result = service.search(" q ", "artist", pageable);
+        var result = service.search(" q ", " artist ", pageable);
 
-        verify(albumRepository).findByNameContainingIgnoreCase("q", pageable);
+        verify(albumRepository).searchByNameAndArtist("q", "artist", pageable);
+        verify(albumRepository, never()).findByNameContainingIgnoreCase(any(), any());
         assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
@@ -117,11 +119,26 @@ class AlbumServiceTest {
         verify(albumRepository).findAll(pageable);
     }
 
+    private static TrackRepository.AlbumTrackCount count(long albumId, long value) {
+        return new TrackRepository.AlbumTrackCount() {
+            @Override
+            public Long getAlbumId() {
+                return albumId;
+            }
+
+            @Override
+            public long getTrackCount() {
+                return value;
+            }
+        };
+    }
+
     @Test
     void getById_countsOnlyAvailableTracks() {
         Album album = album(1L, "A", "X",
                 List.of(track(1L, true), track(2L, false), track(3L, true)));
         when(albumRepository.findById(1L)).thenReturn(Optional.of(album));
+        when(trackRepository.countAvailableByAlbumId(1L)).thenReturn(2L);
 
         assertThat(service.getById(1L).trackCount()).isEqualTo(2);
     }
@@ -157,9 +174,10 @@ class AlbumServiceTest {
     @Test
     void findByIds_countsAvailableAndHandlesNullTracks() {
         Album nullTracks = album(1L, "A", "X", List.of());
-        nullTracks.setTracks(null);
         Album withTracks = album(2L, "B", "Y", List.of(track(1L, true), track(2L, false)));
         when(albumRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(nullTracks, withTracks));
+        // Batched count: only album 2 has an available track.
+        when(trackRepository.countAvailableByAlbumIds(any())).thenReturn(List.of(count(2L, 1L)));
 
         assertThat(service.findByIds(List.of(1L, 2L)))
                 .extracting(AlbumResponse::trackCount)

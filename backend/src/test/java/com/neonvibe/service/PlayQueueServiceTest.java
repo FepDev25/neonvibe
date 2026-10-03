@@ -13,12 +13,22 @@ import com.neonvibe.repository.PlayQueueRepository;
 import com.neonvibe.repository.TrackRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -45,11 +55,14 @@ class PlayQueueServiceTest {
                         List.of(), queue.getUpdatedAt());
             }
         };
-        service = new PlayQueueService(playQueueRepository, trackRepository, mapper, new ObjectMapper());
+        PlatformTransactionManager txManager = mock(PlatformTransactionManager.class);
+        when(txManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
+        service = new PlayQueueService(playQueueRepository, trackRepository, mapper,
+                new ObjectMapper(), new TransactionTemplate(txManager));
         when(trackRepository.findById(anyLong())).thenReturn(Optional.of(Track.builder().id(1L).build()));
     }
 
-    private PlayQueue queueWith(Long current, RepeatMode mode, String orderJson) {
+    private PlayQueue freshQueue(Long current, RepeatMode mode, String orderJson) {
         PlayQueue q = new PlayQueue();
         q.setId(7L);
         q.setUserId(userId);
@@ -57,6 +70,11 @@ class PlayQueueServiceTest {
         q.setPositionSeconds(0);
         q.setRepeatMode(mode);
         q.setTracksOrder(orderJson);
+        return q;
+    }
+
+    private PlayQueue queueWith(Long current, RepeatMode mode, String orderJson) {
+        PlayQueue q = freshQueue(current, mode, orderJson);
         when(playQueueRepository.findByUserId(userId)).thenReturn(Optional.of(q));
         when(playQueueRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         return q;
@@ -97,6 +115,29 @@ class PlayQueueServiceTest {
         PlayQueue result = service.advanceTrack(userId);
 
         assertEquals(3L, result.getCurrentTrackId());
+    }
+
+    @Test
+    void advance_repeatOne_resetsPosition() {
+        PlayQueue q = queueWith(3L, RepeatMode.ONE, "[1,2,3,4]");
+        q.setPositionSeconds(45);
+
+        PlayQueue result = service.advanceTrack(userId);
+
+        assertEquals(3L, result.getCurrentTrackId());
+        assertEquals(0, result.getPositionSeconds());
+    }
+
+    @Test
+    void advance_shuffle_picksADifferentTrack() {
+        PlayQueue q = queueWith(2L, RepeatMode.NONE, "[1,2,3,4]");
+        q.setShuffleEnabled(true);
+
+        PlayQueue result = service.advanceTrack(userId);
+
+        assertNotEquals(2L, result.getCurrentTrackId());
+        assertTrue(List.of(1L, 3L, 4L).contains(result.getCurrentTrackId()));
+        assertEquals(0, result.getPositionSeconds());
     }
 
     @Test
@@ -145,5 +186,53 @@ class PlayQueueServiceTest {
         PlayQueue result = service.updateQueue(userId, List.of(11L, 12L), null);
 
         assertEquals(11L, result.getCurrentTrackId());
+    }
+
+    @Test
+    void advanceTrack_retriesOnOptimisticLockConflict() {
+        // Each attempt re-reads a fresh row (the failed transaction rolled back).
+        when(playQueueRepository.findByUserId(userId))
+                .thenAnswer(inv -> Optional.of(freshQueue(2L, RepeatMode.NONE, "[1,2,3,4]")));
+        when(playQueueRepository.save(any()))
+                .thenThrow(new OptimisticLockingFailureException("stale"))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        PlayQueue result = service.advanceTrack(userId);
+
+        assertEquals(3L, result.getCurrentTrackId());
+        verify(playQueueRepository, times(2)).save(any());
+    }
+
+    @Test
+    void advanceTrack_retriesWhenQueueCreationRaces() {
+        // First attempt: no row yet -> insert -> unique violation. Retry: the row
+        // created by the other request is now visible.
+        PlayQueue existing = new PlayQueue();
+        existing.setId(7L);
+        existing.setUserId(userId);
+        existing.setCurrentTrackId(1L);
+        existing.setPositionSeconds(0);
+        existing.setRepeatMode(RepeatMode.NONE);
+        existing.setTracksOrder("[1,2,3]");
+        when(playQueueRepository.findByUserId(userId))
+                .thenReturn(Optional.empty(), Optional.of(existing));
+        when(playQueueRepository.save(any()))
+                .thenThrow(new DataIntegrityViolationException("uq_play_queue_user"))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        PlayQueue result = service.advanceTrack(userId);
+
+        assertEquals(2L, result.getCurrentTrackId());
+        verify(playQueueRepository, times(2)).save(any());
+    }
+
+    @Test
+    void advanceTrack_rethrowsAfterMaxAttempts() {
+        queueWith(2L, RepeatMode.NONE, "[1,2,3,4]");
+        when(playQueueRepository.save(any()))
+                .thenThrow(new OptimisticLockingFailureException("always stale"));
+
+        assertThrows(OptimisticLockingFailureException.class, () -> service.advanceTrack(userId));
+        verify(playQueueRepository, times(4)).save(any());
     }
 }

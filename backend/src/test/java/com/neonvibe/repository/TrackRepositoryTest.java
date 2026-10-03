@@ -1,7 +1,9 @@
 package com.neonvibe.repository;
 
+import java.util.List;
 import java.util.Optional;
 
+import com.neonvibe.domain.Album;
 import com.neonvibe.domain.Track;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,9 @@ class TrackRepositoryTest {
 
     @Autowired
     private TrackRepository trackRepository;
+
+    @Autowired
+    private AlbumRepository albumRepository;
 
     @BeforeEach
     void setUp() {
@@ -78,5 +83,58 @@ class TrackRepositoryTest {
         // Unique on file_path: a lookup always returns the single canonical row.
         assertThat(trackRepository.findByFilePath("/music/a.mp3")).isPresent();
         assertThat(trackRepository.findAll()).hasSize(3);
+    }
+
+    @Test
+    void countAvailableByAlbumId_countsOnlyAvailable() {
+        Album album = new Album();
+        album.setName("Counted");
+        album.setArtist("A");
+        album = albumRepository.save(album);
+
+        Track available = track("/music/x.mp3", "X", "A", "Counted", "Rock", 2020);
+        available.setAlbumEntity(album);
+        Track unavailable = track("/music/y.mp3", "Y", "A", "Counted", "Rock", 2020);
+        unavailable.setAlbumEntity(album);
+        unavailable.setAvailable(false);
+        trackRepository.save(available);
+        trackRepository.save(unavailable);
+
+        assertThat(trackRepository.countAvailableByAlbumId(album.getId())).isEqualTo(1);
+
+        List<TrackRepository.AlbumTrackCount> counts =
+                trackRepository.countAvailableByAlbumIds(List.of(album.getId()));
+        assertThat(counts).hasSize(1);
+        assertThat(counts.get(0).getAlbumId()).isEqualTo(album.getId());
+        assertThat(counts.get(0).getTrackCount()).isEqualTo(1);
+    }
+
+    @Test
+    void findSimilarByArtist_excludesSeedAndMatchesArtist() {
+        Long seedId = trackRepository.findByFilePath("/music/a.mp3").orElseThrow().getId();
+
+        List<Track> result = trackRepository.findSimilarByArtist("Artist A", seedId, PageRequest.of(0, 10));
+
+        assertThat(result).extracting(Track::getFilePath).containsExactly("/music/c.flac");
+    }
+
+    @Test
+    void findSimilarByGenre_excludesSeedAndMatchesGenre() {
+        Long seedId = trackRepository.findByFilePath("/music/a.mp3").orElseThrow().getId();
+
+        List<Track> result = trackRepository.findSimilarByGenre("Rock", seedId, PageRequest.of(0, 10));
+
+        assertThat(result).extracting(Track::getFilePath).containsExactly("/music/c.flac");
+    }
+
+    @Test
+    void clearCoverArt_nullsPaths() {
+        Track t = trackRepository.findByFilePath("/music/a.mp3").orElseThrow();
+        t.setCoverArtPath("/covers/embedded/1.jpg");
+        trackRepository.save(t);
+
+        trackRepository.clearCoverArt();
+
+        assertThat(trackRepository.findById(t.getId()).orElseThrow().getCoverArtPath()).isNull();
     }
 }

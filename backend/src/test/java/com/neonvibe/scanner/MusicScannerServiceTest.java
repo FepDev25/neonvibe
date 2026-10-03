@@ -3,6 +3,8 @@ package com.neonvibe.scanner;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -159,5 +162,31 @@ class MusicScannerServiceTest {
             Thread.sleep(25);
         }
         assertTrue(status.getProcessed() >= 2);
+    }
+
+    @Test
+    void scanAll_ignoresOverlappingTriggerWhileRunning() throws Exception {
+        config.setPaths(java.util.List.of(tempDir.toString()));
+        CountDownLatch firstFileEntered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        when(extractor.extractFile(any())).thenAnswer(inv -> {
+            firstFileEntered.countDown();
+            release.await();
+            return extracted("T");
+        });
+
+        Thread running = new Thread(scanner::scanAll, "test-scan");
+        running.start();
+        assertTrue(firstFileEntered.await(5, TimeUnit.SECONDS));
+
+        // Overlapping trigger while the first scan is mid-file: must be ignored.
+        scanner.scanAll();
+
+        release.countDown();
+        running.join(5_000);
+
+        // Only the first scan walked the tree and processed the two files.
+        verify(extractor, times(2)).extractFile(any());
+        assertFalse(status.isRunning());
     }
 }

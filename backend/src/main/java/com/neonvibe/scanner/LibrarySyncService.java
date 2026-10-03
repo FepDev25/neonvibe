@@ -152,7 +152,7 @@ public class LibrarySyncService {
         if (name == null || name.isBlank()) {
             return null;
         }
-        return albumRepository.findByNameAndArtist(name, artist)
+        return albumRepository.findByNameAndArtistNullSafe(name, artist)
                 .orElseGet(() -> {
                     Album album = new Album();
                     album.setName(name);

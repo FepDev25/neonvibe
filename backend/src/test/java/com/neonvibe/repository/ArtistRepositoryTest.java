@@ -55,4 +55,18 @@ class ArtistRepositoryTest {
         assertThat(page.getTotalElements()).isEqualTo(1);
         assertThat(page.getContent().get(0).getName()).isEqualTo("Radiohead");
     }
+
+    @Test
+    void clearCoverArt_nullsPathAndFetchedAt() {
+        Artist artist = artist("Covered");
+        artist.setCoverArtPath("/covers/artist/1.jpg");
+        artist.setCoverFetchedAt(java.time.Instant.now());
+        artist = artistRepository.save(artist);
+
+        artistRepository.clearCoverArt();
+
+        Artist reloaded = artistRepository.findById(artist.getId()).orElseThrow();
+        assertThat(reloaded.getCoverArtPath()).isNull();
+        assertThat(reloaded.getCoverFetchedAt()).isNull();
+    }
 }

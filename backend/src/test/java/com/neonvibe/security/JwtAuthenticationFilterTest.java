@@ -78,6 +78,18 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
+    void bearerHeader_populatesPrincipalEmailAndName() throws Exception {
+        MockHttpServletRequest request = request("GET", "/api/v1/tracks");
+        request.addHeader("Authorization", "Bearer " + accessToken());
+
+        Authentication auth = run(request);
+
+        UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
+        assertThat(principal.email()).isEqualTo("u@example.com");
+        assertThat(principal.name()).isEqualTo("User");
+    }
+
+    @Test
     void queryParamToken_onStreamEndpoint_authenticates() throws Exception {
         MockHttpServletRequest request = request("GET", "/api/v1/tracks/1/stream");
         request.setParameter("token", accessToken());

@@ -1,10 +1,13 @@
 package com.neonvibe.service;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 import com.neonvibe.domain.PlayHistory;
 import com.neonvibe.domain.Track;
+import com.neonvibe.domain.User;
+import com.neonvibe.dto.PlayHistoryRequest;
 import com.neonvibe.mapper.PlayHistoryMapper;
 import com.neonvibe.repository.PlayHistoryRepository;
 import com.neonvibe.repository.TrackRepository;
@@ -15,7 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -113,5 +121,116 @@ class PlayHistoryServiceTest {
         org.junit.jupiter.api.Assertions.assertThrows(
                 com.neonvibe.exception.ResourceNotFoundException.class,
                 () -> service.recordIfSignificant(userId, 999L, 50, false));
+    }
+
+    private void lastFmConnected() {
+        User user = new User();
+        user.setLastfmSessionKey("session-key");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(settingsService.scrobbleEnabledFor(userId)).thenReturn(true);
+    }
+
+    @Test
+    void completedPlay_scrobblesWhenLastFmConnected() {
+        stubTrack(1L, 200);
+        lastFmConnected();
+        when(historyRepository.existsByUserIdAndTrackIdAndPlayedAtAfter(any(), any(), any()))
+                .thenReturn(false);
+
+        service.recordIfSignificant(userId, 1L, 200, true);
+
+        verify(lastFmScrobbler).scrobble(eq(userId), any(), any(), any(), eq(200), anyLong());
+    }
+
+    @Test
+    void completedPlay_viaRestEndpoint_scrobbles() {
+        stubTrack(1L, 200);
+        lastFmConnected();
+        when(historyRepository.existsByUserIdAndTrackIdAndPlayedAtAfter(any(), any(), any()))
+                .thenReturn(false);
+
+        service.record(userId, new PlayHistoryRequest(1L, true, 200));
+
+        verify(lastFmScrobbler).scrobble(eq(userId), any(), any(), any(), eq(200), anyLong());
+    }
+
+    @Test
+    void completedPlay_dedupeSuppressesWhenRecentPlayExists() {
+        stubTrack(1L, 200);
+        lastFmConnected();
+        when(historyRepository.existsByUserIdAndTrackIdAndPlayedAtAfter(any(), any(), any()))
+                .thenReturn(true);
+
+        service.recordIfSignificant(userId, 1L, 200, true);
+
+        verify(lastFmScrobbler, never()).scrobble(any(), any(), any(), any(), anyInt(), anyLong());
+    }
+
+    @Test
+    void completedPlay_doesNotScrobbleWithoutLastFmSession() {
+        stubTrack(1L, 200); // userRepository.findById -> Optional.empty() by default
+
+        service.recordIfSignificant(userId, 1L, 200, true);
+
+        verify(lastFmScrobbler, never()).scrobble(any(), any(), any(), any(), anyInt(), anyLong());
+    }
+
+    @Test
+    void shortListen_doesNotScrobble() {
+        stubTrack(1L, 200);
+        lastFmConnected();
+
+        service.recordIfSignificant(userId, 1L, 5, false);
+
+        verify(lastFmScrobbler, never()).scrobble(any(), any(), any(), any(), anyInt(), anyLong());
+    }
+
+    private PlayHistory existingRecentPlay(boolean completed) {
+        return PlayHistory.builder()
+                .id(9L).userId(userId).trackId(1L).playedAt(Instant.now())
+                .completed(completed).durationListenedSeconds(120).build();
+    }
+
+    @Test
+    void recordIfSignificant_dedupesRecentPlayFromOtherPath() {
+        stubTrack(1L, 200);
+        lastFmConnected();
+        when(historyRepository.findFirstByUserIdAndTrackIdAndPlayedAtAfterOrderByPlayedAtDesc(
+                any(), any(), any())).thenReturn(Optional.of(existingRecentPlay(false)));
+
+        var result = service.recordIfSignificant(userId, 1L, 120, false);
+
+        assertNotNull(result);
+        assertEquals(9L, result.id());
+        verify(historyRepository, never()).save(any());
+        verify(lastFmScrobbler, never()).scrobble(any(), any(), any(), any(), anyInt(), anyLong());
+    }
+
+    @Test
+    void record_dedupesRecentCompletedPlayFromOtherPath() {
+        stubTrack(1L, 200);
+        lastFmConnected();
+        when(historyRepository.findFirstByUserIdAndTrackIdAndPlayedAtAfterOrderByPlayedAtDesc(
+                any(), any(), any())).thenReturn(Optional.of(existingRecentPlay(true)));
+
+        var result = service.record(userId, new PlayHistoryRequest(1L, true, 200));
+
+        assertNotNull(result);
+        assertEquals(9L, result.id());
+        verify(historyRepository, never()).save(any());
+    }
+
+    @Test
+    void record_upgradesIncompleteRecentPlayToCompleted() {
+        stubTrack(1L, 200);
+        lastFmConnected();
+        when(historyRepository.findFirstByUserIdAndTrackIdAndPlayedAtAfterOrderByPlayedAtDesc(
+                any(), any(), any())).thenReturn(Optional.of(existingRecentPlay(false)));
+
+        var result = service.record(userId, new PlayHistoryRequest(1L, true, 200));
+
+        assertNotNull(result);
+        assertEquals(true, result.completed());
+        verify(historyRepository).save(any());
     }
 }

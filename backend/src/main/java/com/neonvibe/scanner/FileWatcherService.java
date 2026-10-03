@@ -12,8 +12,8 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 
@@ -39,7 +39,9 @@ public class FileWatcherService {
     private final ScannerConfig config;
     private final ExecutorService workerPool;
     private final WatchService watchService;
-    private final Map<WatchKey, Path> keyToDir = new HashMap<>();
+    // Written by init()/registerTree (main thread) and by watchLoop (new
+    // directories), read by watchLoop: must be concurrent.
+    private final Map<WatchKey, Path> keyToDir = new ConcurrentHashMap<>();
 
     private volatile BiConsumer<Path, EventType> eventHandler = (p, t) -> { /* no-op until wired */ };
     private volatile boolean running;

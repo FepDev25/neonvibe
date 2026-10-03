@@ -76,11 +76,12 @@ class ArtistServiceTest {
     }
 
     private Album album(Long id, String name, String artistName, List<Track> tracks) {
+        // `tracks` is retained only to keep call sites readable; track counts now
+        // come from TrackRepository (mocked), not from a lazy collection.
         Album album = new Album();
         album.setId(id);
         album.setName(name);
         album.setArtist(artistName);
-        album.setTracks(new ArrayList<>(tracks));
         return album;
     }
 
@@ -125,6 +126,18 @@ class ArtistServiceTest {
         when(artistRepository.findById(1L)).thenReturn(Optional.of(artist(1L, "Radiohead")));
         when(albumRepository.findByArtistIgnoreCase("Radiohead")).thenReturn(List.of(
                 album(10L, "OK Computer", "Radiohead", List.of(track(1L, true), track(2L, false)))));
+        when(trackRepository.countAvailableByAlbumIds(any())).thenReturn(List.of(
+                new TrackRepository.AlbumTrackCount() {
+                    @Override
+                    public Long getAlbumId() {
+                        return 10L;
+                    }
+
+                    @Override
+                    public long getTrackCount() {
+                        return 1L;
+                    }
+                }));
 
         var result = service.getAlbums(1L);
 

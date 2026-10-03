@@ -106,19 +106,25 @@ public class CoverArtService {
         }
 
         Object lock = albumLocks.computeIfAbsent(albumId, k -> new Object());
-        synchronized (lock) {
-            // Double-check under the lock: another request may have cached it.
-            Optional<Path> recheck = store.find("album", albumId);
-            if (recheck.isPresent()) {
-                return readWithType(recheck.get());
+        try {
+            synchronized (lock) {
+                // Double-check under the lock: another request may have cached it.
+                Optional<Path> recheck = store.find("album", albumId);
+                if (recheck.isPresent()) {
+                    return readWithType(recheck.get());
+                }
+                byte[] online = fetchOnline(album.getName(), album.getArtist());
+                if (online != null) {
+                    cacheAlbum(album, online, "jpg");
+                    return cover(online, "image/jpeg");
+                }
+                album.setCoverFetchedAt(Instant.now());
+                albumRepository.save(album);
             }
-            byte[] online = fetchOnline(album.getName(), album.getArtist());
-            if (online != null) {
-                cacheAlbum(album, online, "jpg");
-                return cover(online, "image/jpeg");
-            }
-            album.setCoverFetchedAt(Instant.now());
-            albumRepository.save(album);
+        } finally {
+            // Evict so the lock map does not grow unbounded; the double-check
+            // under the lock keeps concurrent waiters safe.
+            albumLocks.remove(albumId, lock);
         }
         // Placeholders are NOT cached: a later online match must not be blocked.
         return cover(placeholderSvg(albumId, album.getName()), "image/svg+xml");
@@ -162,21 +168,25 @@ public class CoverArtService {
         }
 
         Object lock = artistLocks.computeIfAbsent(artistId, k -> new Object());
-        synchronized (lock) {
-            Optional<Path> recheck = store.find("artist", artistId);
-            if (recheck.isPresent()) {
-                return readWithType(recheck.get());
-            }
-            byte[] online = lastFmClient.fetchArtistImage(artist.getName());
-            if (online != null) {
-                store.write(store.fileFor("artist", artistId, "jpg"), online);
-                artist.setCoverArtPath(store.fileFor("artist", artistId, "jpg").toString());
+        try {
+            synchronized (lock) {
+                Optional<Path> recheck = store.find("artist", artistId);
+                if (recheck.isPresent()) {
+                    return readWithType(recheck.get());
+                }
+                byte[] online = lastFmClient.fetchArtistImage(artist.getName());
+                if (online != null) {
+                    store.write(store.fileFor("artist", artistId, "jpg"), online);
+                    artist.setCoverArtPath(store.fileFor("artist", artistId, "jpg").toString());
+                    artist.setCoverFetchedAt(Instant.now());
+                    artistRepository.save(artist);
+                    return cover(online, "image/jpeg");
+                }
                 artist.setCoverFetchedAt(Instant.now());
                 artistRepository.save(artist);
-                return cover(online, "image/jpeg");
             }
-            artist.setCoverFetchedAt(Instant.now());
-            artistRepository.save(artist);
+        } finally {
+            artistLocks.remove(artistId, lock);
         }
         return cover(placeholderSvg(artistId, artist.getName()), "image/svg+xml");
     }
@@ -336,7 +346,14 @@ public class CoverArtService {
         return new CoverResult(bytes, contentType);
     }
 
-    /** Deterministic neon gradient SVG placeholder, keyed by name hash. */
+    /**
+     * Deterministic neon gradient SVG placeholder, keyed by name hash.
+     *
+     * <p>It is reached only when NO image exists (no DB/cache/embedded/online
+     * cover), so there is no source image to sample a dominant colour from; the
+     * deterministic palette is intentional. If a cover is later found it replaces
+     * this placeholder (placeholders are never cached).</p>
+     */
     byte[] placeholderSvg(long id, String name) {
         List<String> palette = List.of(
                 "bc13fe,00f3ff", "ff00ff,bc13fe", "00f3ff,ff00ff",

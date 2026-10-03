@@ -214,6 +214,17 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <!-- The base config has no JWT secret fallback (fail-fast in prod),
+                 so the test JVM injects a fixed one for every test. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <neonvibe.jwt.secret>test-secret-test-secret-test-secret-test-secret-1234567890</neonvibe.jwt.secret>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
             <!-- Code coverage. `report` is bound to the test phase so
                  `./mvnw test` produces target/site/jacoco (HTML + CSV/XML). -->
             <plugin>

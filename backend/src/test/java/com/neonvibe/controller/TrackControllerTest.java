@@ -91,7 +91,8 @@ class TrackControllerTest {
         mockMvc.perform(get("/api/v1/tracks/1").header("Authorization", bearerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Alpha"))
-                .andExpect(jsonPath("$.file_path").value("/music/a.mp3"));
+                // Absolute server paths must never reach the client.
+                .andExpect(jsonPath("$.file_path").doesNotExist());
     }
 
     @Test

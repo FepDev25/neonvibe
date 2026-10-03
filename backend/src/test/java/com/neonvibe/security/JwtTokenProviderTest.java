@@ -42,6 +42,28 @@ class JwtTokenProviderTest {
     }
 
     @Test
+    void refreshTokenCarriesVersion() {
+        UUID id = UUID.randomUUID();
+        String token = provider.generateRefreshToken(id, "user@example.com", 3);
+
+        JwtTokenProvider.RefreshClaims claims = provider.validateRefreshTokenClaims(token);
+
+        assertThat(claims.subject()).isEqualTo(id.toString());
+        assertThat(claims.version()).isEqualTo(3);
+    }
+
+    @Test
+    void accessTokenCarriesEmailAndName() {
+        UUID id = UUID.randomUUID();
+        String token = provider.generateAccessToken(id, "user@example.com", "Test User");
+
+        JwtTokenProvider.AccessTokenClaims claims = provider.validateAccessTokenClaims(token);
+
+        assertThat(claims.email()).isEqualTo("user@example.com");
+        assertThat(claims.name()).isEqualTo("Test User");
+    }
+
+    @Test
     void accessTokenRejectsRefreshToken() {
         UUID id = UUID.randomUUID();
         String refresh = provider.generateRefreshToken(id, "user@example.com");

@@ -1,10 +1,12 @@
 package com.neonvibe.service;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.neonvibe.domain.PlayHistory;
 import com.neonvibe.domain.Track;
+import com.neonvibe.dto.HistoryEntryResponse;
 import com.neonvibe.dto.PlayHistoryRequest;
 import com.neonvibe.dto.PlayHistoryResponse;
 import com.neonvibe.exception.ResourceNotFoundException;
@@ -31,6 +33,14 @@ public class PlayHistoryService {
     /** Minimum seconds of a track before a non-completed stop counts as history. */
     private static final int MIN_SIGNIFICANT_SECONDS = 30;
 
+    /**
+     * Window within which a second report for the same track is treated as the
+     * same play event. The REST endpoint and the WebSocket sync flow can both
+     * report a single play (REST + WS fire almost simultaneously); this collapses
+     * them into one history row.
+     */
+    private static final int HISTORY_DEDUPE_SECONDS = 5;
+
     private final PlayHistoryRepository playHistoryRepository;
     private final TrackRepository trackRepository;
     private final PlayHistoryMapper historyMapper;
@@ -52,20 +62,44 @@ public class PlayHistoryService {
         this.lastFmScrobbler = lastFmScrobbler;
     }
 
+    /** History page enriched with the played track's title/artist/album. */
     @Transactional(readOnly = true)
-    public Page<PlayHistoryResponse> listForUser(UUID userId, Pageable pageable) {
-        Page<PlayHistory> page = playHistoryRepository.findByUserIdOrderByPlayedAtDesc(userId, pageable);
-        var dtos = page.getContent().stream().map(historyMapper::toResponse).toList();
+    public Page<HistoryEntryResponse> listForUser(UUID userId, Pageable pageable) {
+        Page<PlayHistory> page = playHistoryRepository.findWithTrackByUserId(userId, pageable);
+        var dtos = page.getContent().stream().map(this::toEntry).toList();
         return new PageImpl<>(dtos, pageable, page.getTotalElements());
+    }
+
+    private HistoryEntryResponse toEntry(PlayHistory history) {
+        Track track = history.getTrack();
+        return new HistoryEntryResponse(
+                history.getId(),
+                history.getTrackId(),
+                track != null ? track.getTitle() : null,
+                track != null ? track.getArtist() : null,
+                track != null ? track.getAlbum() : null,
+                history.getPlayedAt(),
+                history.isCompleted(),
+                history.getDurationListenedSeconds());
     }
 
     @Transactional
     public PlayHistoryResponse record(UUID userId, PlayHistoryRequest request) {
         Track track = requireTrack(request.trackId());
         boolean completed = request.completed() != null && request.completed();
+        Optional<PlayHistory> recent = recentPlay(userId, track.getId());
+        if (recent.isPresent()) {
+            // Already recorded by the other path (WebSocket sync) for this play.
+            return dedupeOrUpgrade(recent.get(), completed, request.durationListenedSeconds());
+        }
+        // Decide BEFORE persisting: the dedupe query must not see the row this
+        // call is about to insert (it would always match and skip scrobbling).
+        boolean scrobble = scrobbleEligible(userId, track, request.durationListenedSeconds(), completed);
         PlayHistoryResponse response = persist(userId, track.getId(), completed,
                 request.durationListenedSeconds());
-        maybeScrobble(userId, track, request.durationListenedSeconds(), completed);
+        if (scrobble) {
+            scrobble(userId, track);
+        }
         return response;
     }
 
@@ -94,21 +128,63 @@ public class PlayHistoryService {
         if (!significant) {
             return null;
         }
+        Optional<PlayHistory> recent = recentPlay(userId, track.getId());
+        if (recent.isPresent()) {
+            // Already recorded by the other path (REST endpoint) for this play.
+            return dedupeOrUpgrade(recent.get(), completed, listened);
+        }
+        // Decide BEFORE persisting (see record()).
+        boolean scrobble = scrobbleEligible(userId, track, listened, completed);
         PlayHistoryResponse response = persist(userId, track.getId(), completed, listened);
-        maybeScrobble(userId, track, listened, completed);
+        if (scrobble) {
+            scrobble(userId, track);
+        }
         return response;
     }
 
-    /** Best-effort Last.fm scrobble on significant plays, if configured + enabled. */
-    private void maybeScrobble(UUID userId, Track track, Integer listenedSeconds, boolean completed) {
+    /**
+     * Returns a very recent history row for the same track, if any. Used to make
+     * history recording idempotent across the REST and WebSocket paths, which can
+     * both report the same play event.
+     */
+    private Optional<PlayHistory> recentPlay(UUID userId, Long trackId) {
+        return playHistoryRepository.findFirstByUserIdAndTrackIdAndPlayedAtAfterOrderByPlayedAtDesc(
+                userId, trackId, Instant.now().minusSeconds(HISTORY_DEDUPE_SECONDS));
+    }
+
+    /**
+     * Returns the already-recorded row for this play instead of inserting a
+     * duplicate. If the new report marks it completed but the stored row did not
+     * (the WebSocket skip can win the race against the REST completion report),
+     * the row is upgraded so the play is not left recorded as a skip.
+     */
+    private PlayHistoryResponse dedupeOrUpgrade(PlayHistory recent, boolean completed, Integer listened) {
+        if (completed && !recent.isCompleted()) {
+            recent.setCompleted(true);
+            if (listened != null && (recent.getDurationListenedSeconds() == null
+                    || listened > recent.getDurationListenedSeconds())) {
+                recent.setDurationListenedSeconds(listened);
+            }
+            recent = playHistoryRepository.save(recent);
+        }
+        return historyMapper.toResponse(recent);
+    }
+
+    /**
+     * Whether this play should be scrobbled: Last.fm session connected, scrobbling
+     * enabled, the play significant enough, and no other play for the same track
+     * recorded within the dedupe window. Must be evaluated before persisting the
+     * current play so the dedupe query does not match the row being inserted.
+     */
+    private boolean scrobbleEligible(UUID userId, Track track, Integer listenedSeconds, boolean completed) {
         try {
             if (userRepository.findById(userId)
                     .filter(u -> u.getLastfmSessionKey() != null)
                     .isEmpty()) {
-                return;
+                return false;
             }
             if (!settingsService.scrobbleEnabledFor(userId)) {
-                return;
+                return false;
             }
             int listened = listenedSeconds != null ? listenedSeconds : 0;
             boolean significant = completed
@@ -116,21 +192,27 @@ public class PlayHistoryService {
                     || (track.getDurationSeconds() != null && track.getDurationSeconds() > 0
                     && listened >= track.getDurationSeconds() / 2);
             if (!significant) {
-                return;
+                return false;
             }
-            // Dedupe: a recently completed play for this track was already scrobbled
-            // (record() and recordIfSignificant() can both fire for the same play).
-            if (playHistoryRepository.existsByUserIdAndTrackIdAndCompletedTrueAndPlayedAtAfter(
+            // Dedupe: record() and recordIfSignificant() can both fire for the same
+            // play event (REST + WebSocket), so only the first one scrobbles.
+            if (playHistoryRepository.existsByUserIdAndTrackIdAndPlayedAtAfter(
                     userId, track.getId(), Instant.now().minusSeconds(30))) {
-                return;
+                return false;
             }
-            lastFmScrobbler.scrobble(userId, track.getArtist(), track.getTitle(), track.getAlbum(),
-                    track.getDurationSeconds() != null ? track.getDurationSeconds() : 0,
-                    System.currentTimeMillis() / 1000L);
+            return true;
         } catch (Exception ex) {
             // Scrobbling is best-effort; never break history recording.
-            log.debug("Scrobble hook failed: {}", ex.getMessage());
+            log.debug("Scrobble eligibility check failed: {}", ex.getMessage());
+            return false;
         }
+    }
+
+    /** Fire-and-forget Last.fm scrobble (async, best-effort). */
+    private void scrobble(UUID userId, Track track) {
+        lastFmScrobbler.scrobble(userId, track.getArtist(), track.getTitle(), track.getAlbum(),
+                track.getDurationSeconds() != null ? track.getDurationSeconds() : 0,
+                System.currentTimeMillis() / 1000L);
     }
 
     private PlayHistoryResponse persist(UUID userId, Long trackId, boolean completed,

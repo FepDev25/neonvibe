@@ -3,6 +3,8 @@ package com.neonvibe.dto;
 import java.time.Instant;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Public representation of a {@link com.neonvibe.domain.Playlist} including its
  * ordered tracks.
@@ -12,7 +14,7 @@ public record PlaylistResponse(
         String name,
         String description,
         boolean isPublic,
-        String coverArtPath,
+        @JsonIgnore String coverArtPath,
         String ownerId,
         Instant createdAt,
         Instant updatedAt,

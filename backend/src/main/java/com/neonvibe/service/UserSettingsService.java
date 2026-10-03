@@ -14,6 +14,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neonvibe.domain.UserSettings;
 import com.neonvibe.dto.SettingsRequest;
 import com.neonvibe.dto.SettingsResponse;
+import com.neonvibe.repository.AlbumRepository;
+import com.neonvibe.repository.ArtistRepository;
+import com.neonvibe.repository.TrackRepository;
 import com.neonvibe.repository.UserRepository;
 import com.neonvibe.repository.UserSettingsRepository;
 import org.slf4j.Logger;
@@ -35,17 +38,26 @@ public class UserSettingsService {
 
     private final UserSettingsRepository settingsRepository;
     private final UserRepository userRepository;
+    private final AlbumRepository albumRepository;
+    private final ArtistRepository artistRepository;
+    private final TrackRepository trackRepository;
     private final ObjectMapper objectMapper;
     private final Path coversPath;
     private final Path lyricsPath;
 
     public UserSettingsService(UserSettingsRepository settingsRepository,
                                UserRepository userRepository,
+                               AlbumRepository albumRepository,
+                               ArtistRepository artistRepository,
+                               TrackRepository trackRepository,
                                ObjectMapper objectMapper,
                                @Value("${neonvibe.covers.cache-path:./data/covers}") String coversPath,
                                @Value("${neonvibe.lyrics.cache-path:./data/lyrics}") String lyricsPath) {
         this.settingsRepository = settingsRepository;
         this.userRepository = userRepository;
+        this.albumRepository = albumRepository;
+        this.artistRepository = artistRepository;
+        this.trackRepository = trackRepository;
         this.objectMapper = objectMapper;
         this.coversPath = Path.of(coversPath).toAbsolutePath().normalize();
         this.lyricsPath = Path.of(lyricsPath).toAbsolutePath().normalize();
@@ -101,7 +113,12 @@ public class UserSettingsService {
                 .orElse(true);
     }
 
-    /** Deletes cover/lyrics cache files; returns the number removed. */
+    /**
+     * Deletes cover/lyrics cache files and clears the DB cover pointers, so no row
+     * keeps referencing a file that no longer exists. Returns the number of files
+     * removed.
+     */
+    @Transactional
     public int clearCache() {
         AtomicInteger count = new AtomicInteger();
         for (Path dir : java.util.List.of(coversPath, lyricsPath)) {
@@ -121,6 +138,9 @@ public class UserSettingsService {
                 log.warn("Could not walk cache dir {}: {}", dir, ex.getMessage());
             }
         }
+        albumRepository.clearCoverArt();
+        artistRepository.clearCoverArt();
+        trackRepository.clearCoverArt();
         return count.get();
     }
 

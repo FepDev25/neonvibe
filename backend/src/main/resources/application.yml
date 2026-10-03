@@ -31,17 +31,19 @@ spring:
       media-types:
         webmanifest: application/manifest+json
 
-  # OpenAPI / Swagger UI (dev). Deshabilitado en prod (application-prod.yml).
-  springdoc:
-    api-docs:
-      path: /v3/api-docs
-    swagger-ui:
-      path: /swagger-ui
-
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+
+# OpenAPI / Swagger UI (dev). Disabled in prod (application-prod.yml).
+# NOTE: `springdoc.*` is a root-level property; it must NOT be nested under
+# `spring:` or the settings are silently ignored.
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
 
 server:
   port: ${SERVER_PORT:8080}
@@ -58,10 +60,15 @@ management:
 # NeonVibe custom configuration (see AGENTS.md section 10)
 neonvibe:
   jwt:
-    # 256-bit secret for HS256. Always injected via env; never hardcode in prod.
-    secret: ${JWT_SECRET:neonvibe-dev-only-secret-change-me-please-00000000}
+    # 256-bit secret for HS256. Injected via env (JWT_SECRET) with NO fallback, so
+    # the app fails fast instead of starting with a known/guessable key. Dev and
+    # test profiles provide their own value.
+    secret: ${JWT_SECRET}
     access-token-expiration-ms: 900000        # 15 minutes
     refresh-token-expiration-ms: 604800000    # 7 days
+  # Comma-separated admin allowlist. Empty = any authenticated user is admin
+  # (dev); production requires it (see ProdStartupGuard).
+  admin-emails: ${ADMIN_EMAILS:}
   auth:
     google:
       # true (default): validate id_token against Google. false: dev/test mock.

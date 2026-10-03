@@ -1,10 +1,8 @@
 package com.neonvibe.mapper;
 
 import java.time.Instant;
-import java.util.List;
 
 import com.neonvibe.domain.Album;
-import com.neonvibe.domain.Track;
 import com.neonvibe.dto.AlbumResponse;
 import org.junit.jupiter.api.Test;
 
@@ -29,8 +27,6 @@ class AlbumMapperTest {
         album.setGenre("Rock");
         album.setCoverArtPath("/covers/1.jpg");
         album.setCreatedAt(created);
-        // The mapper must NOT derive trackCount even when tracks are present.
-        album.setTracks(List.of(new Track()));
 
         AlbumResponse response = mapper.toResponse(album);
 

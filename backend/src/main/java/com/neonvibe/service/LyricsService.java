@@ -13,11 +13,14 @@ import com.neonvibe.repository.TrackRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Lyrics resolution: filesystem cache first, then LRCLIB (synced preferred).
  * Found lyrics are cached and reflected in {@code track.hasLyrics}.
+ *
+ * <p>Not {@code @Transactional}: the LRCLIB lookup is an outbound HTTP call and
+ * must not hold a database connection while it runs. The track read and the
+ * {@code hasLyrics} update are each their own short transaction.</p>
  */
 @Service
 public class LyricsService {
@@ -34,7 +37,6 @@ public class LyricsService {
         this.lrclibClient = lrclibClient;
     }
 
-    @Transactional
     public LyricsResponse getLyrics(Long trackId) {
         Track track = trackRepository.findById(trackId)
                 .orElseThrow(() -> new ResourceNotFoundException("Track not found: " + trackId));

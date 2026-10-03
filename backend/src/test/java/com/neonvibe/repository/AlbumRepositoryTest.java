@@ -78,4 +78,48 @@ class AlbumRepositoryTest {
         // Partial name must not match: this is an exact (case-insensitive) lookup.
         assertThat(albumRepository.findByArtistIgnoreCase("radio")).isEmpty();
     }
+
+    @Test
+    void findByNameAndArtistNullSafe_matchesAlbumWithoutArtist() {
+        Album noArtist = album("Unknown Album", null, 2024);
+        albumRepository.save(noArtist);
+
+        // A NULL artist must match the NULL row (plain `artist = NULL` never does),
+        // otherwise the scanner would recreate the album on every scan.
+        Optional<Album> found = albumRepository.findByNameAndArtistNullSafe("Unknown Album", null);
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(noArtist.getId());
+    }
+
+    @Test
+    void findByNameAndArtistNullSafe_withArtist_doesNotMatchNullRow() {
+        albumRepository.save(album("Unknown Album", null, 2024));
+
+        assertThat(albumRepository.findByNameAndArtistNullSafe("Unknown Album", "Someone")).isEmpty();
+    }
+
+    @Test
+    void searchByNameAndArtist_appliesBothFilters() {
+        albumRepository.save(album("OK Computer", "Muse", 1999)); // same name, other artist
+
+        Page<Album> page = albumRepository.searchByNameAndArtist("ok", "radio", PageRequest.of(0, 20));
+
+        assertThat(page.getTotalElements()).isEqualTo(1);
+        assertThat(page.getContent().get(0).getArtist()).isEqualTo("Radiohead");
+    }
+
+    @Test
+    void clearCoverArt_nullsPathAndFetchedAt() {
+        Album album = album("Amnesiac", "Radiohead", 2001);
+        album.setCoverArtPath("/covers/album/1.jpg");
+        album.setCoverFetchedAt(java.time.Instant.now());
+        album = albumRepository.save(album);
+
+        albumRepository.clearCoverArt();
+
+        Album reloaded = albumRepository.findById(album.getId()).orElseThrow();
+        assertThat(reloaded.getCoverArtPath()).isNull();
+        assertThat(reloaded.getCoverFetchedAt()).isNull();
+    }
 }

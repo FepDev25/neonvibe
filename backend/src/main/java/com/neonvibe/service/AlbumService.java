@@ -2,6 +2,8 @@ package com.neonvibe.service;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.neonvibe.domain.Album;
 import com.neonvibe.domain.Track;
@@ -46,8 +48,8 @@ public class AlbumService {
         boolean hasText = (q != null && !q.isBlank());
         boolean hasArtist = (artist != null && !artist.isBlank());
         if (hasText && hasArtist) {
-            // Combined text+artist search falls back to a name search to keep it simple.
-            page = albumRepository.findByNameContainingIgnoreCase(q.trim(), pageable);
+            // Both filters applied, not just the text one.
+            page = albumRepository.searchByNameAndArtist(q.trim(), artist.trim(), pageable);
         } else if (hasText) {
             page = albumRepository.findByNameContainingIgnoreCase(q.trim(), pageable);
         } else if (hasArtist) {
@@ -63,10 +65,9 @@ public class AlbumService {
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Album not found: " + id));
         AlbumResponse response = albumMapper.toResponse(album);
-        long count = album.getTracks().stream().filter(Track::isAvailable).count();
         return new AlbumResponse(response.id(), response.name(), response.artist(),
                 response.year(), response.genre(), response.coverArtPath(),
-                response.createdAt(), count);
+                response.createdAt(), trackRepository.countAvailableByAlbumId(id));
     }
 
     @Transactional(readOnly = true)
@@ -81,24 +82,34 @@ public class AlbumService {
     /** Batch lookup used by favorites (nulls filtered out, with track counts). */
     @Transactional(readOnly = true)
     public List<AlbumResponse> findByIds(Collection<Long> ids) {
-        return albumRepository.findAllById(ids).stream()
-                .map(album -> {
-                    AlbumResponse r = albumMapper.toResponse(album);
-                    long count = album.getTracks() == null ? 0
-                            : album.getTracks().stream().filter(Track::isAvailable).count();
-                    return new AlbumResponse(r.id(), r.name(), r.artist(), r.year(),
-                            r.genre(), r.coverArtPath(), r.createdAt(), count);
-                }).toList();
+        List<Album> albums = albumRepository.findAllById(ids);
+        Map<Long, Long> counts = countsFor(albums);
+        return albums.stream().map(album -> withCount(album, counts)).toList();
     }
 
     private Page<AlbumResponse> page(Page<Album> source) {
-        List<AlbumResponse> dtos = source.getContent().stream().map(album -> {
-            AlbumResponse r = albumMapper.toResponse(album);
-            long count = album.getTracks() == null ? 0
-                    : album.getTracks().stream().filter(Track::isAvailable).count();
-            return new AlbumResponse(r.id(), r.name(), r.artist(), r.year(),
-                    r.genre(), r.coverArtPath(), r.createdAt(), count);
-        }).toList();
+        Map<Long, Long> counts = countsFor(source.getContent());
+        List<AlbumResponse> dtos = source.getContent().stream()
+                .map(album -> withCount(album, counts))
+                .toList();
         return new PageImpl<>(dtos, source.getPageable(), source.getTotalElements());
+    }
+
+    /** One grouped COUNT query for the whole page instead of one per album. */
+    private Map<Long, Long> countsFor(List<Album> albums) {
+        List<Long> ids = albums.stream().map(Album::getId).toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return trackRepository.countAvailableByAlbumIds(ids).stream()
+                .collect(Collectors.toMap(TrackRepository.AlbumTrackCount::getAlbumId,
+                        TrackRepository.AlbumTrackCount::getTrackCount));
+    }
+
+    private AlbumResponse withCount(Album album, Map<Long, Long> counts) {
+        AlbumResponse r = albumMapper.toResponse(album);
+        return new AlbumResponse(r.id(), r.name(), r.artist(), r.year(),
+                r.genre(), r.coverArtPath(), r.createdAt(),
+                counts.getOrDefault(album.getId(), 0L));
     }
 }

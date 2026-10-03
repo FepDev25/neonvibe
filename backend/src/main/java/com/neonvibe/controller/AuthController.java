@@ -52,6 +52,17 @@ public class AuthController {
         return ResponseEntity.ok(authService.me(principal.id()));
     }
 
+    /**
+     * Revokes the user's refresh tokens. Requires a valid access token; returns
+     * 204 even if there is nothing to revoke.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(Authentication authentication) {
+        UserPrincipal principal = requirePrincipal(authentication);
+        authService.logout(principal.id());
+        return ResponseEntity.noContent().build();
+    }
+
     private UserPrincipal requirePrincipal(Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal p)) {
             throw new InvalidTokenException("Authentication required");

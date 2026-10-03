@@ -18,13 +18,16 @@ public class ProdStartupGuard {
     private final String jwtSecret;
     private final String googleClientId;
     private final String allowedEmails;
+    private final String adminEmails;
 
     public ProdStartupGuard(@Value("${neonvibe.jwt.secret}") String jwtSecret,
                             @Value("${neonvibe.auth.google.client-id:}") String googleClientId,
-                            @Value("${neonvibe.auth.allowed-emails:}") String allowedEmails) {
+                            @Value("${neonvibe.auth.allowed-emails:}") String allowedEmails,
+                            @Value("${neonvibe.admin-emails:}") String adminEmails) {
         this.jwtSecret = jwtSecret;
         this.googleClientId = googleClientId;
         this.allowedEmails = allowedEmails;
+        this.adminEmails = adminEmails;
     }
 
     @PostConstruct
@@ -54,6 +57,14 @@ public class ProdStartupGuard {
                     "ALLOWED_EMAILS is empty. Production requires an explicit email allowlist "
                             + "(comma-separated), otherwise ANY Google account could access the library. "
                             + "Set it in /opt/neonvibe/neonvibe.env");
+        }
+        // An empty admin allowlist would make EVERY authenticated user an admin
+        // (manual scans, global cover replacement).
+        if (adminEmails == null || adminEmails.isBlank() || adminEmails.contains("CHANGE_ME")) {
+            throw new IllegalStateException(
+                    "ADMIN_EMAILS is empty. Production requires an explicit admin allowlist "
+                            + "(comma-separated), otherwise any authenticated user could trigger scans "
+                            + "and replace global artwork. Set it in /opt/neonvibe/neonvibe.env");
         }
     }
 }

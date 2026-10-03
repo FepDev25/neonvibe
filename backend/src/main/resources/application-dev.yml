@@ -17,6 +17,9 @@ spring:
 
 # CORS: allow the Vite dev server during development.
 neonvibe:
+  jwt:
+    # Dev-only secret; production has no fallback (see application.yml).
+    secret: neonvibe-dev-only-secret-change-me-please-00000000
   auth:
     google:
       # Dev: accept mock tokens (no real Google credentials needed).
