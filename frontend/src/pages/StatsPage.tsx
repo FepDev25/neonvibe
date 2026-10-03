@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, Clock, Disc3, ListMusic, Mic2, Play } from 'lucide-react';
+import { BarChart3, Clock, Disc3, ListMusic, Mic2, Play, TriangleAlert } from 'lucide-react';
 import {
   useStatsHours,
   useStatsOverview,
@@ -76,6 +76,13 @@ export default function StatsPage() {
   const hourItems = hours.data ?? [];
   const topItems = top.data ?? [];
 
+  const retryAll = () => {
+    void overview.refetch();
+    void timeline.refetch();
+    void hours.refetch();
+    void top.refetch();
+  };
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -100,7 +107,19 @@ export default function StatsPage() {
         </div>
       </div>
 
-      {overview.isPending ? (
+      {overview.isError ? (
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <TriangleAlert className="h-10 w-10 text-neon-pink" aria-hidden />
+          <p className="text-sm text-text-muted">No se pudieron cargar las estadísticas.</p>
+          <button
+            type="button"
+            onClick={retryAll}
+            className="rounded-xl border border-neon-cyan px-4 py-2 text-sm font-semibold text-neon-cyan transition-colors hover:bg-neon-cyan/10"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : overview.isPending ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-20 w-full rounded-2xl" />
@@ -110,7 +129,7 @@ export default function StatsPage() {
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <BarChart3 className="h-10 w-10 text-text-muted" aria-hidden />
           <p className="text-sm text-text-muted">
-            Todavía no hay datos de escucha para este periodo.
+            Todavía no hay datos de escucha para este periodo. Prueba con «Todo».
           </p>
         </div>
       ) : (

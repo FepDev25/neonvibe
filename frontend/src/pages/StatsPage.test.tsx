@@ -31,6 +31,8 @@ describe('StatsPage', () => {
         distinct_albums: 4,
       },
       isPending: false,
+      isError: false,
+      refetch: vi.fn(),
     });
     mocks.useStatsTimeline.mockReturnValue({
       data: {
@@ -41,14 +43,20 @@ describe('StatsPage', () => {
         ],
       },
       isPending: false,
+      isError: false,
+      refetch: vi.fn(),
     });
     mocks.useStatsHours.mockReturnValue({
       data: Array.from({ length: 24 }, (_, hour) => ({ hour, plays: hour === 8 ? 4 : 0 })),
       isPending: false,
+      isError: false,
+      refetch: vi.fn(),
     });
     mocks.useStatsTop.mockReturnValue({
       data: [{ id: 1, name: 'Radiohead', subtitle: '', plays: 7, listened_seconds: 2000 }],
       isPending: false,
+      isError: false,
+      refetch: vi.fn(),
     });
   });
 
@@ -63,6 +71,24 @@ describe('StatsPage', () => {
     expect(screen.getByText('2 h 15 min')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
     expect(screen.getByText('Radiohead')).toBeInTheDocument();
+  });
+
+  it('shows an error with a retry when the overview request fails', () => {
+    mocks.useStatsOverview.mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      refetch: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter>
+        <StatsPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/no se pudieron cargar las estadísticas/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
   });
 
   it('shows an empty state when there are no plays', () => {
