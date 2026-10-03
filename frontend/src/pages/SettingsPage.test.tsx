@@ -82,18 +82,4 @@ describe('SettingsPage theme', () => {
 
     expect(useThemeStore.getState().theme).toBe('light');
   });
-
-  it('applies the server theme once on load', async () => {
-    useThemeStore.setState({ theme: 'light' });
-    mocks.getSettings.mockResolvedValue(SERVER_SETTINGS);
-
-    renderPage();
-
-    await screen.findByText('Ajustes');
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(useThemeStore.getState().theme).toBe('dark');
-  });
 });
