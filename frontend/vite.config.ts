@@ -39,15 +39,19 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
         runtimeCaching: [
           {
-            // Library/playlists/favorites API reads: serve stale while revalidating
-            // so pages work offline with the last good data.
+            // Library/playlists/favorites/settings API reads. NetworkFirst (not
+            // StaleWhileRevalidate): after a mutation, an invalidation must read
+            // fresh data, otherwise the cached stale list/theme is served and the
+            // UI looks like the change was lost (seen on mobile PWAs). Offline it
+            // still falls back to the last cached response.
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
               url.pathname.startsWith('/api/v1/') &&
               !/\/stream$|\/cover$/.test(url.pathname),
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'neonvibe-api',
+              networkTimeoutSeconds: 5,
               cacheableResponse: { statuses: [0, 200] },
               expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 7 },
               plugins: [
