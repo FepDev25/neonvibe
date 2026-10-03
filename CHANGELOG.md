@@ -19,6 +19,12 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   álbumes, playlists, búsqueda, favoritos y cola) la canción actual muestra barras
   ecualizadoras animadas mientras suena y recupera su número al pausar; respeta
   `prefers-reduced-motion`.
+- **Quality selector (transcodificación on-demand):** cache-transcode a **AAC**
+  con FFmpeg (presets Alta 320 / Normal 192 / Ahorro 128, además de Original sin
+  tocar). Solo transcodifica si el origen es lossless o de mayor bitrate que el
+  objetivo; si no, sirve el original. Caché configurable con evicción LRU y
+  degradación a original si falta FFmpeg. Parámetro `quality` en el stream,
+  `GET /api/v1/transcode/status` y selector en la vista "Now Playing".
 - **Notificaciones nativas (Web Push):** migración **V11** (`push_subscriptions`),
   endpoints `/api/v1/push/*` (clave pública, suscribir/desuscribir, prueba) y envío
   con VAPID (`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`). Service worker con handler de

@@ -14,11 +14,11 @@
   con una pasada de seguridad, concurrencia, accesibilidad y rendimiento. Incluye
   **rotación/revocación de refresh token**, **UI de scanner (admin)**, **página de
   historial**, **gestión de descargas** y validación de subida de carátulas.
-  Pendiente para v0.3: transcodificación/quality selector,
-  Chromecast, social, stats y audiolibros/podcasts (ver §11).
-- **Testing/CI (2026-10-02):** backend con **508 tests** (`./mvnw test`) y JaCoCo
+  Pendiente para v0.3: stats y analytics personales. v0.4: audiolibros/podcasts
+  y Chromecast (ver §11).
+- **Testing/CI (2026-10-02):** backend con **524 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **97 tests** (Vitest + Testing Library); CI en
+  Testcontainers; frontend con **102 tests** (Vitest + Testing Library); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
 ### Próximos pasos
@@ -29,8 +29,8 @@
 2. **Verificar en producción:** login de Google, escaneo real de `/srv/Music`
    (`POST /api/v1/admin/scan`), scrobbling real con claves Last.fm, y el refresh de
    token al expirar el access token (15 min).
-3. **Planificar v0.3** (roadmap en §11): transcodificación/quality selector,
-   social, stats y audiolibros/podcasts.
+3. **Planificar v0.3** (roadmap en §11): stats y analytics personales. v0.4:
+   audiolibros/podcasts y Chromecast.
 
 ---
 
@@ -370,6 +370,15 @@ neonvibe:
     public-key: ${VAPID_PUBLIC_KEY:}
     private-key: ${VAPID_PRIVATE_KEY:}
     subject: ${VAPID_SUBJECT:mailto:admin@neonvibe.local}
+  # Transcodificación on-demand a AAC (quality selector). Requiere FFmpeg; si no
+  # está, se sirve el original.
+  transcode:
+    enabled: ${TRANSCODE_ENABLED:true}
+    ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+    cache-path: ${TRANSCODE_CACHE:./data/transcode}
+    max-cache-mb: ${TRANSCODE_MAX_CACHE_MB:2048}
+    max-concurrent: ${TRANSCODE_MAX_CONCURRENT:1}
+    timeout-seconds: ${TRANSCODE_TIMEOUT:300}
   frontend-base: ${FRONTEND_BASE}
   websocket:
     allowed-origins: ${WS_ORIGINS:"*"}        # Restringir en prod
@@ -407,16 +416,15 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 - [x] Background playback (via PWA/MediaSession API)
 - [x] Refresh token con rotación y revocación
 - [x] UI de scanner (admin) y página de historial
-- [ ] Transcodificación / quality selector (se traslada a v0.3)
-- [ ] Notificaciones nativas (se traslada a v0.3)
+- [x] Transcodificación / quality selector (se traslada a v0.3)
+- [x] Notificaciones nativas (se traslada a v0.3)
 
 ### v0.3
-- [ ] Transcodificación / quality selector
+- [x] Transcodificación / quality selector (cache-transcode AAC)
 - [x] Notificaciones nativas (Web Push + VAPID)
 - [ ] Audiolibros / podcasts
 - [x] Búsqueda avanzada (fulltext PostgreSQL — `pg_trgm` + GIN, V10)
 - [ ] Chromecast / Bluetooth audio routing
-- [ ] Social (followers, actividad)
 - [ ] Stats y analytics personales
 
 ---
