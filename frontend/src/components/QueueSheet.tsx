@@ -1,7 +1,8 @@
 import { useRef } from 'react';
-import { X, Play } from 'lucide-react';
+import { X } from 'lucide-react';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useModalA11y } from '@/hooks/useModalA11y';
+import NowPlayingBars from './NowPlayingIndicator';
 import { cn } from '@/utils/cn';
 import { formatDuration } from '@/utils/format';
 
@@ -71,7 +72,7 @@ export default function QueueSheet({ open, onClose }: QueueSheetProps) {
                 >
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                     {isCurrent && isPlaying ? (
-                      <Play className="h-4 w-4 fill-neon-cyan text-neon-cyan" aria-hidden />
+                      <NowPlayingBars />
                     ) : (
                       <span className={cn('text-xs tabular-nums', isCurrent ? 'text-neon-cyan' : 'text-text-muted')}>
                         {index + 1}

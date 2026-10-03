@@ -3,6 +3,7 @@ import { Play, Plus } from 'lucide-react';
 import { usePlayerStore, type PlayerTrack } from '@/stores/playerStore';
 import FavoriteButton from './FavoriteButton';
 import AddToPlaylistSheet from './AddToPlaylistSheet';
+import NowPlayingBars from './NowPlayingIndicator';
 import type { Track } from '@/types';
 import { formatDuration } from '@/utils/format';
 import { cn } from '@/utils/cn';
@@ -22,6 +23,7 @@ interface TrackRowProps {
 export default function TrackRow({ track, number, queue }: TrackRowProps) {
   const playTrack = usePlayerStore((s) => s.playTrack);
   const currentTrack = usePlayerStore((s) => s.currentTrack);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
   const isCurrent = currentTrack != null && currentTrack.id === track.id;
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -32,13 +34,19 @@ export default function TrackRow({ track, number, queue }: TrackRowProps) {
         isCurrent ? 'bg-surface-alt' : 'hover:bg-surface-alt/60',
       )}
     >
-      <span
-        className={cn(
-          'w-6 shrink-0 text-center text-sm tabular-nums',
-          isCurrent ? 'text-neon-cyan' : 'text-text-muted',
+      <span className="flex w-6 shrink-0 items-center justify-center">
+        {isCurrent && isPlaying ? (
+          <NowPlayingBars />
+        ) : (
+          <span
+            className={cn(
+              'text-sm tabular-nums',
+              isCurrent ? 'text-neon-cyan' : 'text-text-muted',
+            )}
+          >
+            {number ?? track.track_number ?? '•'}
+          </span>
         )}
-      >
-        {number ?? track.track_number ?? '•'}
       </span>
 
       <button

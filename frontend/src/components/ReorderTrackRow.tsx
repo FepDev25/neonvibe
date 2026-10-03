@@ -1,5 +1,6 @@
 import { ChevronUp, ChevronDown, Trash2, Play } from 'lucide-react';
 import { usePlayerStore, type PlayerTrack } from '@/stores/playerStore';
+import NowPlayingBars from './NowPlayingIndicator';
 import type { Track } from '@/types';
 import { formatDuration } from '@/utils/format';
 import { cn } from '@/utils/cn';
@@ -33,6 +34,7 @@ export default function ReorderTrackRow({
 }: ReorderTrackRowProps) {
   const playTrack = usePlayerStore((s) => s.playTrack);
   const currentTrack = usePlayerStore((s) => s.currentTrack);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
   const isCurrent = currentTrack != null && currentTrack.id === track.id;
 
   return (
@@ -42,13 +44,19 @@ export default function ReorderTrackRow({
         isCurrent ? 'bg-surface-alt' : 'hover:bg-surface-alt/60',
       )}
     >
-      <span
-        className={cn(
-          'w-6 shrink-0 text-center text-sm tabular-nums',
-          isCurrent ? 'text-neon-cyan' : 'text-text-muted',
+      <span className="flex w-6 shrink-0 items-center justify-center">
+        {isCurrent && isPlaying ? (
+          <NowPlayingBars />
+        ) : (
+          <span
+            className={cn(
+              'text-sm tabular-nums',
+              isCurrent ? 'text-neon-cyan' : 'text-text-muted',
+            )}
+          >
+            {index + 1}
+          </span>
         )}
-      >
-        {index + 1}
       </span>
 
       <button
