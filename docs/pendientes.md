@@ -24,7 +24,7 @@ rendimiento, bugs frontend, accesibilidad) más features de v0.2. Todo con tests
   saliente, tema persistente, seek sin forzar play, modales accesibles, tabs, etc.
 - [x] **Features v0.2:** refresh token en frontend, UI de scanner, página de historial,
   gestión de descargas.
-- [x] **Testing:** backend 486 tests, frontend 65 tests.
+- [x] **Testing:** backend 486 tests, frontend 66 tests.
 - [ ] **Verificación end-to-end en servidor:** escaneo real de `/srv/Music`, scrobbling
   real con claves Last.fm y refresh de token al expirar el access (15 min).
 
@@ -36,7 +36,7 @@ rendimiento, bugs frontend, accesibilidad) más features de v0.2. Todo con tests
   con JaCoCo forzando el umbral (líneas ≥ 82%, ramas ≥ 63%).
 - [x] **PostgreSQL real:** `PostgresMigrationTest` (Testcontainers) aplica Flyway
   `V1..V9` y valida el esquema con `ddl-auto: validate`.
-- [x] **Frontend:** Vitest + Testing Library (jsdom), 65 tests.
+- [x] **Frontend:** Vitest + Testing Library (jsdom), 66 tests.
 - [x] **CI:** GitHub Actions (`.github/workflows/ci.yml`): backend tests, frontend
   tests/build y empaquetado del JAR.
 - [x] **Bugs corregidos durante el testing:** doble lectura del scanner, cierre del

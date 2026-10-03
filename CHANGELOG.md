@@ -25,7 +25,7 @@ accesibilidad, más features de sesión, historial, scanner y descargas.
   (`/downloads`).
 - `GET /history` devuelve entradas enriquecidas con título/artista/álbum (fetch
   join, sin N+1).
-- **Testing:** backend 486 tests y frontend 65 tests.
+- **Testing:** backend 486 tests y frontend 66 tests.
 
 ### Security
 
