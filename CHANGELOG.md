@@ -7,6 +7,23 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Búsqueda en las listas:** buscador en `/library` (compartido entre los tabs de
+  canciones, álbumes y artistas), `/albums` y `/artists`, con un componente
+  reutilizable `SearchInput` y debounce (300 ms) sobre el filtro `q` del backend.
+
+### Fixed
+
+- **Tema:** el toggle del header ya no se revierte al estar en Ajustes. El tema
+  se hidrata una sola vez desde los ajustes del servidor y las actualizaciones
+  son optimistas en el caché, evitando que un `settings.theme` obsoleto deshaga
+  el cambio.
+- **Orden de resultados:** los listados y búsquedas de tracks, álbumes y artistas
+  devuelven un orden determinista (alfabético, insensible a mayúsculas, con `id`
+  como desempate) cuando el cliente no pasa `sort`, en lugar de un orden
+  indefinido; se respeta un `sort` explícito si se envía.
+
 ## [0.2.0] - 2026-10-02
 
 Segunda versión: hardening de seguridad, concurrencia, rendimiento y
