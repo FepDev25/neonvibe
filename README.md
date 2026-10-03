@@ -94,8 +94,8 @@ cd backend && ./mvnw test        # JUnit 5 + Mockito (+ PostgreSQL vía Testcont
 cd frontend && pnpm test         # Vitest + Testing Library (jsdom)
 ```
 
-El backend tiene **524 tests** (cobertura JaCoCo, build falla por debajo de
-**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **102 tests**. El CI de GitHub
+El backend tiene **540 tests** (cobertura JaCoCo, build falla por debajo de
+**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **107 tests**. El CI de GitHub
 Actions ejecuta ambos y empaqueta el JAR.
 
 ---
@@ -131,10 +131,14 @@ Auth, streaming, playlists, carátulas, letras, scanner real-time, visualizador,
 - [x] Quality selector / transcodificación (cache-transcode AAC) — v0.3
 - [x] Notificaciones nativas (Web Push + VAPID) — v0.3
 
-### v0.3+
-Cierre de v0.3: **stats y analytics personales**. Hechos: búsqueda fulltext
-(pg_trgm), notificaciones nativas (Web Push) y quality selector (transcodificación
-AAC cacheada). v0.4: audiolibros/podcasts y Chromecast/Bluetooth.
+### v0.3 (completada)
+- [x] Búsqueda avanzada fulltext (pg_trgm)
+- [x] Notificaciones nativas (Web Push)
+- [x] Quality selector / transcodificación (AAC cacheada)
+- [x] Stats y analytics personales
+
+### v0.4
+Audiolibros/podcasts y Chromecast/Bluetooth.
 
 ---
 

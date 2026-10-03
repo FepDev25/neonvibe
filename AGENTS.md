@@ -14,11 +14,12 @@
   con una pasada de seguridad, concurrencia, accesibilidad y rendimiento. Incluye
   **rotación/revocación de refresh token**, **UI de scanner (admin)**, **página de
   historial**, **gestión de descargas** y validación de subida de carátulas.
-  Pendiente para v0.3: stats y analytics personales. v0.4: audiolibros/podcasts
+  v0.3 cerrada: fulltext (pg_trgm), notificaciones nativas (Web Push), quality
+  selector (transcodificación AAC) y stats personales. v0.4: audiolibros/podcasts
   y Chromecast (ver §11).
-- **Testing/CI (2026-10-02):** backend con **524 tests** (`./mvnw test`) y JaCoCo
+- **Testing/CI (2026-10-02):** backend con **540 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **102 tests** (Vitest + Testing Library); CI en
+  Testcontainers; frontend con **107 tests** (Vitest + Testing Library); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
 ### Próximos pasos
@@ -29,8 +30,8 @@
 2. **Verificar en producción:** login de Google, escaneo real de `/srv/Music`
    (`POST /api/v1/admin/scan`), scrobbling real con claves Last.fm, y el refresh de
    token al expirar el access token (15 min).
-3. **Planificar v0.3** (roadmap en §11): stats y analytics personales. v0.4:
-   audiolibros/podcasts y Chromecast.
+3. **v0.3 cerrada.** Planificar v0.4 (roadmap en §11): audiolibros/podcasts y
+   Chromecast.
 
 ---
 
@@ -425,7 +426,7 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 - [ ] Audiolibros / podcasts
 - [x] Búsqueda avanzada (fulltext PostgreSQL — `pg_trgm` + GIN, V10)
 - [ ] Chromecast / Bluetooth audio routing
-- [ ] Stats y analytics personales
+- [x] Stats y analytics personales
 
 ---
 

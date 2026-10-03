@@ -19,6 +19,11 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   álbumes, playlists, búsqueda, favoritos y cola) la canción actual muestra barras
   ecualizadoras animadas mientras suena y recupera su número al pausar; respeta
   `prefers-reduced-motion`.
+- **Stats y analytics personales:** página `/stats` con resumen (tiempo escuchado,
+  reproducciones, artistas/canciones distintas), actividad en el tiempo, top de
+  artistas/canciones/álbumes/géneros y reproducciones por hora. Backend con
+  agregaciones JPQL y bucketing por la zona horaria del cliente; gráficas CSS sin
+  dependencias extra.
 - **Quality selector (transcodificación on-demand):** cache-transcode a **AAC**
   con FFmpeg (presets Alta 320 / Normal 192 / Ahorro 128, además de Original sin
   tocar). Solo transcodifica si el origen es lossless o de mayor bitrate que el
