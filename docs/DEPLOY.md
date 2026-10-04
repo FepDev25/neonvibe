@@ -126,16 +126,35 @@ Hace:
 
 ### Permisos de la música
 
-`/srv/Music` debe ser legible por `neonvibe`. Opciones:
+`/srv/Music` debe ser **legible** por `neonvibe`. Para **editar metadata** (tags)
+y **subir/organizar música**, también necesita **escritura** sobre la biblioteca
+y sobre la carpeta de entrada. Opciones:
 
 ```bash
-# Opción simple (mundo-legible):
-chmod o+x /srv && chmod o+rx /srv/Music
+# Opción simple (mundo-legible/editable):
+chmod o+x /srv && chmod -R o+rwX /srv/Music
 
-# Opción con grupo:
+# Opción con grupo (recomendada):
 usermod -aG felipep neonvibe
-# y asegura permisos de grupo en /srv/Music (g+rX).
+chgrp -R felipep /srv/Music && chmod -R g+rwX /srv/Music
+# (además de g+rX en los directorios padre hasta /srv/Music)
 ```
+
+Crea la carpeta de entrada (la que el watcher organiza sola) y el staging:
+
+```bash
+sudo -u neonvibe mkdir -p /srv/Music/incoming
+# staging de subidas (fuera de la biblioteca), si no usas el tmp por defecto:
+sudo -u neonvibe mkdir -p /var/lib/neonvibe/incoming
+```
+
+> **Carpeta de entrada (`/srv/Music/incoming`):** copia ahí álbumes por
+> SFTP/rsync (`rsync -av Album/ user@server:/srv/Music/incoming/`) o suéltalos
+> desde la UI. El watcher los mueve a `<Artista>/<Álbum>/` y los ingiere. Si el
+> fichero llega a medias, espera a que termine la copia antes de que se procese.
+>
+> **Cloudflare:** el plan free limita cada petición a **100 MB**, así que para
+> lotes grandes (varios FLAC) usa la carpeta de entrada en vez de la subida web.
 
 ---
 
@@ -165,6 +184,10 @@ Opcionales: `LASTFM_API_KEY`, `LASTFM_API_SECRET` y, para las notificaciones
 nativas, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`. Genera el par
 VAPID con `npx web-push generate-vapid-keys`; sin ellas el push queda deshabilitado
 (el toggle de Ajustes aparece desactivado).
+
+**Subida de música:** `MUSIC_STAGING` (staging de subidas web; por defecto
+`<java.io.tmpdir>/neonvibe-staging`) y `MUSIC_INCOMING` (carpeta de entrada;
+por defecto `<MUSIC_PATHS>/incoming`). Necesitan escritura por `neonvibe` (ver §5).
 
 **Transcodificación / quality selector:** `setup.sh` instala **FFmpeg**; la caché
 de AAC va a `TRANSCODE_CACHE` (por defecto `/var/lib/neonvibe/transcode`, se crea

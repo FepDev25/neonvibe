@@ -102,7 +102,7 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(413);
         assertThat(response.getBody().get("error")).isEqualTo("payload_too_large");
-        assertThat(response.getBody().get("message").toString()).contains("10MB");
+        assertThat(response.getBody().get("message").toString()).contains("maximum upload size");
     }
 
     @Test

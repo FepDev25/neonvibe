@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleUploadTooLarge(
             org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
         return build(HttpStatus.PAYLOAD_TOO_LARGE, "payload_too_large",
-                "File exceeds the maximum upload size (10MB)");
+                "File exceeds the maximum upload size");
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

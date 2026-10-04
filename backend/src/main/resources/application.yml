@@ -33,10 +33,12 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 10MB
-      # Headroom over the 10MB file limit: the multipart envelope (boundaries,
-      # headers) pushes a max-size file slightly over the request limit.
-      max-request-size: 12MB
+      # Covers are validated to 10MB in CoverController; audio uploads (single
+      # tracks/albums or a ZIP) can legitimately be much larger. Cloudflare's
+      # free plan caps a request at 100MB — large batches go via the incoming
+      # folder (SFTP/rsync) instead.
+      max-file-size: 512MB
+      max-request-size: 512MB
 
 # OpenAPI / Swagger UI (dev). Disabled in prod (application-prod.yml).
 # NOTE: `springdoc.*` is a root-level property; it must NOT be nested under
@@ -88,6 +90,11 @@ neonvibe:
     paths: /srv/Music
     supported-formats: mp3,flac,aac,ogg,m4a,wav
     scan-interval-seconds: 0
+    # Web uploads land here first (outside the watched roots), then are moved
+    # into the library. Blank => <java.io.tmpdir>/neonvibe-staging.
+    staging-path: ${MUSIC_STAGING:}
+    # Drop folder inside the library for SFTP/rsync batches. Blank => <root>/incoming.
+    incoming-path: ${MUSIC_INCOMING:}
   covers:
     cache-path: ./data/covers
     max-size-mb: 500

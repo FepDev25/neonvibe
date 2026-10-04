@@ -9,6 +9,14 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Subida de música al servidor:** `POST /api/v1/admin/upload` (admin) acepta
+  varios ficheros de audio o un **ZIP**; se escriben en un staging fuera de la
+  biblioteca, se leen sus tags, se **mueven a `<Artista>/<Álbum>/`**, se ingieren
+  y se les aplica la carátula lateral (`cover.jpg/png`). El ZIP se extrae de forma
+  segura (anti *zip-slip* y *zip-bomb*, solo audio/imágenes). Además, una
+  **carpeta de entrada** vigilada (`<root>/incoming`, configurable) permite dejar
+  lotes por SFTP/rsync y se organizan solos. UI de subida (drag & drop, progreso
+  y resultado) en Ajustes.
 - **Edición de metadata desde la UI:** endpoint y diálogo para editar los tags
   de una canción (`PUT /tracks/{id}/metadata`), de un álbum completo
   (`PUT /albums/{id}/metadata`: nombre, año, género, propagado a todos sus

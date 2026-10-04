@@ -17,9 +17,9 @@
   v0.3 cerrada: fulltext (pg_trgm), notificaciones nativas (Web Push), quality
   selector (transcodificación AAC) y stats personales. v0.4: audiolibros/podcasts
   y Chromecast (ver §11).
-- **Testing/CI (2026-10-02):** backend con **541 tests** (`./mvnw test`) y JaCoCo
+- **Testing/CI (2026-10-02):** backend con **564 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **109 tests** (Vitest + Testing Library); CI en
+  Testcontainers; frontend con **117 tests** (Vitest + Testing Library); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
 ### Próximos pasos
@@ -277,6 +277,8 @@ Last.fm:
 Scanner (solo admin, vía `ADMIN_EMAILS`):
 - `POST /admin/scan` — Trigger manual scan (202)
 - `GET /admin/scan/status` — Estado del scanner
+- `POST /admin/upload` — Sube canciones o un ZIP (multipart `files`); se escriben
+  en staging, se organizan en `<Artista>/<Álbum>/` y se ingieren
 
 Stats (por usuario):
 - `GET /stats/overview?range=` — Totales (tiempo, plays, completadas) y distintos
@@ -383,6 +385,9 @@ neonvibe:
     paths: ${MUSIC_PATHS:/srv/Music}          # 50GB de MP3+ en el servidor
     supported-formats: mp3,flac,aac,ogg,m4a,wav
     scan-interval-seconds: ${SCAN_INTERVAL:0} # 0 = solo watcher real-time/manual
+    # Web uploads (staging, fuera de la biblioteca) y carpeta de entrada vigilada.
+    staging-path: ${MUSIC_STAGING:}           # vacío => <java.io.tmpdir>/neonvibe-staging
+    incoming-path: ${MUSIC_INCOMING:}         # vacío => <primer root>/incoming
   covers:
     cache-path: ${COVERS_CACHE:./data/covers}
     max-size-mb: 500
@@ -453,7 +458,9 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 - [x] Búsqueda avanzada (fulltext PostgreSQL — `pg_trgm` + GIN, V10)
 - [x] Stats y analytics personales
 
-### v0.4 (planificado)
+### v0.4 (en curso)
+- [x] Edición de metadata desde la UI (pistas/álbumes/artistas), escribiendo en los ficheros
+- [x] Subida de álbumes/canciones (web upload + carpeta de entrada vigilada)
 - [ ] Audiolibros / podcasts
 - [ ] Chromecast / Bluetooth audio routing
 - Social **descartado** (proyecto de un solo usuario).

@@ -40,8 +40,8 @@ echo "==> [2/5] Usuario y directorios"
 id -u "$SERVICE_USER" >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER"
 # /opt/neonvibe es de root (el servicio solo lee el JAR y el env; systemd los carga).
 install -d -m 0755 -o root -g root "$INSTALL_DIR"
-# /var/lib/neonvibe es donde el servicio ESCRIBE (covers/lyrics).
-install -d -m 0755 -o "$SERVICE_USER" -g "$SERVICE_USER" "$DATA_DIR/covers" "$DATA_DIR/lyrics"
+# /var/lib/neonvibe es donde el servicio ESCRIBE (covers/lyrics/staging).
+install -d -m 0755 -o "$SERVICE_USER" -g "$SERVICE_USER" "$DATA_DIR/covers" "$DATA_DIR/lyrics" "$DATA_DIR/incoming"
 
 echo "==> [3/5] PostgreSQL (base + usuario)"
 DB_PASS="$(openssl rand -hex 16)"
@@ -95,6 +95,9 @@ if [ ! -f "$ENV_FILE" ]; then
     echo "SERVER_PORT=8080"
     echo "MUSIC_PATHS=/srv/Music"
     echo "SCAN_INTERVAL=0"
+    echo "# Subida de música: staging de subidas web y carpeta de entrada vigilada."
+    echo "# La carpeta de entrada, por defecto, es <MUSIC_PATHS>/incoming."
+    echo "MUSIC_STAGING=/var/lib/neonvibe/incoming"
     echo "COVERS_CACHE=/var/lib/neonvibe/covers"
     echo "LYRICS_CACHE=/var/lib/neonvibe/lyrics"
     echo "TRANSCODE_CACHE=/var/lib/neonvibe/transcode"
@@ -119,8 +122,11 @@ fi
 echo ""
 echo "==> Música"
 if [ -d /srv/Music ]; then
-  echo "  /srv/Music presente. Asegúrate de que '$SERVICE_USER' puede LEERLO:"
-  echo "    chmod o+x /srv && chmod o+rx /srv/Music   (o añade neonvibe al grupo felipep y usa ACLs)"
+  echo "  /srv/Music presente. Asegúrate de que '$SERVICE_USER' puede LEERLO y,"
+  echo "  para editar tags y subir música, también ESCRIBIRLO:"
+  echo "    chmod o+x /srv && chmod -R o+rwX /srv/Music   (o grupo/ACLs equivalentes)"
+  echo "  y crea la carpeta de entrada:"
+  echo "    sudo -u $SERVICE_USER mkdir -p /srv/Music/incoming"
 else
   echo "  /srv/Music no existe. Crea el path o ajusta MUSIC_PATHS en $ENV_FILE."
 fi

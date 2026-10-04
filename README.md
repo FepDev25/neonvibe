@@ -20,6 +20,7 @@ NeonVibe es un reproductor de música self-hosted diseñado para quienes tienen 
 - **Letras en vivo:** Sincronización con LRCLIB (con caché local).
 - **Carátulas automáticas:** Descarga desde múltiples fuentes (iTunes, MusicBrainz, Last.fm) con caché local y subida manual.
 - **Edición de metadata:** Corrige títulos, artistas, álbumes, años, géneros y nº de pista/disco desde la interfaz; se escribe en los ficheros reales del servidor.
+- **Sube tu música:** Añade canciones o un ZIP desde la interfaz (o deja lotes en una carpeta de entrada) y se organizan solos en la biblioteca.
 - **Radio por similitud:** Descubre música de tu biblioteca basada en lo que estás escuchando.
 - **Scrobbling:** Integración con Last.fm (conecta tu cuenta desde Ajustes).
 - **Historial:** Página con tus reproducciones recientes.
@@ -102,8 +103,8 @@ cd backend && ./mvnw test        # JUnit 5 + Mockito (+ PostgreSQL vía Testcont
 cd frontend && pnpm test         # Vitest + Testing Library (jsdom)
 ```
 
-El backend tiene **541 tests** (cobertura JaCoCo, build falla por debajo de
-**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **109 tests**. El CI de GitHub
+El backend tiene **564 tests** (cobertura JaCoCo, build falla por debajo de
+**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **117 tests**. El CI de GitHub
 Actions ejecuta ambos y empaqueta el JAR.
 
 ---
@@ -146,7 +147,9 @@ Auth, streaming, playlists, carátulas, letras, scanner real-time, visualizador,
 - [x] Stats y analytics personales
 
 ### v0.4
-Audiolibros/podcasts y Chromecast/Bluetooth.
+- [x] Edición de metadata desde la UI (se escribe en los ficheros del servidor)
+- [x] Subida de álbumes/canciones (web upload + carpeta de entrada)
+- [ ] Audiolibros/podcasts y Chromecast/Bluetooth.
 
 ---
 

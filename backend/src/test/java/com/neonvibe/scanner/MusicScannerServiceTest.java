@@ -35,8 +35,9 @@ class MusicScannerServiceTest {
     private final LibrarySyncService sync = mock(LibrarySyncService.class);
     private final ScannerStatus status = new ScannerStatus();
     private final FileWatcherService watcher = mock(FileWatcherService.class);
+    private final IngestService ingestService = mock(IngestService.class);
     private final com.neonvibe.websocket.ScannerWsBridge wsBridge = mock(com.neonvibe.websocket.ScannerWsBridge.class);
-    private final MusicScannerService scanner = new MusicScannerService(config, extractor, sync, status, watcher, wsBridge, null);
+    private final MusicScannerService scanner = new MusicScannerService(config, extractor, sync, status, watcher, ingestService, wsBridge, null);
 
     private Path mp3;
     private Path flac;
@@ -82,6 +83,20 @@ class MusicScannerServiceTest {
     @Test
     void onFileChanged_unsupportedFile_isCountedButNotPersisted() {
         scanner.onFileChanged(txt);
+        verify(sync, never()).upsert(any(), any(), any());
+    }
+
+    @Test
+    void onFileChanged_fileInIncomingFolder_delegatesToIngest() throws IOException {
+        Path incoming = tempDir.resolve("incoming");
+        Files.createDirectories(incoming);
+        config.setPaths(java.util.List.of(tempDir.toString()));
+        Path dropped = incoming.resolve("new.mp3");
+        Files.writeString(dropped, "dummy");
+
+        scanner.onFileChanged(dropped);
+
+        verify(ingestService).ingestIncoming(dropped);
         verify(sync, never()).upsert(any(), any(), any());
     }
 

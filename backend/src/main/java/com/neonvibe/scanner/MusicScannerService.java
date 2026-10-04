@@ -41,6 +41,7 @@ public class MusicScannerService {
     private final LibrarySyncService librarySyncService;
     private final ScannerStatus status;
     private final FileWatcherService fileWatcher;
+    private final IngestService ingestService;
     private final ScannerWsBridge wsBridge;
     private final PushNotificationService pushNotifications;
 
@@ -71,6 +72,7 @@ public class MusicScannerService {
                                LibrarySyncService librarySyncService,
                                ScannerStatus status,
                                FileWatcherService fileWatcher,
+                               IngestService ingestService,
                                @Autowired(required = false) ScannerWsBridge wsBridge,
                                @Autowired(required = false) PushNotificationService pushNotifications) {
         this.config = config;
@@ -78,6 +80,7 @@ public class MusicScannerService {
         this.librarySyncService = librarySyncService;
         this.status = status;
         this.fileWatcher = fileWatcher;
+        this.ingestService = ingestService;
         this.wsBridge = wsBridge;
         this.pushNotifications = pushNotifications;
     }
@@ -201,11 +204,28 @@ public class MusicScannerService {
     }
 
     /**
-     * Handles a CREATE/MODIFY event from the watcher.
+     * Handles a CREATE/MODIFY event from the watcher. Files dropped in the
+     * incoming folder are organized into the library (moved + ingested);
+     * everything else is upserted in place.
      */
     public void onFileChanged(Path path) {
-        if (Files.exists(path)) {
-            processPath(path);
+        if (!Files.exists(path)) {
+            return;
+        }
+        if (isInIncoming(path)) {
+            ingestService.ingestIncoming(path);
+            return;
+        }
+        processPath(path);
+    }
+
+    /** Whether a path lives inside the watched incoming/drop folder. */
+    private boolean isInIncoming(Path path) {
+        try {
+            Path incoming = config.resolveIncomingPath().toAbsolutePath().normalize();
+            return path.toAbsolutePath().normalize().startsWith(incoming);
+        } catch (Exception ex) {
+            return false;
         }
     }
 
