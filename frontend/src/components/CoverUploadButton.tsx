@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
 import { ImagePlus, Check, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { apiErrorMessage } from '@/utils/apiError';
 import Button from './Button';
 
 /** Matches CoverController.MAX_UPLOAD_BYTES (10 MB). */
@@ -20,24 +20,6 @@ const ALLOWED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
 function hasAllowedExtension(name: string): boolean {
   const ext = name.split('.').pop()?.toLowerCase() ?? '';
   return ALLOWED_EXTENSIONS.includes(ext);
-}
-
-/** Turns an API failure into a specific, actionable message when possible. */
-function uploadErrorMessage(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    const status = error.response?.status;
-    if (status === 403) {
-      return 'Solo los administradores pueden cambiar la carátula.';
-    }
-    if (status === 413) {
-      return 'La imagen supera el tamaño máximo permitido (10 MB).';
-    }
-    const message = (error.response?.data as { message?: string } | undefined)?.message;
-    if (message) {
-      return message;
-    }
-  }
-  return 'No se pudo subir la carátula. Inténtalo de nuevo.';
 }
 
 type Status = 'idle' | 'uploading' | 'success' | 'error';
@@ -108,7 +90,10 @@ export default function CoverUploadButton({
       onUploaded?.();
     } catch (err) {
       setStatus('error');
-      setError(uploadErrorMessage(err));
+      setError(apiErrorMessage(err, 'No se pudo subir la carátula. Inténtalo de nuevo.', {
+        403: 'Solo los administradores pueden cambiar la carátula.',
+        413: 'La imagen supera el tamaño máximo permitido (10 MB).',
+      }));
     }
   };
 
