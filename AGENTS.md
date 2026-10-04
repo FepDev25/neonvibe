@@ -19,7 +19,7 @@
   y Chromecast (ver §11).
 - **Testing/CI (2026-10-02):** backend con **564 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **117 tests** (Vitest + Testing Library); CI en
+  Testcontainers; frontend con **118 tests** (Vitest + Testing Library); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
 ### Próximos pasos
@@ -332,7 +332,7 @@ ignore sus propios ecos. Ver `websocket/PlayerWebSocketController.java` y
 ### Frontend (React + TS)
 - **Funcional components + hooks.** No class components.
 - **TypeScript estricto.** No `any` sin justificación documentada.
-- **Rutas:** `/`, `/home`, `/library`, `/albums`, `/album/:id`, `/artists`, `/artist/:id`, `/playlists`, `/playlist/:id`, `/favorites`, `/history`, `/downloads`, `/search`, `/settings`, `/p/:id`
+- **Rutas:** `/`, `/home`, `/library`, `/albums`, `/album/:id`, `/artists`, `/artist/:id`, `/playlists`, `/playlist/:id`, `/favorites`, `/history`, `/downloads`, `/upload`, `/search`, `/settings`, `/p/:id`
 - **Mobile-first.** Diseñar para pantallas <400px, escalar a desktop.
 - **PWA:** `manifest.json`, service worker mínimo para cache de assets.
 - **Visualizador:** Web Audio API + Canvas 2D. Fallback si no hay soporte.

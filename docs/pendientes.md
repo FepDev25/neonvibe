@@ -16,8 +16,7 @@
   Ajustar propietario/grupo/ACL, crear `/srv/Music/incoming` y documentar en
   `docs/DEPLOY.md`.
 - [ ] Verificar en producción: editar metadata (MP3/álbum/artista) sin que el
-  watcher revierta, subir un álbum por la UI y por la carpeta de entrada.
-- [ ] (Opcional) Promover la subida a su propia ruta `/upload` en la navegación.
+  watcher revierta, subir un álbum por la UI (`/upload`) y por la carpeta de entrada.
 
 ---
 

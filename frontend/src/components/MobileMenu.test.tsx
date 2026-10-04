@@ -27,6 +27,7 @@ describe('MobileMenu', () => {
 
     for (const label of [
       'Biblioteca',
+      'Subir',
       'Álbumes',
       'Artistas',
       'Playlists',

@@ -10,6 +10,7 @@ import {
   History,
   Download,
   BarChart3,
+  UploadCloud,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Inicio', icon: Home, end: true },
   { to: '/library', label: 'Biblioteca', icon: Library, end: false },
+  { to: '/upload', label: 'Subir', icon: UploadCloud, end: false },
   { to: '/albums', label: 'Álbumes', icon: Disc3, end: false },
   { to: '/artists', label: 'Artistas', icon: UserRound, end: false },
   { to: '/playlists', label: 'Playlists', icon: ListMusic, end: false },

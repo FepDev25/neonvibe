@@ -15,6 +15,7 @@ import SearchPage from './pages/SearchPage';
 import HistoryPage from './pages/HistoryPage';
 import StatsPage from './pages/StatsPage';
 import DownloadsPage from './pages/DownloadsPage';
+import UploadPage from './pages/UploadPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/downloads" element={<DownloadsPage />} />
+            <Route path="/upload" element={<UploadPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/home" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFoundPage />} />

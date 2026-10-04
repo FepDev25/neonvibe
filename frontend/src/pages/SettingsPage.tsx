@@ -24,7 +24,6 @@ import { logout as revokeSession } from '@/api/auth';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
 import ScannerCard from '@/components/ScannerCard';
-import UploadCard from '@/components/UploadCard';
 import Skeleton from '@/components/Skeleton';
 import { cn } from '@/utils/cn';
 
@@ -363,9 +362,6 @@ export default function SettingsPage() {
 
       {/* Scanner (admin only; hidden for non-admins) */}
       <ScannerCard />
-
-      {/* Upload new music (admin only) */}
-      <UploadCard />
 
       <p className="text-xs text-text-muted">
         NeonVibe v0.1 — preproducción. Los ajustes se guardan en la base de datos.
