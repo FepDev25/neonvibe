@@ -8,6 +8,7 @@ import { albumCoverUrl, uploadAlbumCover } from '@/api/cover';
 import AlbumCover from '@/components/AlbumCover';
 import TrackRow from '@/components/TrackRow';
 import CoverUploadButton from '@/components/CoverUploadButton';
+import AlbumEditButton from '@/components/AlbumEditButton';
 import DownloadButton from '@/components/DownloadButton';
 import RadioButton from '@/components/RadioButton';
 import Skeleton from '@/components/Skeleton';
@@ -110,6 +111,7 @@ export default function AlbumDetailPage() {
               onUpload={(file) => uploadAlbumCover(album.id, file)}
               onUploaded={handleCoverUploaded}
             />
+            <AlbumEditButton album={album} />
           </div>
         </div>
       </div>

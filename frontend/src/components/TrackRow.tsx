@@ -3,6 +3,7 @@ import { Play, Plus } from 'lucide-react';
 import { usePlayerStore, type PlayerTrack } from '@/stores/playerStore';
 import FavoriteButton from './FavoriteButton';
 import AddToPlaylistSheet from './AddToPlaylistSheet';
+import TrackEditButton from './TrackEditButton';
 import NowPlayingBars from './NowPlayingIndicator';
 import type { Track } from '@/types';
 import { formatDuration } from '@/utils/format';
@@ -97,6 +98,8 @@ export default function TrackRow({ track, number, queue }: TrackRowProps) {
       </button>
 
       <FavoriteButton entityType="TRACK" entityId={track.id} />
+
+      <TrackEditButton track={track} />
 
       <AddToPlaylistSheet
         open={sheetOpen}

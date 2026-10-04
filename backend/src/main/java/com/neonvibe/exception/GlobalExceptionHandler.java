@@ -76,6 +76,16 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, "not_found", ex.getMessage());
     }
 
+    /**
+     * Tag writing failures (read-only filesystem, unsupported format, ...) are
+     * a server-side condition the client cannot fix by retrying as-is: surface
+     * them as 422 with the reason so the UI can explain what happened.
+     */
+    @ExceptionHandler(TagWriteException.class)
+    public ResponseEntity<Map<String, Object>> handleTagWrite(TagWriteException ex) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, "metadata_write_failed", ex.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
         return build(HttpStatus.BAD_REQUEST, "bad_request", ex.getMessage());

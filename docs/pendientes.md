@@ -4,6 +4,20 @@
 
 ---
 
+## v0.4 — EN CURSO (2026-10-04)
+
+- [x] **Edición de metadata desde la UI** (pistas, álbumes y artistas): escribe los
+  tags en los ficheros reales con jaudiotagger y actualiza la BD; solo-admin.
+- [ ] **Permisos de escritura en `/srv/Music`.** La edición de tags necesita que el
+  usuario del servicio (`neonvibe`) pueda **escribir** en la biblioteca, que hoy es
+  solo-lectura. Ajustar propietario/grupo/ACL y documentar en `docs/DEPLOY.md`.
+- [ ] **Subida de álbumes/canciones al servidor** (web upload + carpeta de entrada),
+  pendiente de decidir el formato final (ver alternativas acordadas).
+- [ ] Verificar la edición de metadata end-to-end en producción (un MP3, un álbum,
+  un artista) y que el watcher no revierte los cambios.
+
+---
+
 ## v0.3 — COMPLETADO (2026-10-03)
 
 Cierre de v0.3: **búsqueda fulltext (pg_trgm)**, **notificaciones nativas (Web

@@ -9,6 +9,7 @@ import AlbumCard from '@/components/AlbumCard';
 import AlbumCover from '@/components/AlbumCover';
 import TrackRow from '@/components/TrackRow';
 import CoverUploadButton from '@/components/CoverUploadButton';
+import ArtistEditButton from '@/components/ArtistEditButton';
 import RadioButton from '@/components/RadioButton';
 import Skeleton from '@/components/Skeleton';
 
@@ -97,8 +98,14 @@ export default function ArtistDetailPage() {
             </p>
           )}
           {tracks.length > 0 && (
-            <div className="mt-2">
+            <div className="mt-2 flex items-center justify-center gap-2">
               <RadioButton trackId={tracks[0].id} />
+              <ArtistEditButton artist={artist} />
+            </div>
+          )}
+          {tracks.length === 0 && (
+            <div className="mt-2 flex items-center justify-center">
+              <ArtistEditButton artist={artist} />
             </div>
           )}
         </div>

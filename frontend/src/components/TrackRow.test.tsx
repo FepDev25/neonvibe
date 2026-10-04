@@ -23,6 +23,8 @@ vi.mock('@/hooks/usePlaylists', () => ({
   useAddTrackToPlaylist: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
+vi.mock('./TrackEditButton', () => ({ default: () => null }));
+
 import TrackRow from './TrackRow';
 import type { Track } from '@/types';
 

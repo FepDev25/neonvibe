@@ -210,6 +210,8 @@ Tracks:
 - `GET /tracks/:id/stream` — Stream del archivo (range requests obligatorio). Acepta `?quality=original|high|normal|data` (transcodificación AAC cacheada on-demand)
 - `GET /tracks/:id/lyrics` — Letras
 - `GET /tracks/:id/cover` — Carátula (redirect a cache o generar)
+- `PUT /tracks/:id/metadata` — Edita los tags y **los escribe en el fichero
+  real** (jaudiotagger); solo admin
 
 Albums:
 - `GET /albums`
@@ -217,6 +219,8 @@ Albums:
 - `GET /albums/:id/tracks`
 - `GET /albums/:id/cover`
 - `POST /albums/:id/cover` — Upload manual (multipart, **solo admin**; valida PNG/JPEG/WebP por magic bytes, rechaza SVG)
+- `PUT /albums/:id/metadata` — Edita nombre/año/género y lo propaga a los tags de
+  todos los ficheros del álbum (solo admin)
 
 Artists:
 - `GET /artists`
@@ -225,6 +229,8 @@ Artists:
 - `GET /artists/:id/tracks`
 - `GET /artists/:id/cover`
 - `POST /artists/:id/cover` — Upload manual (multipart, **solo admin**; misma validación)
+- `PUT /artists/:id/metadata` — Renombra el artista y lo propaga a sus canciones y
+  álbumes (solo admin)
 
 Playlists:
 - `GET /playlists` — Mis playlists + públicas

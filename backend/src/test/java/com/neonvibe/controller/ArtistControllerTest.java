@@ -8,9 +8,11 @@ import com.neonvibe.config.SecurityConfig;
 import com.neonvibe.dto.AlbumResponse;
 import com.neonvibe.dto.ArtistResponse;
 import com.neonvibe.dto.TrackResponse;
+import com.neonvibe.security.AdminGuard;
 import com.neonvibe.security.JwtAuthenticationFilter;
 import com.neonvibe.security.JwtTokenProvider;
 import com.neonvibe.service.ArtistService;
+import com.neonvibe.service.MetadataEditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -45,6 +49,12 @@ class ArtistControllerTest {
 
     @MockBean
     private ArtistService artistService;
+
+    @MockBean
+    private MetadataEditService metadataEditService;
+
+    @MockBean
+    private AdminGuard adminGuard;
 
     private String bearerToken;
 
@@ -119,5 +129,19 @@ class ArtistControllerTest {
     void withoutToken_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/artists"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateMetadata_returnsRenamedArtist() throws Exception {
+        when(metadataEditService.updateArtist(eq(1L), any()))
+                .thenReturn(new MetadataEditService.PropagationResult(1L, 3, 0));
+        when(artistService.getById(1L)).thenReturn(sampleArtist());
+
+        mockMvc.perform(put("/api/v1/artists/1/metadata")
+                        .header("Authorization", bearerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Radiohead\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Radiohead"));
     }
 }

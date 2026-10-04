@@ -19,6 +19,7 @@ NeonVibe es un reproductor de música self-hosted diseñado para quienes tienen 
 - **Playlists:** Crea, edita y comparte tus playlists.
 - **Letras en vivo:** Sincronización con LRCLIB (con caché local).
 - **Carátulas automáticas:** Descarga desde múltiples fuentes (iTunes, MusicBrainz, Last.fm) con caché local y subida manual.
+- **Edición de metadata:** Corrige títulos, artistas, álbumes, años, géneros y nº de pista/disco desde la interfaz; se escribe en los ficheros reales del servidor.
 - **Radio por similitud:** Descubre música de tu biblioteca basada en lo que estás escuchando.
 - **Scrobbling:** Integración con Last.fm (conecta tu cuenta desde Ajustes).
 - **Historial:** Página con tus reproducciones recientes.

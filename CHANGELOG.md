@@ -9,6 +9,15 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Edición de metadata desde la UI:** endpoint y diálogo para editar los tags
+  de una canción (`PUT /tracks/{id}/metadata`), de un álbum completo
+  (`PUT /albums/{id}/metadata`: nombre, año, género, propagado a todos sus
+  ficheros) y de un artista (`PUT /artists/{id}/metadata`: renombrado propagado
+  a sus canciones y álbumes). La edición **escribe en los ficheros reales**
+  con jaudiotagger (`AudioTagWriter`) y refleja el mismo estado en la BD; es
+  solo-admin y devuelve `422` si el fichero no se puede escribir (p. ej.
+  filesystem de solo lectura). Botones de edición en cada fila de canción,
+  en el detalle de álbum y en el de artista.
 - **Búsqueda en las listas:** buscador en `/library` (compartido entre los tabs de
   canciones, álbumes y artistas), `/albums` y `/artists`, con un componente
   reutilizable `SearchInput` y debounce (300 ms) sobre el filtro `q` del backend.
@@ -60,6 +69,14 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Subida manual de carátulas:** funcionaba mal de punta a punta. El cliente
+  rechazaba el fichero si el navegador reportaba un MIME vacío o inusual (ahora
+  valida MIME **o extensión**), el service worker servía la imagen antigua tras
+  subir (StaleWhileRevalidate + `ignoreSearch` ignoraba el cache-buster `?v=`;
+  ahora las carátulas son **NetworkFirst**), y los errores salían genéricos
+  (ahora se muestra el motivo real: 403 admin, 413 tamaño, mensaje del server).
+  Además `MaxUploadSizeExceededException` devuelve `413` (antes `500`) y
+  `max-request-size` gana margen sobre el límite de fichero de 10 MB.
 - **Stats en producción:** las agregaciones usaban `(:param IS NULL OR col >= :param)`;
   en PostgreSQL un parámetro nulo lanzaba `could not determine data type of
   parameter` y `/api/v1/stats/*` devolvía 500 (la página salía vacía). El rango

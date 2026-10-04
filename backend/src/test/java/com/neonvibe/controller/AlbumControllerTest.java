@@ -7,9 +7,11 @@ import java.util.UUID;
 import com.neonvibe.config.SecurityConfig;
 import com.neonvibe.dto.AlbumResponse;
 import com.neonvibe.dto.TrackResponse;
+import com.neonvibe.security.AdminGuard;
 import com.neonvibe.security.JwtAuthenticationFilter;
 import com.neonvibe.security.JwtTokenProvider;
 import com.neonvibe.service.AlbumService;
+import com.neonvibe.service.MetadataEditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -25,6 +28,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -44,6 +49,12 @@ class AlbumControllerTest {
 
     @MockBean
     private AlbumService albumService;
+
+    @MockBean
+    private MetadataEditService metadataEditService;
+
+    @MockBean
+    private AdminGuard adminGuard;
 
     private String bearerToken;
 
@@ -113,5 +124,20 @@ class AlbumControllerTest {
     void withoutToken_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/albums"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateMetadata_propagatesAndReturnsAlbum() throws Exception {
+        when(metadataEditService.updateAlbum(eq(1L), any()))
+                .thenReturn(new MetadataEditService.PropagationResult(1L, 12, 1));
+        when(albumService.getById(1L)).thenReturn(sampleAlbum());
+
+        mockMvc.perform(put("/api/v1/albums/1/metadata")
+                        .header("Authorization", bearerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"OK Computer\",\"year\":1997,\"genre\":\"Rock\"}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Metadata-Failed", "1"))
+                .andExpect(jsonPath("$.name").value("OK Computer"));
     }
 }

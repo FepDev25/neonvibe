@@ -6,8 +6,10 @@ import java.util.UUID;
 
 import com.neonvibe.config.SecurityConfig;
 import com.neonvibe.dto.TrackResponse;
+import com.neonvibe.security.AdminGuard;
 import com.neonvibe.security.JwtAuthenticationFilter;
 import com.neonvibe.security.JwtTokenProvider;
+import com.neonvibe.service.MetadataEditService;
 import com.neonvibe.service.TrackService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,13 +19,16 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,6 +48,12 @@ class TrackControllerTest {
 
     @MockBean
     private TrackService trackService;
+
+    @MockBean
+    private MetadataEditService metadataEditService;
+
+    @MockBean
+    private AdminGuard adminGuard;
 
     private String bearerToken;
 
@@ -109,5 +120,38 @@ class TrackControllerTest {
     void withoutToken_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/tracks"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateMetadata_returnsUpdatedTrack() throws Exception {
+        when(metadataEditService.updateTrack(eq(1L), any())).thenReturn(sampleTrack());
+
+        mockMvc.perform(put("/api/v1/tracks/1/metadata")
+                        .header("Authorization", bearerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Alpha\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Alpha"));
+    }
+
+    @Test
+    void updateMetadata_blankTitle_returns400() throws Exception {
+        mockMvc.perform(put("/api/v1/tracks/1/metadata")
+                        .header("Authorization", bearerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"  \"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateMetadata_nonAdmin_returns403() throws Exception {
+        doThrow(new com.neonvibe.exception.ForbiddenException("Admin privileges required"))
+                .when(adminGuard).requireAdmin(any());
+
+        mockMvc.perform(put("/api/v1/tracks/1/metadata")
+                        .header("Authorization", bearerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Alpha\"}"))
+                .andExpect(status().isForbidden());
     }
 }

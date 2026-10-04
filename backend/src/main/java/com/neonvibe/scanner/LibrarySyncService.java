@@ -135,7 +135,8 @@ public class LibrarySyncService {
         }
     }
 
-    private Artist resolveArtist(String name) {
+    /** Resolves (or creates) the artist entity for a tag name. Shared with metadata edits. */
+    public Artist resolveArtist(String name) {
         if (name == null || name.isBlank()) {
             return null;
         }
@@ -147,7 +148,8 @@ public class LibrarySyncService {
                 });
     }
 
-    private Album resolveAlbum(String name, String artist, Integer year, String genre) {
+    /** Resolves (or creates) the album entity for a track's tag values. Shared with metadata edits. */
+    public Album resolveAlbum(String name, String artist, Integer year, String genre) {
         String albumGenre = (genre != null && !genre.isBlank()) ? genre : null;
         if (name == null || name.isBlank()) {
             return null;
