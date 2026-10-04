@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import { ImagePlus, Check, Loader2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import Button from './Button';
@@ -7,6 +8,37 @@ import Button from './Button';
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+/**
+ * Allowed file extensions. Some browsers/OSes report an empty or unusual
+ * `File.type` (e.g. photos shared from a mobile gallery), so the extension is
+ * used as a fallback. The backend ultimately validates the real image bytes,
+ * so this is only a fast client-side guard.
+ */
+const ALLOWED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
+
+function hasAllowedExtension(name: string): boolean {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  return ALLOWED_EXTENSIONS.includes(ext);
+}
+
+/** Turns an API failure into a specific, actionable message when possible. */
+function uploadErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    if (status === 403) {
+      return 'Solo los administradores pueden cambiar la carátula.';
+    }
+    if (status === 413) {
+      return 'La imagen supera el tamaño máximo permitido (10 MB).';
+    }
+    const message = (error.response?.data as { message?: string } | undefined)?.message;
+    if (message) {
+      return message;
+    }
+  }
+  return 'No se pudo subir la carátula. Inténtalo de nuevo.';
+}
 
 type Status = 'idle' | 'uploading' | 'success' | 'error';
 
@@ -24,7 +56,8 @@ interface CoverUploadButtonProps {
 
 /**
  * Manual cover upload: a labelled file input (hidden) plus a status-aware
- * button. Validates MIME type and size client-side before hitting the API.
+ * button. Validates type (MIME, with extension fallback) and size client-side
+ * before hitting the API.
  */
 export default function CoverUploadButton({
   onUpload,
@@ -56,7 +89,7 @@ export default function CoverUploadButton({
     input.value = '';
     if (!file) return;
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    if (!ALLOWED_MIME_TYPES.includes(file.type) && !hasAllowedExtension(file.name)) {
       setStatus('error');
       setError('Formato no permitido. Usa PNG, JPEG o WebP.');
       return;
@@ -73,9 +106,9 @@ export default function CoverUploadButton({
       await onUpload(file);
       setStatus('success');
       onUploaded?.();
-    } catch {
+    } catch (err) {
       setStatus('error');
-      setError('No se pudo subir la carátula. Inténtalo de nuevo.');
+      setError(uploadErrorMessage(err));
     }
   };
 
@@ -93,7 +126,7 @@ export default function CoverUploadButton({
       <input
         ref={inputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp"
+        accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
         aria-label="Archivo de carátula"
         className="sr-only"
         onChange={(e) => void handleChange(e)}

@@ -96,6 +96,16 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void uploadTooLarge_returns413() {
+        ResponseEntity<Map<String, Object>> response = handler.handleUploadTooLarge(
+                new org.springframework.web.multipart.MaxUploadSizeExceededException(10 * 1024 * 1024));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(413);
+        assertThat(response.getBody().get("error")).isEqualTo("payload_too_large");
+        assertThat(response.getBody().get("message").toString()).contains("10MB");
+    }
+
+    @Test
     void missingRequestParameter_returnsBadRequest() {
         ResponseEntity<Map<String, Object>> response = handler.handleMalformedRequest(
                 new org.springframework.web.bind.MissingServletRequestParameterException("track_id", "Long"));

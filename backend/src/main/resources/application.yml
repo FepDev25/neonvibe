@@ -34,7 +34,9 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
-      max-request-size: 10MB
+      # Headroom over the 10MB file limit: the multipart envelope (boundaries,
+      # headers) pushes a max-size file slightly over the request limit.
+      max-request-size: 12MB
 
 # OpenAPI / Swagger UI (dev). Disabled in prod (application-prod.yml).
 # NOTE: `springdoc.*` is a root-level property; it must NOT be nested under

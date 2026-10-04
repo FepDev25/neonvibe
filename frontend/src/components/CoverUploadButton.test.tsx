@@ -74,6 +74,27 @@ describe('CoverUploadButton', () => {
     expect(uploadAlbumCover).not.toHaveBeenCalled();
   });
 
+  it('accepts an allowed extension when the browser reports no MIME type', async () => {
+    vi.mocked(uploadAlbumCover).mockResolvedValue({} as never);
+    render(<CoverUploadButton onUpload={(file) => uploadAlbumCover(ALBUM_ID, file)} />);
+
+    selectFile(imageFile(1024, '', 'night.jpg'));
+
+    await waitFor(() => expect(uploadAlbumCover).toHaveBeenCalledTimes(1));
+  });
+
+  it('explains a 403 as an admin-only action', async () => {
+    vi.mocked(uploadAlbumCover).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 403, data: { message: 'Admin privileges required' } },
+    });
+    render(<CoverUploadButton onUpload={(file) => uploadAlbumCover(ALBUM_ID, file)} />);
+
+    selectFile(imageFile(1024));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('administradores');
+  });
+
   it('shows an error when the upload fails', async () => {
     vi.mocked(uploadAlbumCover).mockRejectedValue(new Error('boom'));
     render(<CoverUploadButton onUpload={(file) => uploadAlbumCover(ALBUM_ID, file)} />);

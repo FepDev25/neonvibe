@@ -59,6 +59,18 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, "forbidden", ex.getMessage());
     }
 
+    /**
+     * Multipart uploads that exceed the servlet limit (file or whole request)
+     * are rejected by the container before the controller runs. Surface them as
+     * 413 instead of the generic 500 so the client can show a useful message.
+     */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleUploadTooLarge(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return build(HttpStatus.PAYLOAD_TOO_LARGE, "payload_too_large",
+                "File exceeds the maximum upload size (10MB)");
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, "not_found", ex.getMessage());

@@ -73,12 +73,16 @@ export default defineConfig({
           },
           {
             // Cover images (URLs carry a ?token=, so ignore the query string).
-            // StaleWhileRevalidate: offline shows the last cover and uploads
-            // are revalidated (a fresh cover replaces the cached one).
+            // NetworkFirst: online a fresh cover (e.g. just uploaded, busted with
+            // ?v=) is always fetched; StaleWhileRevalidate served the stale image
+            // first and, with ignoreSearch, ignored the ?v= cache-buster — so an
+            // uploaded cover looked like it never changed. Offline falls back to
+            // the last cached cover.
             urlPattern: ({ url }) => /\/cover$/.test(url.pathname),
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'neonvibe-covers',
+              networkTimeoutSeconds: 5,
               cacheableResponse: { statuses: [0, 200] },
               expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 30 },
               matchOptions: { ignoreSearch: true },
