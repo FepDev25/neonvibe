@@ -95,6 +95,9 @@ neonvibe:
     staging-path: ${MUSIC_STAGING:}
     # Drop folder inside the library for SFTP/rsync batches. Blank => <root>/incoming.
     incoming-path: ${MUSIC_INCOMING:}
+    # Periodic sweep of the drop folder (seconds; 0 disables). WatchService can
+    # miss events, so this reliably organizes dropped files without a manual scan.
+    incoming-scan-interval-seconds: ${MUSIC_INCOMING_INTERVAL:60}
   covers:
     cache-path: ./data/covers
     max-size-mb: 500

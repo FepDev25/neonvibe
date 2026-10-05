@@ -80,8 +80,9 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Escaneo completo vs. carpeta de entrada:** el escaneo recorría también
   `incoming` y la ingería **en su sitio** (sin mover a `<Artista>/<Álbum>/`),
   pudiendo duplicar pistas; ahora el barrido **omite** `incoming` y, antes de
-  empezar, **organiza lo pendiente** que haya en ella. Para añadir música no
-  hace falta pulsar «Escanear»: el watcher organiza `incoming` en tiempo real.
+  empezar, **organiza lo pendiente** que haya en ella. Además, un **barrido
+  periódico** de `incoming` (cada 60 s, `MUSIC_INCOMING_INTERVAL`) recoge lo que
+  el watcher no detecte, así no hay que pulsar «Escanear».
 - **Subida manual de carátulas:** funcionaba mal de punta a punta. El cliente
   rechazaba el fichero si el navegador reportaba un MIME vacío o inusual (ahora
   valida MIME **o extensión**), el service worker servía la imagen antigua tras

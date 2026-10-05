@@ -188,6 +188,8 @@ VAPID con `npx web-push generate-vapid-keys`; sin ellas el push queda deshabilit
 **Subida de música:** `MUSIC_STAGING` (staging de subidas web; por defecto
 `<java.io.tmpdir>/neonvibe-staging`) y `MUSIC_INCOMING` (carpeta de entrada;
 por defecto `<MUSIC_PATHS>/incoming`). Necesitan escritura por `neonvibe` (ver §5).
+`MUSIC_INCOMING_INTERVAL` (segundos, por defecto `60`) es el barrido periódico de
+la carpeta de entrada; `0` lo desactiva.
 
 **Transcodificación / quality selector:** `setup.sh` instala **FFmpeg**; la caché
 de AAC va a `TRANSCODE_CACHE` (por defecto `/var/lib/neonvibe/transcode`, se crea

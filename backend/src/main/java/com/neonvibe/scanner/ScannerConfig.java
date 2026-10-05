@@ -43,6 +43,14 @@ public class ScannerConfig {
      */
     private String incomingPath = "";
 
+    /**
+     * How often (seconds) the incoming folder is swept for files the watcher
+     * missed. 0 disables the sweep. WatchService can drop events (e.g. files
+     * copied before the directory was registered), so a periodic sweep is the
+     * reliable fallback.
+     */
+    private long incomingScanIntervalSeconds = 60;
+
     public List<String> getPaths() {
         return paths;
     }
@@ -81,6 +89,14 @@ public class ScannerConfig {
 
     public void setIncomingPath(String incomingPath) {
         this.incomingPath = incomingPath;
+    }
+
+    public long getIncomingScanIntervalSeconds() {
+        return incomingScanIntervalSeconds;
+    }
+
+    public void setIncomingScanIntervalSeconds(long incomingScanIntervalSeconds) {
+        this.incomingScanIntervalSeconds = incomingScanIntervalSeconds;
     }
 
     /** First configured music root (destination for organized uploads). */

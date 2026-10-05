@@ -46,6 +46,13 @@ public class MusicScannerService {
     private final PushNotificationService pushNotifications;
 
     private ScheduledExecutorService periodicScheduler;
+    private ScheduledExecutorService incomingScheduler;
+
+    /**
+     * Guards the incoming-folder sweep so the watcher trigger, the periodic
+     * sweep and the full scan do not ingest it concurrently.
+     */
+    private final AtomicBoolean incomingRunning = new AtomicBoolean(false);
 
     /**
      * Guards {@link #scanAll()}: a full scan can be triggered from the watcher
@@ -116,6 +123,20 @@ public class MusicScannerService {
             });
             periodicScheduler.scheduleWithFixedDelay(this::scanAllSafely, interval, interval, TimeUnit.SECONDS);
         }
+
+        // Periodic incoming-folder sweep: WatchService can miss events (files
+        // copied before the dir was registered, files present at startup), so a
+        // timer reliably organizes the drop folder without a manual scan.
+        long incomingInterval = config.getIncomingScanIntervalSeconds();
+        if (incomingInterval > 0) {
+            incomingScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "neonvibe-incoming-sweep");
+                t.setDaemon(true);
+                return t;
+            });
+            incomingScheduler.scheduleWithFixedDelay(
+                    this::ingestIncomingSafely, 10, incomingInterval, TimeUnit.SECONDS);
+        }
     }
 
     @PreDestroy
@@ -123,6 +144,9 @@ public class MusicScannerService {
         scanAsyncExecutor.shutdownNow();
         if (periodicScheduler != null) {
             periodicScheduler.shutdownNow();
+        }
+        if (incomingScheduler != null) {
+            incomingScheduler.shutdownNow();
         }
         try {
             fileWatcher.close();
@@ -136,6 +160,23 @@ public class MusicScannerService {
             scanAll();
         } catch (Exception ex) {
             log.error("Periodic scan failed", ex);
+        }
+    }
+
+    /**
+     * Sweeps the incoming folder, organizing anything the watcher missed. Runs
+     * on a timer; a guard prevents overlapping sweeps / races with the watcher.
+     */
+    private void ingestIncomingSafely() {
+        if (!incomingRunning.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            ingestService.ingestIncomingFolder();
+        } catch (Exception ex) {
+            log.warn("Incoming folder sweep failed: {}", ex.getMessage());
+        } finally {
+            incomingRunning.set(false);
         }
     }
 
@@ -230,7 +271,13 @@ public class MusicScannerService {
             return;
         }
         if (isInIncoming(path)) {
-            ingestService.ingestIncoming(path);
+            if (Files.isDirectory(path)) {
+                // A new folder appeared in the drop zone: sweep it (its files may
+                // have been created before the directory was registered).
+                ingestIncomingSafely();
+            } else {
+                ingestService.ingestIncoming(path);
+            }
             return;
         }
         processPath(path);

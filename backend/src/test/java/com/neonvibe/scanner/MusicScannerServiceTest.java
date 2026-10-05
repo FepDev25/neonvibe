@@ -101,6 +101,19 @@ class MusicScannerServiceTest {
     }
 
     @Test
+    void onFileChanged_directoryInIncoming_sweepsTheFolder() throws IOException {
+        Path incoming = tempDir.resolve("incoming");
+        Path albumDir = incoming.resolve("New Album");
+        Files.createDirectories(albumDir);
+        config.setPaths(java.util.List.of(tempDir.toString()));
+
+        scanner.onFileChanged(albumDir);
+
+        verify(ingestService).ingestIncomingFolder();
+        verify(sync, never()).upsert(any(), any(), any());
+    }
+
+    @Test
     void onFileDeleted_marksUnavailable() {
         scanner.onFileDeleted(tempDir.resolve("gone.mp3"));
         verify(sync).markUnavailable(tempDir.resolve("gone.mp3").toString());
