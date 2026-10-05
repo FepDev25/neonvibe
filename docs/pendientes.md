@@ -10,13 +10,29 @@
   tags en los ficheros reales con jaudiotagger y actualiza la BD; solo-admin.
 - [x] **Subida de álbumes/canciones**: `POST /api/v1/admin/upload` (ficheros/ZIP) +
   carpeta de entrada vigilada (`<root>/incoming`); organiza en `<Artista>/<Álbum>/`,
-  ingiere y aplica carátula lateral. UI de subida en Ajustes.
-- [ ] **Permisos de escritura en `/srv/Music`.** La edición de tags y la subida
-  necesitan que `neonvibe` pueda **escribir** en la biblioteca, hoy solo-lectura.
-  Ajustar propietario/grupo/ACL, crear `/srv/Music/incoming` y documentar en
-  `docs/DEPLOY.md`.
-- [ ] Verificar en producción: editar metadata (MP3/álbum/artista) sin que el
-  watcher revierta, subir un álbum por la UI (`/upload`) y por la carpeta de entrada.
+  ingiere y aplica carátula lateral. UI propia en **`/upload`**.
+- [x] **Permisos de escritura** en `/srv/Music` (ACL para `neonvibe`) y **default
+  ACL** en `/srv/Music/incoming` para que las carpetas copiadas por `felipep`
+  hereden el permiso (necesario para mover/borrar).
+- [x] **Incidente de duplicados `(1)…(5)` resuelto:** el fallback de ingesta
+  copiaba sin poder borrar y recopiaba cada minuto. Eliminado; la ingesta de
+  `incoming` está serializada y un `move` fallido ya no crea copias ni upserts.
+  Duplicados y filas fantasma limpiados en el servidor.
+- [ ] **Verificar en producción:** editar metadata (MP3/álbum/artista) sin que el
+  watcher revierta; subir un álbum por `/upload` y por la carpeta de entrada
+  comprobando que entra **una sola vez** y que `incoming` queda vacío.
+- [ ] Audiolibros / podcasts y Chromecast / Bluetooth (resto de v0.4).
+
+### Permisos (referencia)
+
+```bash
+# biblioteca: lectura + escritura para el servicio
+sudo setfacl -R -m u:neonvibe:rwX /srv/Music
+sudo find /srv/Music -type d -exec setfacl -m d:u:neonvibe:rwx {} +
+# carpeta de entrada: que lo copiado por felipep herede el permiso de neonvibe
+sudo setfacl -R -m u:neonvibe:rwX /srv/Music/incoming
+sudo setfacl -m d:u:neonvibe:rwx /srv/Music/incoming
+```
 
 ---
 
@@ -293,4 +309,4 @@ Desarrollo movido a esta PC (2026-08-06). Infra local lista:
 
 ---
 
-*Última actualización: 2026-10-03*
+*Última actualización: 2026-10-04*

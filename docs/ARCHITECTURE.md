@@ -96,7 +96,7 @@ Módulos backend (`com.neonvibe.*`):
 | `service` | Lógica de negocio (auth, librería, cola, radio, ...) |
 | `repository` | Acceso a datos Spring Data JPA |
 | `security` | `JwtAuthenticationFilter`, emisión/validación de JWT |
-| `scanner` | WatchService + extracción de metadatos (jaudiotagger) |
+| `scanner` | WatchService + extracción de metadatos (jaudiotagger) + ingesta de subidas (`IngestService`) y escritura de tags (`AudioTagWriter`) |
 | `websocket` | `@MessageMapping` de reproductor/cola y bridge de scanner |
 | `transcode` | Transcodificación AAC on-demand (FFmpeg) con caché LRU |
 | `push` | Notificaciones nativas Web Push (VAPID) |
@@ -187,6 +187,17 @@ sequenceDiagram
   la API. Un `AtomicBoolean` garantiza que **solo un escaneo completo** corre a la
   vez (watcher, scheduler y admin se coordinan).
 - Los archivos borrados se marcan `is_available=false` (no se eliminan registros).
+
+**Ingesta de subidas (v0.4):** además del escaneo, existe un `IngestService` que
+lee los tags de un fichero nuevo, lo **mueve** a `<Artista>/<Álbum>/` (saneando
+nombres) y lo da de alta. Se alimenta de dos vías:
+
+- `POST /api/v1/admin/upload` (admin): ficheros o un ZIP se escriben en un
+  *staging* fuera de la biblioteca, se extraen de forma segura (anti *zip-slip*
+  y *zip-bomb*) y se ingieren; se aplica la carátula lateral (`cover.jpg/png`).
+- **Carpeta de entrada** `<root>/incoming`: el watcher la organiza y, como
+  `WatchService` puede perder eventos, un **barrido periódico** la recorre cada
+  60 s (`MUSIC_INCOMING_INTERVAL`). El escaneo completo **omite** `incoming`.
 
 ## 7. Sync multi-dispositivo (WebSocket)
 

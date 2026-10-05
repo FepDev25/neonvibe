@@ -129,6 +129,13 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   como desempate) cuando el cliente no pasa `sort`, en lugar de un orden
   indefinido; se respeta un `sort` explícito si se envía.
 
+### Testing
+
+- Backend **569 tests** (`./mvnw test`, cobertura JaCoCo ≥82% líneas / ≥63%
+  ramas) y frontend **118 tests** (`pnpm test`). Se añaden tests de la edición de
+  metadata, la ingesta (mover/organizar, ZIP anti *zip-slip*, carátula lateral) y
+  el filtrado de pistas no disponibles en álbumes/artistas.
+
 
 ## [0.2.0] - 2026-10-02
 
