@@ -190,7 +190,7 @@ class ArtistServiceTest {
     @Test
     void getTracks_mapsTracks() {
         when(artistRepository.findById(1L)).thenReturn(Optional.of(artist(1L, "A")));
-        when(trackRepository.findByArtistEntityId(1L)).thenReturn(List.of(track(5L, true)));
+        when(trackRepository.findByArtistEntityIdAndIsAvailableTrue(1L)).thenReturn(List.of(track(5L, true)));
 
         assertThat(service.getTracks(1L)).extracting(TrackResponse::id).containsExactly(5L);
     }

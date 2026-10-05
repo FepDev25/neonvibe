@@ -106,7 +106,8 @@ public class ArtistService {
     @Transactional(readOnly = true)
     public List<TrackResponse> getTracks(Long id) {
         require(id);
-        return trackRepository.findByArtistEntityId(id).stream().map(trackMapper::toResponse).toList();
+        return trackRepository.findByArtistEntityIdAndIsAvailableTrue(id).stream()
+                .map(trackMapper::toResponse).toList();
     }
 
     /** Batch lookup used by favorites. */

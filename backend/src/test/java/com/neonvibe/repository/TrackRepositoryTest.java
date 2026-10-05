@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.neonvibe.domain.Album;
+import com.neonvibe.domain.Artist;
 import com.neonvibe.domain.Track;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ class TrackRepositoryTest {
 
     @Autowired
     private AlbumRepository albumRepository;
+
+    @Autowired
+    private ArtistRepository artistRepository;
 
     @BeforeEach
     void setUp() {
@@ -107,6 +111,46 @@ class TrackRepositoryTest {
         assertThat(counts).hasSize(1);
         assertThat(counts.get(0).getAlbumId()).isEqualTo(album.getId());
         assertThat(counts.get(0).getTrackCount()).isEqualTo(1);
+    }
+
+    @Test
+    void findByAlbumEntityIdPaged_excludesUnavailable() {
+        Album album = new Album();
+        album.setName("Paged Album");
+        album.setArtist("A");
+        album = albumRepository.save(album);
+
+        Track available = track("/music/p1.mp3", "P1", "A", "Paged Album", "Rock", 2020);
+        available.setAlbumEntity(album);
+        available.setTrackNumber(1);
+        Track unavailable = track("/music/p2.mp3", "P2", "A", "Paged Album", "Rock", 2020);
+        unavailable.setAlbumEntity(album);
+        unavailable.setTrackNumber(2);
+        unavailable.setAvailable(false);
+        trackRepository.save(available);
+        trackRepository.save(unavailable);
+
+        Page<Track> page = trackRepository.findByAlbumEntityIdPaged(album.getId(), PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).extracting(Track::getFilePath).containsExactly("/music/p1.mp3");
+    }
+
+    @Test
+    void findByArtistEntityIdAndIsAvailableTrue_excludesUnavailable() {
+        Artist artist = new Artist();
+        artist.setName("Available Artist");
+        artist = artistRepository.save(artist);
+
+        Track available = track("/music/av1.mp3", "Av1", "Available Artist", "Al", "Rock", 2020);
+        available.setArtistEntity(artist);
+        Track unavailable = track("/music/av2.mp3", "Av2", "Available Artist", "Al", "Rock", 2020);
+        unavailable.setArtistEntity(artist);
+        unavailable.setAvailable(false);
+        trackRepository.save(available);
+        trackRepository.save(unavailable);
+
+        assertThat(trackRepository.findByArtistEntityIdAndIsAvailableTrue(artist.getId()))
+                .extracting(Track::getFilePath).containsExactly("/music/av1.mp3");
     }
 
     @Test

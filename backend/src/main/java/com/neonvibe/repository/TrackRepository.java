@@ -40,9 +40,12 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
 
     List<Track> findByArtistEntityId(Long artistId);
 
+    /** Available tracks of an artist, for the artist detail page. */
+    List<Track> findByArtistEntityIdAndIsAvailableTrue(Long artistId);
+
     List<Track> findByAlbumEntityId(Long albumId);
 
-    @Query("SELECT t FROM Track t WHERE t.albumEntity.id = :albumId ORDER BY t.trackNumber")
+    @Query("SELECT t FROM Track t WHERE t.albumEntity.id = :albumId AND t.isAvailable = true ORDER BY t.trackNumber")
     Page<Track> findByAlbumEntityIdPaged(@Param("albumId") Long albumId, Pageable pageable);
 
     @Query("SELECT COUNT(t) FROM Track t WHERE t.albumEntity.id = :albumId AND t.isAvailable = true")

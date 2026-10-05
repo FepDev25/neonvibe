@@ -77,6 +77,10 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Canciones no disponibles visibles:** el detalle de álbum y de artista listaba
+  los tracks con `is_available=false` (p. ej. los duplicados borrados seguían
+  apareciendo). Las consultas de pistas por álbum/artista ahora filtran por
+  disponibilidad.
 - **Duplicados `(1)`, `(2)`… en la biblioteca:** el fallback de ingesta copiaba el
   fichero e intentaba borrar el original **ignorando el fallo del borrado**; si
   `neonvibe` no podía borrar en la carpeta de entrada (permisos), el original se
