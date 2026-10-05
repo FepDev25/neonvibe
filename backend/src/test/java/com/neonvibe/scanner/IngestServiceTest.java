@@ -129,6 +129,24 @@ class IngestServiceTest {
     }
 
     @Test
+    void ingestUpload_doesNotOverwriteAnExistingLibraryFile() throws Exception {
+        Path staging = staging();
+        Files.write(staging.resolve("song.mp3"), fixture());
+
+        // The fixture maps to <artist>/<album>/song.mp3; pre-create that file.
+        Path destDir = tempDir.resolve("Nobuo Uematsu")
+                .resolve("FINAL FANTASY Special Soundtrack _Timelapse Remix_");
+        Files.createDirectories(destDir);
+        Files.writeString(destDir.resolve("song.mp3"), "existing");
+
+        IngestService.IngestResult result = service.ingestUpload(staging);
+
+        assertThat(result.processed()).isEqualTo(1);
+        assertThat(Files.readString(destDir.resolve("song.mp3"))).isEqualTo("existing");
+        assertThat(destDir.resolve("song (1).mp3")).exists();
+    }
+
+    @Test
     void safeUploadName_stripsPathsAndUnsafeChars() {
         assertThat(IngestService.safeUploadName("../../etc/passwd")).isEqualTo("passwd");
         assertThat(IngestService.safeUploadName("my song?.mp3")).isEqualTo("my song_.mp3");

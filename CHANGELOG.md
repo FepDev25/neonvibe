@@ -77,6 +77,11 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Ingesta de `incoming` concurrente:** el watcher, el barrido periódico y el
+  escaneo completo podían procesar el mismo fichero a la vez; el `Files.move`
+  perdedor fallaba con `FileAlreadyExistsException` y el disco no entraba.
+  Ahora la ingesta de `incoming` está **serializada** y el `move` reintenta con
+  un nombre único (o lo da por hecho si otra pasada ya lo movió).
 - **Escaneo completo vs. carpeta de entrada:** el escaneo recorría también
   `incoming` y la ingería **en su sitio** (sin mover a `<Artista>/<Álbum>/`),
   pudiendo duplicar pistas; ahora el barrido **omite** `incoming` y, antes de

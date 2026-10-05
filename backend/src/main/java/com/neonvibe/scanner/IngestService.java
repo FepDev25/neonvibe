@@ -3,10 +3,13 @@ package com.neonvibe.scanner;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -58,6 +62,14 @@ public class IngestService {
     private final LibrarySyncService librarySyncService;
     private final CoverArtService coverArtService;
 
+    /**
+     * Serializes ingestion of the incoming folder. The watcher, the periodic
+     * sweep and a full scan can all fire at once; without this, two runs race on
+     * the same source file and the loser's {@code Files.move} fails with
+     * {@link FileAlreadyExistsException}.
+     */
+    private final ReentrantLock incomingLock = new ReentrantLock();
+
     public IngestService(ScannerConfig config,
                          MetadataExtractor metadataExtractor,
                          LibrarySyncService librarySyncService,
@@ -98,15 +110,20 @@ public class IngestService {
      * by the watcher). Safe to call from a full scan.
      */
     public IngestResult ingestIncomingFolder() {
-        Path incoming = config.resolveIncomingPath();
-        if (!Files.isDirectory(incoming)) {
+        if (!incomingLock.tryLock()) {
+            // Another incoming ingest is already running; it will cover this.
             return IngestResult.empty();
         }
         try {
+            Path incoming = config.resolveIncomingPath();
+            if (!Files.isDirectory(incoming)) {
+                return IngestResult.empty();
+            }
             extractZipsIn(incoming);
             return ingestTree(incoming);
         } finally {
-            deleteQuietly(incoming.resolve(".extracted"));
+            deleteQuietly(config.resolveIncomingPath().resolve(".extracted"));
+            incomingLock.unlock();
         }
     }
 
@@ -122,37 +139,6 @@ public class IngestService {
         }
         String cleaned = name.replaceAll("[^A-Za-z0-9._ -]", "_").replaceAll("^\\.+", "").trim();
         return cleaned.isEmpty() ? "upload" : cleaned;
-    }
-
-    /**
-     * Watcher entry point for a file dropped into the incoming folder. Handles
-     * ZIPs (extract + ingest + delete) and audio files (move + ingest).
-     */
-    public void ingestIncoming(Path path) {
-        if (path == null || !Files.isRegularFile(path)) {
-            return;
-        }
-        if (isZip(path)) {
-            Path tmp = null;
-            try {
-                tmp = Files.createTempDirectory("neonvibe-incoming-");
-                extractZip(path, tmp);
-                ingestTree(tmp);
-                Files.deleteIfExists(path);
-            } catch (Exception ex) {
-                log.warn("Could not ingest archive {}: {}", path, ex.getMessage());
-            } finally {
-                deleteQuietly(tmp);
-            }
-            return;
-        }
-        if (isSupportedAudio(path)) {
-            try {
-                ingestFile(path);
-            } catch (Exception ex) {
-                log.warn("Could not ingest {}: {}", path, ex.getMessage());
-            }
-        }
     }
 
     // ---- internals ----
@@ -220,10 +206,43 @@ public class IngestService {
 
         Path destination = destinationFor(meta, source.getFileName().toString());
         Files.createDirectories(destination.getParent());
-        Files.move(source, destination);
+        Path finalPath = moveIntoLibrary(source, destination);
 
-        Track track = librarySyncService.upsert(destination, meta, extracted.embeddedArt());
+        Track track = librarySyncService.upsert(finalPath, meta, extracted.embeddedArt());
         return track.getAlbumEntity() != null ? track.getAlbumEntity().getId() : null;
+    }
+
+    /**
+     * Moves a file into the library, tolerating concurrent ingests: if the target
+     * was created by another run, a fresh unique name is chosen; if our source is
+     * already gone (another run won), the existing target is returned. Falls back
+     * to copy+delete for filesystems where rename fails.
+     *
+     * @return the path the file actually ended up at
+     */
+    private Path moveIntoLibrary(Path source, Path destination) throws IOException {
+        Path target = unique(destination);
+        try {
+            Files.move(source, target);
+            return target;
+        } catch (FileAlreadyExistsException ex) {
+            if (!Files.exists(source)) {
+                return target; // another run already moved it
+            }
+            return moveIntoLibrary(source, destination);
+        } catch (NoSuchFileException ex) {
+            if (Files.exists(target)) {
+                return target;
+            }
+            throw ex;
+        } catch (IOException ex) {
+            log.debug("Move {} -> {} failed ({}); falling back to copy",
+                    source, target, ex.getClass().getSimpleName());
+        }
+        Path copyTarget = unique(destination);
+        Files.copy(source, copyTarget, StandardCopyOption.COPY_ATTRIBUTES);
+        Files.deleteIfExists(source);
+        return copyTarget;
     }
 
     private Path destinationFor(MusicMetadata meta, String originalName) {

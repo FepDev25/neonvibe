@@ -271,13 +271,9 @@ public class MusicScannerService {
             return;
         }
         if (isInIncoming(path)) {
-            if (Files.isDirectory(path)) {
-                // A new folder appeared in the drop zone: sweep it (its files may
-                // have been created before the directory was registered).
-                ingestIncomingSafely();
-            } else {
-                ingestService.ingestIncoming(path);
-            }
+            // Serialized sweep: covers files/dirs copied before the watcher
+            // registered them, and avoids concurrent moves of the same file.
+            ingestIncomingSafely();
             return;
         }
         processPath(path);

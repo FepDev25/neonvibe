@@ -87,7 +87,7 @@ class MusicScannerServiceTest {
     }
 
     @Test
-    void onFileChanged_fileInIncomingFolder_delegatesToIngest() throws IOException {
+    void onFileChanged_fileInIncomingFolder_sweepsTheFolder() throws IOException {
         Path incoming = tempDir.resolve("incoming");
         Files.createDirectories(incoming);
         config.setPaths(java.util.List.of(tempDir.toString()));
@@ -96,7 +96,7 @@ class MusicScannerServiceTest {
 
         scanner.onFileChanged(dropped);
 
-        verify(ingestService).ingestIncoming(dropped);
+        verify(ingestService).ingestIncomingFolder();
         verify(sync, never()).upsert(any(), any(), any());
     }
 
