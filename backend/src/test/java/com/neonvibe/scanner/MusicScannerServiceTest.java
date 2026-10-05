@@ -135,6 +135,24 @@ class MusicScannerServiceTest {
     }
 
     @Test
+    void scanAll_organizesIncomingAndSkipsItDuringTheWalk() throws IOException {
+        config.setPaths(java.util.List.of(tempDir.toString()));
+        Path incoming = tempDir.resolve("incoming");
+        Files.createDirectories(incoming);
+        Path dropped = incoming.resolve("drop.mp3");
+        Files.writeString(dropped, "dummy");
+        when(extractor.extractFile(any())).thenReturn(extracted("T"));
+
+        scanner.scanAll();
+
+        // The drop folder is organized by the ingester, not upserted in place.
+        verify(ingestService).ingestIncomingFolder();
+        verify(extractor, never()).extractFile(dropped);
+        // Only the two library fixtures (mp3/flac) were processed.
+        verify(sync, times(2)).upsert(any(), any(), any());
+    }
+
+    @Test
     void scanAll_missingRoot_completesWithoutProcessing() {
         config.setPaths(java.util.List.of(tempDir.resolve("nope").toString()));
 

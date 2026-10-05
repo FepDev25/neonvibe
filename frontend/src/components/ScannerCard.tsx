@@ -46,7 +46,9 @@ export default function ScannerCard() {
         <div>
           <p className="font-semibold">Escáner</p>
           <p className="text-sm text-text-muted">
-            {running ? 'Escaneando la biblioteca…' : 'Busca música nueva en el servidor.'}
+            {running
+              ? 'Escaneando la biblioteca…'
+              : 'Revisa toda la biblioteca. La carpeta de entrada se organiza sola.'}
           </p>
         </div>
       </div>

@@ -92,6 +92,24 @@ public class IngestService {
         }
     }
 
+    /**
+     * Organizes whatever is currently sitting in the incoming/drop folder
+     * (leftovers dropped while the service was down, or just not yet picked up
+     * by the watcher). Safe to call from a full scan.
+     */
+    public IngestResult ingestIncomingFolder() {
+        Path incoming = config.resolveIncomingPath();
+        if (!Files.isDirectory(incoming)) {
+            return IngestResult.empty();
+        }
+        try {
+            extractZipsIn(incoming);
+            return ingestTree(incoming);
+        } finally {
+            deleteQuietly(incoming.resolve(".extracted"));
+        }
+    }
+
     /** Sanitizes an uploaded part's filename so it cannot escape the staging dir. */
     public static String safeUploadName(String original) {
         if (original == null || original.isBlank()) {

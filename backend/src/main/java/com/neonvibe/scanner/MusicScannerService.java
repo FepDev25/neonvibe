@@ -154,6 +154,15 @@ public class MusicScannerService {
         }
         try {
             status.markScanning(Instant.now());
+            // Organize anything pending in the drop folder first, then skip it
+            // during the walk so its files are not upserted in place (they must
+            // be moved into <Artist>/<Album>/ by the ingester).
+            try {
+                ingestService.ingestIncomingFolder();
+            } catch (Exception ex) {
+                log.warn("Could not organize the incoming folder: {}", ex.getMessage());
+            }
+            Path incoming = config.resolveIncomingPath().toAbsolutePath().normalize();
             for (String root : config.getPaths()) {
                 Path rootPath = Path.of(root);
                 if (!Files.exists(rootPath)) {
@@ -161,6 +170,14 @@ public class MusicScannerService {
                     continue;
                 }
                 Files.walkFileTree(rootPath, new SimpleFileVisitor<>() {
+                    @Override
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                        if (dir.toAbsolutePath().normalize().equals(incoming)) {
+                            return FileVisitResult.SKIP_SUBTREE;
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                         processPath(file);
