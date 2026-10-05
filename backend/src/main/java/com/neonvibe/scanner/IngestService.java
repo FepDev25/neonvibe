@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -176,7 +175,8 @@ public class IngestService {
                 processed++;
             } catch (Exception ex) {
                 failed++;
-                String msg = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+                String reason = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+                String msg = ex.getClass().getSimpleName() + ": " + reason;
                 errors.add(file.getFileName() + ": " + msg);
                 log.warn("Ingest failed for {}: {}", file, msg);
             }
@@ -215,8 +215,12 @@ public class IngestService {
     /**
      * Moves a file into the library, tolerating concurrent ingests: if the target
      * was created by another run, a fresh unique name is chosen; if our source is
-     * already gone (another run won), the existing target is returned. Falls back
-     * to copy+delete for filesystems where rename fails.
+     * already gone (another run won), the existing target is returned.
+     *
+     * <p>Deliberately does NOT fall back to copy: a copy that cannot delete the
+     * source would leave the file in the drop folder and re-ingest it forever
+     * (producing {@code (1)}, {@code (2)}… duplicates). {@code Files.move} already
+     * handles cross-device moves, so a move failure is surfaced instead.</p>
      *
      * @return the path the file actually ended up at
      */
@@ -235,14 +239,7 @@ public class IngestService {
                 return target;
             }
             throw ex;
-        } catch (IOException ex) {
-            log.debug("Move {} -> {} failed ({}); falling back to copy",
-                    source, target, ex.getClass().getSimpleName());
         }
-        Path copyTarget = unique(destination);
-        Files.copy(source, copyTarget, StandardCopyOption.COPY_ATTRIBUTES);
-        Files.deleteIfExists(source);
-        return copyTarget;
     }
 
     private Path destinationFor(MusicMetadata meta, String originalName) {

@@ -77,6 +77,12 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Duplicados `(1)`, `(2)`… en la biblioteca:** el fallback de ingesta copiaba el
+  fichero e intentaba borrar el original **ignorando el fallo del borrado**; si
+  `neonvibe` no podía borrar en la carpeta de entrada (permisos), el original se
+  quedaba y el barrido lo volvía a copiar sin parar. Se elimina ese fallback
+  (`Files.move` ya resuelve los cambios de dispositivo) y un fallo de `move`
+  ahora se registra **sin crear copias ni upserts**.
 - **Ingesta de `incoming` concurrente:** el watcher, el barrido periódico y el
   escaneo completo podían procesar el mismo fichero a la vez; el `Files.move`
   perdedor fallaba con `FileAlreadyExistsException` y el disco no entraba.
