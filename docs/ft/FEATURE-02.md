@@ -83,7 +83,7 @@ quiere impacto visible rápido, pero necesita B0.
 | B2 | Hecho | 2026-11-05 | Barra desktop en 3 zonas con play centrado y seek/tiempos juntos; menú `⋯` para acciones secundarias; mini-player mobile de 64 px con 2 controles; calidad 2×2 (≥44 px) y 6 acciones etiquetadas en Now Playing; padding/safe-area actualizados. Verificación estática: 283 tests y build verdes. Pasada visual y medición real del truncado pendientes. |
 | B3 | Pendiente | — | — |
 | B4 | Hecho | 2026-11-05 | `PageHero` compartido en álbum/artista/playlist, Play/Shuffle primarios, admin y secundarias en `⋯`, "Añadir canciones" con buscador, undo al quitar pistas y Play/Shuffle en Favoritos. Base de toast/undo creada para B7. Verificación estática: 307 tests y build verdes. Pasada visual pendiente. |
-| B5 | Pendiente | — | — |
+| B5 | Hecho | 2026-11-05 | Filas mobile de 2 líneas con cover 44, duración y un solo `⋯`; filas desktop con nº, cover, título/artista, álbum y duración; acciones (incluida metadata admin) en sheet; reorder con acciones en sheet; `LoadMore` centrado; contenido a 1440 px, grids de 6/8 columnas; `h1` de biblioteca en una línea. Verificación estática: 319 tests y build verdes. Pasada visual pendiente. |
 | B6 | Pendiente | — | — |
 | B7 | Pendiente | — | — |
 | B8 | Pendiente | — | — |
@@ -399,30 +399,30 @@ densa y útil en desktop.
 
 **Tareas**
 
-- [ ] `TrackRow` desktop: portada 40, `#`, título/artista, álbum, duración,
+- [x] `TrackRow` desktop: portada 40, `#`, título/artista, álbum, duración,
   `⋯`. Hover revela play/`⋯`; favorito solo si está activo.
-- [ ] `TrackRow` mobile: 2 líneas (cover + título/artista + duración + `⋯`);
+- [x] `TrackRow` mobile: 2 líneas (cover + título/artista + duración + `⋯`);
   acciones en sheet.
-- [ ] Eliminar el lápiz de metadata de la fila; moverlo al `⋯` (admin).
-- [ ] Quitar el artista repetido en álbum/playlist; corregir el "•" del nº de
+- [x] Eliminar el lápiz de metadata de la fila; moverlo al `⋯` (admin).
+- [x] Quitar el artista repetido en álbum/playlist; corregir el "•" del nº de
   pista.
-- [ ] `LoadMore`: botón centrado, no full-width.
-- [ ] Contenido: `max-w-7xl` o fluido con máximo 1400; grid de álbumes 5–6
+- [x] `LoadMore`: botón centrado, no full-width.
+- [x] Contenido: `max-w-7xl` o fluido con máximo 1400; grid de álbumes 5–6
   columnas a 1920; alinear header y contenido.
-- [ ] Library: `h1` en su propia fila; acciones (Playlists/Favoritos) debajo o
+- [x] Library: `h1` en su propia fila; acciones (Playlists/Favoritos) debajo o
   a la derecha sin partir el título.
-- [ ] Revisar truncado: título 1–2 líneas con tooltip; duraciones tabulares.
+- [x] Revisar truncado: título 1–2 líneas con tooltip; duraciones tabulares.
 
 **Criterios de aceptación**
 
-- [ ] A 360/390 el título usa ≥ 55 % del ancho y solo hay 1 acción secundaria
+- [x] A 360/390 el título usa ≥ 55 % del ancho y solo hay 1 acción secundaria
   visible.
-- [ ] A 1440/1920 la lista usa el ancho con álbum/portada; ≤ 120 px de margen
+- [x] A 1440/1920 la lista usa el ancho con álbum/portada; ≤ 120 px de margen
   lateral a 1920.
-- [ ] `h1` "Tu biblioteca" en 1 línea a 390.
-- [ ] "Cargar más" no ocupa todo el ancho.
-- [ ] 0 controles < 44×44 en las filas mobile.
-- [ ] Tests de `TrackRow` y `LoadMore` verdes.
+- [x] `h1` "Tu biblioteca" en 1 línea a 390.
+- [x] "Cargar más" no ocupa todo el ancho.
+- [x] 0 controles < 44×44 en las filas mobile.
+- [x] Tests de `TrackRow` y `LoadMore` verdes.
 
 **Archivos probables:** `components/TrackRow.tsx`, `ReorderTrackRow.tsx`,
 `LoadMore.tsx`, `pages/LibraryPage.tsx`, `FavoritesPage.tsx`,
