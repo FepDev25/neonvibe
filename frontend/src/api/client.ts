@@ -44,10 +44,11 @@ export function shouldAutoLogout(status: number | undefined, url: string): boole
   return !url.startsWith('/auth/google') && !url.startsWith('/auth/refresh');
 }
 
-// In-flight refresh shared by concurrent 401s so only one refresh happens.
+// In-flight refresh shared by concurrent 401s and by the player's media-token
+// check, so only one rotation ever happens at a time.
 let refreshPromise: Promise<string> | null = null;
 
-async function refreshAccessToken(): Promise<string> {
+async function performRefresh(): Promise<string> {
   const refreshToken = useAuthStore.getState().refreshToken;
   if (!refreshToken) {
     throw new Error('No refresh token available');
@@ -58,6 +59,60 @@ async function refreshAccessToken(): Promise<string> {
   });
   useAuthStore.getState().setTokens(data.access_token, data.refresh_token);
   return data.access_token;
+}
+
+/**
+ * Refreshes the access token, sharing one in-flight request between every
+ * caller. Exported for the player: `<audio src>` requests cannot go through the
+ * axios interceptor, so the player checks the JWT expiry before using a stream
+ * URL and refreshes proactively.
+ */
+export function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = performRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+/** Reads the `exp` claim (seconds) from a JWT without verifying it. */
+export function getTokenExpirySeconds(token: string | null | undefined): number | null {
+  if (!token) {
+    return null;
+  }
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return null; // opaque token (e.g. dev mocks): no expiry information
+  }
+  try {
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = payload.padEnd(Math.ceil(payload.length / 4) * 4, '=');
+    const json = JSON.parse(atob(padded)) as { exp?: unknown };
+    return typeof json.exp === 'number' ? json.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * True when the access token is missing, malformed with an expiry, or expires
+ * within `skewMs`. Opaque tokens are treated as non-expiring: the backend will
+ * reject them if needed and the media error path handles it.
+ */
+export function isAccessTokenExpiring(
+  token: string | null | undefined,
+  skewMs = 60_000,
+  nowMs = Date.now(),
+): boolean {
+  if (!token) {
+    return true;
+  }
+  const exp = getTokenExpirySeconds(token);
+  if (exp == null) {
+    return false;
+  }
+  return exp * 1000 - nowMs <= skewMs;
 }
 
 type RetriableConfig = InternalAxiosRequestConfig & { _retry?: boolean };
@@ -78,9 +133,7 @@ apiClient.interceptors.response.use(
     ) {
       original._retry = true;
       try {
-        const token = await (refreshPromise ??= refreshAccessToken().finally(() => {
-          refreshPromise = null;
-        }));
+        const token = await refreshAccessToken();
         original.headers = {
           ...original.headers,
           Authorization: `Bearer ${token}`,

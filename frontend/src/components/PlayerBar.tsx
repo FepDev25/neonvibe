@@ -55,6 +55,9 @@ export default function PlayerBar() {
   const cycleRepeat = usePlayerStore((s) => s.cycleRepeat);
   const setVolume = usePlayerStore((s) => s.setVolume);
   const playTrack = usePlayerStore((s) => s.playTrack);
+  const playerError = usePlayerStore((s) => s.error);
+  const retry = usePlayerStore((s) => s.retry);
+  const dismissError = usePlayerStore((s) => s.dismissError);
 
   const [queueOpen, setQueueOpen] = useState(false);
   const [lyricsOpen, setLyricsOpen] = useState(false);
@@ -100,6 +103,35 @@ export default function PlayerBar() {
     <>
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur safe-bottom lg:inset-x-auto lg:left-60 lg:right-0">
         <div className="mx-auto flex w-full max-w-5xl flex-col px-3 py-1.5 sm:px-6">
+          {playerError && (
+            <div
+              role="alert"
+              className="mb-1 flex items-center justify-between gap-2 rounded-lg border border-neon-pink/40 bg-neon-pink/10 px-2 py-1 text-[11px] text-text"
+            >
+              <span className="min-w-0 flex-1 truncate" title={playerError.message}>
+                {playerError.message}
+              </span>
+              <div className="flex shrink-0 items-center gap-1">
+                {playerError.recoverable && (
+                  <button
+                    type="button"
+                    onClick={() => retry()}
+                    className="rounded px-2 py-0.5 font-semibold text-neon-cyan hover:bg-surface-alt"
+                  >
+                    Reintentar
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => dismissError()}
+                  aria-label="Descartar aviso de reproducción"
+                  className="rounded px-1.5 py-0.5 text-text-muted hover:bg-surface-alt"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              </div>
+            </div>
+          )}
           <SeekBar progress={progress} duration={duration} onSeek={seek} className="mb-1" />
 
           <div className="flex items-center gap-2">

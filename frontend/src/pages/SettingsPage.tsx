@@ -12,6 +12,13 @@ import {
 } from 'lucide-react';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
+import {
+  EQ_BANDS,
+  EQ_MAX_DB,
+  EQ_MIN_DB,
+  usePlaybackStore,
+} from '@/stores/playbackStore';
+import { applyEqSettings, ensureGraph } from '@/player/audioGraph';
 import { useSettings, useUpdateSettings } from '@/hooks/useSettings';
 import {
   clearCache,
@@ -83,6 +90,25 @@ export default function SettingsPage() {
   const [pushError, setPushError] = useState<string | null>(null);
   const [pushTesting, setPushTesting] = useState(false);
   const [pushSent, setPushSent] = useState<number | null>(null);
+
+  const prefetch = usePlaybackStore((s) => s.prefetch);
+  const setPrefetch = usePlaybackStore((s) => s.setPrefetch);
+  const eqEnabled = usePlaybackStore((s) => s.eqEnabled);
+  const setEqEnabled = usePlaybackStore((s) => s.setEqEnabled);
+  const eqGains = usePlaybackStore((s) => s.eqGains);
+  const setEqGain = usePlaybackStore((s) => s.setEqGain);
+  const resetEq = usePlaybackStore((s) => s.resetEq);
+  const [eqError, setEqError] = useState(false);
+
+  const toggleEq = (enabled: boolean) => {
+    if (enabled && !ensureGraph()) {
+      setEqError(true);
+      return;
+    }
+    setEqError(false);
+    setEqEnabled(enabled);
+    applyEqSettings();
+  };
 
   const pushKey = useQuery({ queryKey: ['pushKey'], queryFn: getPushKey });
   const pushConfigured = pushKey.data?.configured ?? false;
@@ -246,6 +272,68 @@ export default function SettingsPage() {
             Claro
           </Button>
         </div>
+      </Card>
+
+      {/* Reproducción */}
+      <Card className="flex flex-col gap-3">
+        <div>
+          <p className="font-semibold">Reproducción</p>
+          <p className="text-xs text-text-muted">
+            Ajustes locales de este dispositivo (no se guardan en la cuenta).
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+          <div>
+            <p className="text-sm font-semibold">Precargar la siguiente canción</p>
+            <p className="text-xs text-text-muted">
+              Hasta 12 MB, solo una pista y respetando el ahorro de datos. Mejora el
+              cambio de canción; si falla, se reproduce en streaming normal.
+            </p>
+          </div>
+          <Toggle checked={prefetch} onChange={setPrefetch} label="Precargar la siguiente canción" />
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+          <div>
+            <p className="text-sm font-semibold">Ecualizador</p>
+            <p className="text-xs text-text-muted">
+              Desactivado por defecto (bypass). No es normalización de volumen.
+            </p>
+            {eqError && (
+              <p className="text-xs text-neon-pink">
+                Este navegador no permite procesar el audio en tiempo real.
+              </p>
+            )}
+          </div>
+          <Toggle checked={eqEnabled} onChange={toggleEq} label="Ecualizador" disabled={eqError} />
+        </div>
+
+        {eqEnabled && (
+          <div className="flex flex-col gap-2 border-t border-border pt-3">
+            {EQ_BANDS.map((band, index) => (
+              <label key={band.frequency} className="flex items-center gap-2 text-xs">
+                <span className="w-14 shrink-0 text-text-muted">{band.label}</span>
+                <input
+                  type="range"
+                  min={EQ_MIN_DB}
+                  max={EQ_MAX_DB}
+                  step={1}
+                  value={eqGains[index] ?? 0}
+                  onChange={(event) => setEqGain(index, Number(event.target.value))}
+                  aria-label={`Ganancia ${band.label}`}
+                  className="neon-range h-1.5 flex-1"
+                />
+                <span className="w-10 shrink-0 text-right tabular-nums text-text-muted">
+                  {eqGains[index] ?? 0} dB
+                </span>
+              </label>
+            ))}
+            <Button variant="ghost" size="sm" onClick={resetEq} className="self-start">
+              Restablecer ecualizador
+            </Button>
+          </div>
+        )}
       </Card>
 
       {/* Notificaciones */}

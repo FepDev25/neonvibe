@@ -1,3 +1,4 @@
+import { refreshAccessToken, isAccessTokenExpiring } from '@/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { useQualityStore } from '@/stores/qualityStore';
 import { offlineDb } from '@/offline/offlineDb';
@@ -17,22 +18,85 @@ export function streamUrl(trackId: number): string {
   return `/api/v1/tracks/${trackId}/stream${query ? `?${query}` : ''}`;
 }
 
-// Blob URLs are cached per track id and revoked when replaced.
-const blobUrlCache = new Map<number, string>();
+export type PlayableKind = 'stream' | 'offline';
+
+export interface PlayableSource {
+  src: string;
+  kind: PlayableKind;
+}
 
 /**
- * Returns a playable URL for a track: the normal streaming URL when online, or
- * a blob URL from IndexedDB when offline and the track was downloaded.
+ * The track cannot be played because there is no network connection and no
+ * downloaded copy. Typed so the player can show a clear message instead of
+ * skipping through the queue in silence.
  */
-export async function getPlayableSrc(trackId: number): Promise<string> {
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    const blobUrl = await getOfflineBlobUrl(trackId);
-    if (blobUrl) {
-      return blobUrl;
-    }
+export class OfflineUnavailableError extends Error {
+  constructor(public readonly trackId: number) {
+    super(`Track ${trackId} is not available offline`);
+    this.name = 'OfflineUnavailableError';
+  }
+}
+
+function networkAvailable(): boolean {
+  // `navigator.onLine` is only a hint (false positives and negatives exist),
+  // but a definitive `false` is still worth using to go straight to the blob.
+  return typeof navigator === 'undefined' || navigator.onLine !== false;
+}
+
+/**
+ * Stream URL that can be assigned synchronously, or null when async work is
+ * required first (offline blob lookup, proactive token refresh). Keeping this
+ * path synchronous preserves the user-activation window on the first play.
+ */
+export function getImmediatePlayableSrc(trackId: number): string | null {
+  if (!networkAvailable()) {
+    return null;
+  }
+  if (isAccessTokenExpiring(useAuthStore.getState().token)) {
+    return null;
   }
   return streamUrl(trackId);
 }
+
+/** Online URL for prefetching, only when the current token is still valid. */
+export function getPrefetchableStreamUrl(trackId: number): string | null {
+  if (!networkAvailable() || isAccessTokenExpiring(useAuthStore.getState().token)) {
+    return null;
+  }
+  return streamUrl(trackId);
+}
+
+/**
+ * Resolves a playable source doing the async work only when strictly needed:
+ * - offline: IndexedDB blob (or a typed "unavailable offline" error);
+ * - online with a token about to expire: refresh first, then stream.
+ */
+export async function resolvePlayableSrc(trackId: number): Promise<PlayableSource> {
+  if (!networkAvailable()) {
+    const blobUrl = await getOfflineBlobUrl(trackId);
+    if (blobUrl) {
+      return { src: blobUrl, kind: 'offline' };
+    }
+    throw new OfflineUnavailableError(trackId);
+  }
+  if (isAccessTokenExpiring(useAuthStore.getState().token)) {
+    try {
+      await refreshAccessToken();
+    } catch {
+      // Keep the old token: if it is still valid the request works; if not,
+      // the media error path classifies it without an infinite retry loop.
+    }
+  }
+  return { src: streamUrl(trackId), kind: 'stream' };
+}
+
+/** Backwards-compatible helper returning only the URL. */
+export async function getPlayableSrc(trackId: number): Promise<string> {
+  return (await resolvePlayableSrc(trackId)).src;
+}
+
+// Blob URLs are cached per track id and revoked when replaced.
+const blobUrlCache = new Map<number, string>();
 
 /** Blob URL for a downloaded track, or null. */
 export async function getOfflineBlobUrl(trackId: number): Promise<string | null> {
@@ -41,7 +105,7 @@ export async function getOfflineBlobUrl(trackId: number): Promise<string | null>
     return cached;
   }
   const record = await offlineDb.get(trackId).catch(() => undefined);
-  if (!record) {
+  if (!record || !record.blob) {
     return null;
   }
   const url = URL.createObjectURL(record.blob);
@@ -56,6 +120,15 @@ export function revokeBlobUrl(trackId: number): void {
     URL.revokeObjectURL(url);
     blobUrlCache.delete(trackId);
   }
+}
+
+/** Revokes every cached blob URL (logout / session reset). */
+export function clearBlobUrlCache(): void {
+  for (const url of blobUrlCache.values()) {
+    URL.revokeObjectURL(url);
+  }
+  blobUrlCache.clear();
+  deferredRevoke.clear();
 }
 
 // Tracks whose offline copy was deleted while they were playing: revoking their
