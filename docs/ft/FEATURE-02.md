@@ -82,7 +82,7 @@ quiere impacto visible rápido, pero necesita B0.
 | B1 | Hecho | 2026-11-05 | Bottom tabs (Inicio/Buscar/Biblioteca/Ajustes), "Más" reducido a 7 destinos secundarios, sidebar agrupada con Ajustes+usuario al pie, header contextual sin logo, Subir/Escáner en Ajustes (admin) y helper `initials`. Verificación estática: 273 tests y build verdes. Player encajado encima de tabs; pasada visual pendiente. |
 | B2 | Hecho | 2026-11-05 | Barra desktop en 3 zonas con play centrado y seek/tiempos juntos; menú `⋯` para acciones secundarias; mini-player mobile de 64 px con 2 controles; calidad 2×2 (≥44 px) y 6 acciones etiquetadas en Now Playing; padding/safe-area actualizados. Verificación estática: 283 tests y build verdes. Pasada visual y medición real del truncado pendientes. |
 | B3 | Pendiente | — | — |
-| B4 | Pendiente | — | — |
+| B4 | Hecho | 2026-11-05 | `PageHero` compartido en álbum/artista/playlist, Play/Shuffle primarios, admin y secundarias en `⋯`, "Añadir canciones" con buscador, undo al quitar pistas y Play/Shuffle en Favoritos. Base de toast/undo creada para B7. Verificación estática: 307 tests y build verdes. Pasada visual pendiente. |
 | B5 | Pendiente | — | — |
 | B6 | Pendiente | — | — |
 | B7 | Pendiente | — | — |
@@ -356,24 +356,24 @@ detalles compartan un mismo patrón en desktop y mobile.
 
 **Tareas**
 
-- [ ] `PageHero` único (cover, título, meta, acciones) para álbum/artista/
+- [x] `PageHero` único (cover, título, meta, acciones) para álbum/artista/
   playlist; alineación izquierda en desktop, columna en mobile.
-- [ ] Botón primario **▶ Reproducir** + **Shuffle**; admin (carátula, editar,
+- [x] Botón primario **▶ Reproducir** + **Shuffle**; admin (carátula, editar,
   eliminar) en `⋯`.
-- [ ] Mobile: acciones en una fila horizontal con scroll o iconos + `⋯`; nunca
+- [x] Mobile: acciones en una fila horizontal con scroll o iconos + `⋯`; nunca
   apilar 4 botones de texto.
-- [ ] Playlist: botón "Añadir canciones" (buscador/sheet); quitar pista con undo
+- [x] Playlist: botón "Añadir canciones" (buscador/sheet); quitar pista con undo
   toast.
-- [ ] Unificar títulos: `h1` degradado, `h2` de sección, meta 12–14 px.
-- [ ] Favoritos: Play/Shuffle arriba de la lista.
+- [x] Unificar títulos: `h1` degradado, `h2` de sección, meta 12–14 px.
+- [x] Favoritos: Play/Shuffle arriba de la lista.
 
 **Criterios de aceptación**
 
-- [ ] Un toque reproduce la colección completa; otro en aleatorio.
-- [ ] El hero mobile no apila botones y la lista empieza antes del primer scroll.
-- [ ] Se puede añadir una canción a una playlist desde su detalle en ≤ 2 toques.
-- [ ] Quitar una pista es reversible (undo).
-- [ ] Álbum/artista/playlist comparten estructura y escala.
+- [x] Un toque reproduce la colección completa; otro en aleatorio.
+- [x] El hero mobile no apila botones y la lista empieza antes del primer scroll.
+- [x] Se puede añadir una canción a una playlist desde su detalle en ≤ 2 toques.
+- [x] Quitar una pista es reversible (undo).
+- [x] Álbum/artista/playlist comparten estructura y escala.
 
 **Archivos probables:** `pages/AlbumDetailPage.tsx`,
 `ArtistDetailPage.tsx`, `PlaylistDetailPage.tsx`, `FavoritesPage.tsx`, nuevo
