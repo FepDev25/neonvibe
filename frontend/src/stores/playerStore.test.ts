@@ -679,6 +679,20 @@ describe('media errors, offline fallback and bounded retries', () => {
     expect(state.currentTrack?.id).toBe(4);
   });
 
+  it('reloads a failed source when play is requested after an error', async () => {
+    usePlayerStore.getState().playTrack(track(1), [track(1)]);
+    h.audio.error = { code: 4 };
+    h.audio.emit('error');
+    await flush();
+    expect(usePlayerStore.getState().status).toBe('error');
+
+    usePlayerStore.getState().play();
+
+    expect(usePlayerStore.getState().status).toBe('playing');
+    expect(h.audio.playCalls).toBe(2);
+    expect(usePlayerStore.getState().error).toBeNull();
+  });
+
   it('refreshes an expired token once and retries the stream', async () => {
     h.client.expiring.mockReturnValue(true);
     h.playable.immediate.mockImplementation((id: number) =>

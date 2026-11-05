@@ -642,7 +642,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
     authRetried = false;
     offlineRetried = false;
     set({ error: null });
-    if (currentSrcKind === null || currentLoadId !== currentTrack.id) {
+    if (status === 'error' || currentSrcKind === null || currentLoadId !== currentTrack.id) {
+      // A failed source must be reloaded (token/URL may be stale); media-session
+      // play after an error should recover, not just call play() on the old src.
       loadTrack(currentTrack, progress, true, { force: true });
     } else {
       const effectiveDuration = Number.isFinite(audio.duration) && audio.duration > 0
