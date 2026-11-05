@@ -76,7 +76,8 @@ class StreamControllerTest {
                 .andExpect(header().string("Accept-Ranges", "bytes"))
                 .andExpect(header().string("Content-Range", "bytes 0-99/2048"))
                 .andExpect(header().string("Content-Type", "audio/mpeg"))
-                .andExpect(header().string("Content-Length", "100"));
+                .andExpect(header().string("Content-Length", "100"))
+                .andExpect(header().string("Cache-Control", "private, no-transform"));
     }
 
     @Test
@@ -135,5 +136,11 @@ class StreamControllerTest {
         mockMvc.perform(get("/api/v1/tracks/1/stream").param("token", raw))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Accept-Ranges", "bytes"));
+    }
+
+    @Test
+    void invalidTokenAsQueryParam_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/tracks/1/stream").param("token", "not-a-jwt"))
+                .andExpect(status().isUnauthorized());
     }
 }
