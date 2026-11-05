@@ -86,7 +86,7 @@ quiere impacto visible rápido, pero necesita B0.
 | B5 | Hecho | 2026-11-05 | Filas mobile de 2 líneas con cover 44, duración y un solo `⋯`; filas desktop con nº, cover, título/artista, álbum y duración; acciones (incluida metadata admin) en sheet; reorder con acciones en sheet; `LoadMore` centrado; contenido a 1440 px, grids de 6/8 columnas; `h1` de biblioteca en una línea. Verificación estática: 319 tests y build verdes. Pasada visual pendiente. |
 | B6 | Hecho | 2026-11-05 | Búsqueda con autofocus, recientes (máx. 5) y sugerencias, top result, contadores por sección, resaltado y portadas; `q` de pistas ampliado a título/artista/álbum y de álbumes a nombre/artista. Verificación: 336 tests frontend, 573 backend y builds verdes. Pasada visual pendiente. |
 | B7 | Hecho | 2026-11-05 | `EmptyState` compartido con CTA en descargas, búsqueda, playlists, favoritos, historial, biblioteca y detalles; logout con confirmación; un solo control de tema (header); versión 0.4.0 desde `package.json`; iniciales unificadas; textos ambiguos corregidos. Verificación estática: 340 tests y build verdes. Pasada visual pendiente. |
-| B8 | Pendiente | — | — |
+| B8 | Hecho | 2026-11-05 | Fechas/horas en `es-ES`, historial agrupado por Hoy/Ayer/fecha, stats con “reproducciones”, resumen y ejes/unidades/tooltip, y números/bytes en formato español. Verificación estática: 346 tests y build verdes. Pasada visual pendiente. |
 | B9 | Pendiente | — | — |
 
 ---
@@ -528,20 +528,20 @@ destructivas se entiendan.
 
 **Tareas**
 
-- [ ] Helper `formatDate`/`formatRelative` con `es-ES` (o locale de ajustes).
-- [ ] Historial: agrupar por día (Hoy, Ayer, fecha) y mantener hora.
-- [ ] Stats: "reproducciones", "min", fechas consistentes; eje Y con 3–4
+- [x] Helper `formatDate`/`formatRelative` con `es-ES` (o locale de ajustes).
+- [x] Historial: agrupar por día (Hoy, Ayer, fecha) y mantener hora.
+- [x] Stats: "reproducciones", "min", fechas consistentes; eje Y con 3–4
   marcas, unidad y tooltip.
-- [ ] "Actividad": indicar qué mide (reproducciones/día) y resumen.
-- [ ] Revisar `Intl.DateTimeFormat` para timezone (ya usa `tz`).
-- [ ] Tests de formateo y de `StatsPage`.
+- [x] "Actividad": indicar qué mide (reproducciones/día) y resumen.
+- [x] Revisar `Intl.DateTimeFormat` para timezone (ya usa `tz`).
+- [x] Tests de formateo y de `StatsPage`.
 
 **Criterios de aceptación**
 
-- [ ] 0 cadenas en inglés visibles.
-- [ ] Un solo formato de fecha en historial y stats.
-- [ ] Se puede leer una gráfica sin adivinar unidades.
-- [ ] Tests de `format.ts` y `StatsPage` verdes.
+- [x] 0 cadenas en inglés visibles.
+- [x] Un solo formato de fecha en historial y stats.
+- [x] Se puede leer una gráfica sin adivinar unidades.
+- [x] Tests de `format.ts` y `StatsPage` verdes.
 
 **Archivos probables:** `utils/format.ts`, `pages/HistoryPage.tsx`,
 `pages/StatsPage.tsx`, tests.
