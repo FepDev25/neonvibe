@@ -252,3 +252,84 @@ flowchart TB
 | Scanner con WatchService | Polling periódico | Detección en tiempo real sin coste de barrido |
 | Frontend embebido en el JAR | Frontend separado en CDN/Nginx | Un solo artefacto, despliegue trivial |
 | Transcodificación AAC on-demand con caché | FFmpeg en vivo / HLS | El seek se resuelve reutilizando HTTP Range; el primer play genera el fichero |
+
+## 10. Motor de reproducción web
+
+El reproductor vive en `frontend/src/player/` + `stores/playerStore.ts`. Su
+objetivo es que la cola avance de forma predecible pese a cambios de red,
+expiración de credenciales, pestañas ocultas e interrupciones del sistema.
+
+### Estado
+
+- `isPlaying` expresa la **intención** (icono de la UI).
+- `status` expresa el **elemento real**: `idle`, `loading`, `playing`,
+  `paused`, `buffering`, `ended`, `error`.
+- `play()` y `pause()` son **idempotentes**; `toggle()` es solo para la UI.
+  Media Session usa las acciones semánticas, nunca un toggle compartido.
+- `repeat ONE` afecta **solo** a la finalización automática; un salto manual o
+  un error siempre avanzan.
+- Los errores se clasifican (`autoplay-blocked`, `network`, `media`,
+  `offline-unavailable`, `auth`) y se muestran en la barra del reproductor con
+  «Reintentar»; los saltos por error están acotados a 3.
+
+### Ciclo de carga
+
+```
+playTrack/next/restore
+   → loadTrack (generación ++)
+      ├─ prefetch en memoria (blob)          → src inmediato
+      ├─ URL online + token vigente          → src síncrono + play() en el gesto
+      └─ offline / token a punto de caducar  → await acotado + guarda de generación
+   → eventos: playing | waiting | pause | ended | error
+```
+
+- El camino online **no** hace `await` antes de asignar `src`/`play()`.
+- Una carga vieja (A/B) se descarta si ya se pidió C (`loadGen`), y `reset()`
+  invalida las cargas en vuelo al cerrar sesión.
+- La restauración y los mensajes WebSocket capturan un contador de acciones
+  locales (`actionSeq`): un estado remoto lento no pisa una acción reciente.
+
+### Media Session
+
+- Metadatos y `playbackState` se actualizan al cargar, al sonar y al pausar.
+- Se publica la posición (`setPositionState`) al hacer seek y al cargar metadata.
+- Cada acción se registra con protección: una acción no soportada no rompe las
+  demás. Al cerrar sesión se limpian metadatos y posición.
+
+### Token de streaming
+
+`<audio>` no pasa por Axios. Antes de asignar una URL se comprueba el `exp` del
+JWT; si caduca en <60 s se refresca con la **misma** promesa compartida del
+interceptor. Si el elemento falla y el token está caducado, se refresca y se
+reintenta **una vez**; después se muestra error de sesión.
+
+### Precarga
+
+Solo la siguiente pista, máximo 12 MB, una entrada en memoria, cancelable. Se
+desactiva con `Save-Data`, `2G`, `prefers-reduced-data` o el ajuste del usuario;
+con shuffle no se precarga (el candidato aún no existe). Un fallo de precarga
+nunca afecta a la reproducción normal.
+
+### Offline y recuperación
+
+- Sin red se usa el blob de IndexedDB; si no existe, error visible y **sin**
+  cadena de saltos silenciosos.
+- Si el stream falla y hay copia descargada, se cambia a ella una vez.
+- La cola se guarda con debounce (500 ms), cada 20 s mientras suena y en
+  `pagehide`/`visibilitychange`; la caché local está separada por usuario y
+  conserva repeat/shuffle/volumen.
+- La restauración **nunca** hace autoplay: deja la pista y la posición listas.
+
+### DSP y diagnóstico
+
+- Ecualizador de 5 bandas opt-in (`source → gain → biquads → analyser →
+  destination`), plano cuando está apagado; ver
+  `docs/player/propuesta-eq-normalizacion.md`.
+- Diagnóstico opt-in con búfer acotado y export saneado
+  (`neonvibePlayerDiagnostics`), sin tokens, URLs autenticadas ni blobs.
+
+### Límites que no se pueden resolver en la PWA
+
+Si Android congela o mata el proceso, no se ejecuta `ended` ni los controles;
+un Service Worker no puede reproducir audio de forma persistente. El plan de
+validación real está en `docs/player/plan-pruebas-android.md`.

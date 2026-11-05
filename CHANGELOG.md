@@ -67,6 +67,25 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   con todas las rutas (antes la barra inferior ocultaba playlists, álbumes,
   artistas y favoritos).
 
+- **Reproductor web fiable (Fase 1):** acciones `play()`/`pause()` idempotentes
+  separadas de `toggle()`; estado real `idle/loading/playing/paused/buffering/
+  ended/error`; Media Session semántica y tolerante a acciones no soportadas;
+  refresco proactivo del token de streaming; guardas de generación para cargas,
+  restauración y sync; aviso visible con «Reintentar» ante errores de red,
+  autoplay, sesión o falta de copia offline; persistencia periódica y en
+  `pagehide`. Diagnóstico opt-in con búfer acotado y export saneado.
+- **Precarga acotada de la siguiente canción:** máximo 12 MB, una sola pista,
+  cancelable y respetando `Save-Data`, 2G y `prefers-reduced-data`; se consume
+  como blob local y nunca reproduce en un segundo elemento.
+- **Ecualizador de 5 bandas (opt-in):** cadena `source → gain → biquads →
+  analyser → destination` creada una sola vez, bypass plano al desactivarlo,
+  persistencia local y controles en Ajustes. No es normalización de volumen.
+- **Ajustes de reproducción:** toggle de precarga y sección de EQ en `/settings`,
+  con la aclaración de que la normalización de loudness no está implementada.
+- **Plan de pruebas Android y diagnóstico del motor:** `docs/player/` con el
+  diagnóstico priorizado, la propuesta de EQ/normalización y la matriz manual
+  para validar pantalla bloqueada, Doze, Bluetooth y cambios de red.
+
 ### Changed
 
 - **Barra de reproducción:** la pista ya avanza como una "estela de luz"
@@ -75,6 +94,9 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Navegación móvil:** se reemplaza la barra inferior por el drawer; la
   navegación (`navItems`) es ahora una única fuente compartida con el sidebar.
 
+- **Cola local por usuario:** la caché de cola en `localStorage` se particiona
+  por usuario, guarda repeat/shuffle y ya no puede mostrar metadatos de una
+  sesión anterior; el volumen 0 (mute) se restaura correctamente.
 ### Fixed
 
 - **Canciones no disponibles visibles:** el detalle de álbum y de artista listaba
@@ -128,6 +150,31 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   devuelven un orden determinista (alfabético, insensible a mayúsculas, con `id`
   como desempate) cuando el cliente no pasa `sort`, en lugar de un orden
   indefinido; se respeta un `sort` explícito si se envía.
+
+- **Media Session:** `play` y `pause` del sistema ya no comparten `toggle()` (un
+  `pause` podía reanudar y un `play` pausar). Se limpian metadatos al cerrar
+  sesión y se toleran acciones no soportadas sin romper el resto.
+- **Siguiente/anterior:** `repeat ONE` ya no reinicia la pista en un salto manual
+  (solo en el fin automático) y `next`/`prev` con el reproductor pausado ya no
+  arrancan la música.
+- **Segundo plano:** si `play()` es rechazado (`NotAllowedError`) el estado deja
+  de afirmar «reproduciendo», se muestra un aviso y Media Session queda en pausa
+  en lugar de dejar la cola muda sin explicación.
+- **Token de streaming:** el `<audio>` ya no queda atrapado con un JWT caducado:
+  se refresca antes de cargar y se reintenta una vez si el error llega con el
+  token expirado.
+- **Carreras de sesión:** una restauración lenta ya no pisa la pista elegida por
+  el usuario, un mensaje WebSocket obsoleto se descarta y un logout invalida las
+  cargas en vuelo (no reproduce audio del usuario anterior).
+- **Errores y offline:** los fallos de red/archivo se clasifican, se saltan como
+  máximo 3 pistas y terminan en un error visible; sin conexión y sin copia local
+  se muestra un mensaje claro en vez de saltar en silencio.
+- **Persistencia:** la posición se guarda cada 20 s mientras suena y al ocultar/
+  cerrar la página, no solo al hacer seek o cambiar de pista.
+- **Fin de cola:** al terminar la última pista sin repeat se avisa al servidor y
+  a Media Session (antes quedaban «reproduciendo» en otros dispositivos).
+- **AudioContext:** se reanuda al volver del background y en `playing`, y el EQ
+  se construye de forma que un fallo de la cadena no silencie el elemento.
 
 ### Testing
 

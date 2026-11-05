@@ -19,9 +19,9 @@
   de metadata desde la UI** (escribe los tags en los ficheros reales) y **subida
   de música** (web `/upload` + carpeta de entrada `incoming`); pendiente
   audiolibros/podcasts y Chromecast (ver §11).
-- **Testing/CI (2026-10-02):** backend con **569 tests** (`./mvnw test`) y JaCoCo
+- **Testing/CI (2026-10-02):** backend con **570 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **118 tests** (Vitest + Testing Library); CI en
+  Testcontainers; frontend con **234 tests** (Vitest + Testing Library, incluida la suite del motor de reproducción); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
 ### Próximos pasos
