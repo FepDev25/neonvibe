@@ -37,6 +37,7 @@ export default function FavoriteButton({
       type="button"
       aria-pressed={active}
       aria-label={active ? 'Quitar de favoritos' : 'Marcar como favorito'}
+      title={active ? 'Quitar de favoritos' : 'Marcar como favorito'}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();

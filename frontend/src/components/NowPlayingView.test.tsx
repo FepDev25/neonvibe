@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -48,7 +48,13 @@ vi.mock('@/api/transcode', () => ({ getTranscodeStatus: mocks.getTranscodeStatus
 vi.mock('@/components/Visualizer', () => ({ default: () => null }));
 vi.mock('@/components/QueueSheet', () => ({ default: () => null }));
 vi.mock('@/components/LyricsSheet', () => ({ default: () => null }));
-vi.mock('@/components/TrackDownloadButton', () => ({ default: () => null }));
+vi.mock('@/components/TrackDownloadButton', () => ({
+  default: ({ track }: { track: { title: string } }) => (
+    <button type="button" aria-label={`Descargar ${track.title}`}>
+      download
+    </button>
+  ),
+}));
 vi.mock('@/components/AddToPlaylistSheet', () => ({
   default: ({ open, trackId }: { open: boolean; trackId: number }) =>
     open ? <div>Añadir panel {trackId}</div> : null,
@@ -94,6 +100,10 @@ describe('NowPlayingView', () => {
     expect(mocks.state.toggle).toHaveBeenCalledTimes(1);
 
     expect(screen.getByLabelText('Marcar como favorito')).toBeInTheDocument();
+    expect(screen.getByLabelText('Descargar Alcoholism')).toBeInTheDocument();
+    expect(screen.getByLabelText('Ver letras')).toBeInTheDocument();
+    expect(screen.getByLabelText('Radio basada en esta canción')).toBeInTheDocument();
+    expect(screen.getByLabelText('Visualizador')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('Añadir a playlist'));
     expect(screen.getByText('Añadir panel 1')).toBeInTheDocument();
@@ -105,6 +115,12 @@ describe('NowPlayingView', () => {
   it('offers the quality selector and reloads the track when it changes', async () => {
     mocks.getTranscodeStatus.mockResolvedValue({ available: true, qualities: [] });
     renderView();
+
+    const group = await screen.findByRole('group', { name: 'Calidad de audio' });
+    expect(group).toHaveClass('grid-cols-2');
+    for (const button of within(group).getAllByRole('button')) {
+      expect(button).toHaveClass('min-h-[44px]');
+    }
 
     fireEvent.click(await screen.findByRole('button', { name: 'Normal · 192' }));
 

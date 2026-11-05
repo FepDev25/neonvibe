@@ -334,7 +334,11 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-text-muted">
                 Calidad
               </span>
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div
+                role="group"
+                aria-label="Calidad de audio"
+                className="grid w-full max-w-xs grid-cols-2 gap-2 sm:flex sm:max-w-none sm:flex-wrap sm:justify-center"
+              >
                 {QUALITY_OPTIONS.map((option) => (
                   <button
                     key={option.id}
@@ -342,7 +346,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
                     onClick={() => chooseQuality(option.id)}
                     aria-pressed={quality === option.id}
                     className={cn(
-                      'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
+                      'flex min-h-[44px] items-center justify-center rounded-full border px-4 text-xs font-semibold transition-colors sm:min-w-[4rem]',
                       quality === option.id
                         ? 'border-accent-text bg-accent-soft text-accent-text'
                         : 'border-border text-text-muted hover:border-accent-text/50 hover:text-text',

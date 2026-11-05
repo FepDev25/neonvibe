@@ -7,6 +7,8 @@ import { cn } from '@/utils/cn';
 interface TrackDownloadButtonProps {
   track: PlayerTrack;
   className?: string;
+  /** Render a text label next to the icon (used by the player actions menu). */
+  showLabel?: boolean;
 }
 
 /**
@@ -14,7 +16,11 @@ interface TrackDownloadButtonProps {
  * while fetching, or a check once saved (click again to remove). Backed by the
  * same IndexedDB store as the album/playlist batch download.
  */
-export default function TrackDownloadButton({ track, className }: TrackDownloadButtonProps) {
+export default function TrackDownloadButton({
+  track,
+  className,
+  showLabel = false,
+}: TrackDownloadButtonProps) {
   const ensureLoaded = useOfflineStore((s) => s.ensureLoaded);
   const status = useOfflineStore((s) => s.getStatus(track.id));
   const progress = useOfflineStore((s) => s.progress[track.id] ?? 0);
@@ -59,6 +65,17 @@ export default function TrackDownloadButton({ track, className }: TrackDownloadB
         <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
       ) : (
         <Download className="h-5 w-5" aria-hidden />
+      )}
+      {showLabel && (
+        <span>
+          {downloading
+            ? progress > 0
+              ? `${Math.round(progress * 100)}%`
+              : 'Descargando…'
+            : done
+              ? 'Descargado'
+              : 'Descargar'}
+        </span>
       )}
     </button>
   );

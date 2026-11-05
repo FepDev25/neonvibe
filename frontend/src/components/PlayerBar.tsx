@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import {
   Play,
   Pause,
@@ -10,13 +10,7 @@ import {
   ListMusic,
   Volume2,
   VolumeX,
-  FileText,
-  Waves,
   X,
-  Radio,
-  Loader2,
-  Plus,
-  ChevronUp,
 } from 'lucide-react';
 import { usePlayerStore, tracksToPlayerQueue } from '@/stores/playerStore';
 import { getRadioSeed } from '@/api/radio';
@@ -27,15 +21,16 @@ import QueueSheet from './QueueSheet';
 import LyricsSheet from './LyricsSheet';
 import AddToPlaylistSheet from './AddToPlaylistSheet';
 import NowPlayingView from './NowPlayingView';
-import FavoriteButton from './FavoriteButton';
-import TrackDownloadButton from './TrackDownloadButton';
-import Visualizer from './Visualizer';
-import { useModalA11y } from '@/hooks/useModalA11y';
+import PlayerMoreMenu from './PlayerMoreMenu';
 import { cn } from '@/utils/cn';
 
 /**
- * Fixed player bar, docked above the bottom navigation. Shows the current track,
- * seek bar, playback controls, shuffle/repeat and the queue sheet trigger.
+ * Fixed player bar, docked above the mobile bottom tabs.
+ *
+ * Desktop: three zones (track info | transport + seek | volume/queue/actions)
+ * so the play button sits in the middle of the content column. Mobile: a 64px
+ * mini-player with cover, title/artist, play/pause and next only; the remaining
+ * actions live in Now Playing and the desktop "⋯" menu.
  */
 export default function PlayerBar() {
   const currentTrack = usePlayerStore((s) => s.currentTrack);
@@ -63,10 +58,7 @@ export default function PlayerBar() {
   const [lyricsOpen, setLyricsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
-  const [vizOpen, setVizOpen] = useState(false);
   const [radioBusy, setRadioBusy] = useState(false);
-  const vizRef = useRef<HTMLDivElement>(null);
-  useModalA11y(vizOpen, () => setVizOpen(false), vizRef);
 
   const startRadio = async (trackId: number) => {
     setRadioBusy(true);
@@ -95,14 +87,16 @@ export default function PlayerBar() {
         : currentIndex < queue.length - 1;
   const hasPrev = currentIndex > 0 || repeat === 'ALL' || progress > 3;
   const muted = volume === 0;
-
-  const controlBtn =
-    'flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-surface-alt';
+  const progressPct =
+    duration > 0 ? Math.min(100, Math.max(0, (progress / duration) * 100)) : 0;
+  const transportBtn =
+    'flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-surface-alt';
+  const activeIcon = 'text-accent-text';
 
   return (
     <>
       <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-surface/95 backdrop-blur lg:inset-x-auto lg:bottom-0 lg:left-60 lg:right-0">
-        <div className="mx-auto flex w-full max-w-5xl flex-col px-3 py-1.5 sm:px-6">
+        <div className="mx-auto w-full max-w-7xl px-3 py-1.5 sm:px-6">
           {playerError && (
             <div
               role="alert"
@@ -116,7 +110,7 @@ export default function PlayerBar() {
                   <button
                     type="button"
                     onClick={() => retry()}
-                    className="rounded px-2 py-0.5 font-semibold text-accent-text hover:bg-surface-alt"
+                    className="min-h-[44px] rounded px-2 font-semibold text-accent-text hover:bg-surface-alt"
                   >
                     Reintentar
                   </button>
@@ -125,189 +119,234 @@ export default function PlayerBar() {
                   type="button"
                   onClick={() => dismissError()}
                   aria-label="Descartar aviso de reproducción"
-                  className="rounded px-1.5 py-0.5 text-text-muted hover:bg-surface-alt"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted hover:bg-surface-alt"
                 >
-                  <X className="h-3.5 w-3.5" aria-hidden />
+                  <X className="h-4 w-4" aria-hidden />
                 </button>
               </div>
             </div>
           )}
-          <SeekBar progress={progress} duration={duration} onSeek={seek} className="mb-1" />
 
-          <div className="flex items-center gap-2">
+          {/* Mobile mini-player: info + exactly two transport controls. */}
+          <div role="group" aria-label="Reproductor compacto" className="lg:hidden">
+            <div
+              role="progressbar"
+              aria-label="Progreso de reproducción"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progressPct)}
+              className="-mx-3 h-0.5 bg-surface-alt"
+            >
+              <div
+                className="h-full bg-gradient-to-r from-accent-text to-accent-strong"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <div className="flex h-16 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setNowPlayingOpen(true)}
+                aria-label="Abrir canción"
+                title="Abrir canción"
+                className="flex min-w-0 flex-1 items-center gap-2 rounded-xl py-1 pr-1 text-left transition-colors hover:bg-surface-alt/60"
+              >
+                <AlbumCover
+                  seed={`${currentTrack.title}-${currentTrack.artist}`}
+                  alt={`Carátula de ${currentTrack.title}`}
+                  src={trackCoverUrl(currentTrack.id)}
+                  className="h-10 w-10 shrink-0 rounded-lg"
+                />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-sm font-semibold text-text">
+                    {currentTrack.title}
+                  </span>
+                  <span className="truncate text-xs text-text-muted">
+                    {currentTrack.artist}
+                  </span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={toggle}
+                aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                title={isPlaying ? 'Pausar' : 'Reproducir'}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neon-cyan text-black neon-glow transition-colors hover:bg-neon-pink hover:text-white"
+              >
+                {isPlaying ? (
+                  <Pause className="h-5 w-5" aria-hidden />
+                ) : (
+                  <Play className="h-5 w-5 translate-x-[1px]" aria-hidden />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={next}
+                disabled={!hasNext}
+                aria-label="Siguiente"
+                title="Siguiente"
+                className={cn(transportBtn, 'shrink-0 text-text hover:text-accent-text disabled:opacity-30')}
+              >
+                <SkipForward className="h-5 w-5" aria-hidden />
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop player bar: info | centered transport + seek | volume/queue. */}
+          <div
+            role="group"
+            aria-label="Reproductor de escritorio"
+            className="hidden items-center gap-4 py-1 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]"
+          >
             <button
               type="button"
               onClick={() => setNowPlayingOpen(true)}
               aria-label="Abrir canción"
               title="Abrir canción"
-              className="group -m-1 flex min-w-0 flex-1 items-center gap-2 rounded-xl p-1 text-left transition-colors hover:bg-surface-alt/60"
+              className="group flex min-w-0 items-center gap-3 rounded-xl p-1 text-left transition-colors hover:bg-surface-alt/60"
             >
               <AlbumCover
                 seed={`${currentTrack.title}-${currentTrack.artist}`}
                 alt={`Carátula de ${currentTrack.title}`}
                 src={trackCoverUrl(currentTrack.id)}
-                className="h-11 w-11 shrink-0 rounded-lg"
+                className="h-12 w-12 shrink-0 rounded-lg"
               />
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-sm font-semibold text-text">{currentTrack.title}</span>
-                <span className="truncate text-xs text-text-muted">{currentTrack.artist}</span>
+                <span className="truncate text-sm font-semibold text-text">
+                  {currentTrack.title}
+                </span>
+                <span className="truncate text-xs text-text-muted">
+                  {currentTrack.artist}
+                </span>
               </span>
-              <ChevronUp
-                className="hidden h-4 w-4 shrink-0 text-text-muted opacity-0 transition-opacity group-hover:opacity-100 sm:block"
-                aria-hidden
+            </button>
+
+            <div className="flex min-w-0 flex-col items-center gap-0.5">
+              <div className="flex items-center justify-center gap-1 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={toggleShuffle}
+                  aria-label={shuffle ? 'Desactivar aleatorio' : 'Activar aleatorio'}
+                  aria-pressed={shuffle}
+                  title="Aleatorio"
+                  className={cn(
+                    transportBtn,
+                    'hidden sm:flex',
+                    shuffle ? activeIcon : 'text-text-muted hover:text-text',
+                  )}
+                >
+                  <Shuffle className="h-4 w-4" aria-hidden />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={prev}
+                  disabled={!hasPrev}
+                  aria-label="Anterior"
+                  title="Anterior"
+                  className={cn(transportBtn, 'text-text hover:text-accent-text disabled:opacity-30')}
+                >
+                  <SkipBack className="h-5 w-5" aria-hidden />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggle}
+                  aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                  title={isPlaying ? 'Pausar' : 'Reproducir'}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-neon-cyan text-black neon-glow transition-colors hover:bg-neon-pink hover:text-white"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-5 w-5" aria-hidden />
+                  ) : (
+                    <Play className="h-5 w-5 translate-x-[1px]" aria-hidden />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={next}
+                  disabled={!hasNext}
+                  aria-label="Siguiente"
+                  title="Siguiente"
+                  className={cn(transportBtn, 'text-text hover:text-accent-text disabled:opacity-30')}
+                >
+                  <SkipForward className="h-5 w-5" aria-hidden />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={cycleRepeat}
+                  aria-label={`Repetición: ${repeat === 'ONE' ? 'una' : repeat === 'ALL' ? 'todo' : 'ninguna'}`}
+                  aria-pressed={repeat !== 'NONE'}
+                  title="Repetición"
+                  className={cn(
+                    transportBtn,
+                    'hidden sm:flex',
+                    repeat !== 'NONE' ? activeIcon : 'text-text-muted hover:text-text',
+                  )}
+                >
+                  {repeat === 'ONE' ? (
+                    <Repeat1 className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <Repeat className="h-4 w-4" aria-hidden />
+                  )}
+                </button>
+              </div>
+
+              <SeekBar
+                progress={progress}
+                duration={duration}
+                onSeek={seek}
+                className="w-full max-w-xl"
               />
-            </button>
+            </div>
 
-            <FavoriteButton
-              entityType="TRACK"
-              entityId={currentTrack.id}
-              size="sm"
-              className="hidden shrink-0 sm:flex"
-            />
+            <div className="flex items-center justify-end gap-1">
+              <button
+                type="button"
+                onClick={() => setVolume(muted ? 1 : 0)}
+                aria-label={muted ? 'Activar sonido' : 'Silenciar'}
+                title={muted ? 'Activar sonido' : 'Silenciar'}
+                className={cn(transportBtn, 'text-text-muted hover:text-accent-text')}
+              >
+                {muted ? (
+                  <VolumeX className="h-4 w-4" aria-hidden />
+                ) : (
+                  <Volume2 className="h-4 w-4" aria-hidden />
+                )}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={volume}
+                aria-label="Volumen"
+                onChange={(e) => setVolume(Number(e.target.value))}
+                style={{ '--fill': `${Math.round(volume * 100)}%` } as CSSProperties}
+                className="neon-range hidden h-1.5 w-24 cursor-pointer xl:block"
+              />
 
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              aria-label="Añadir a playlist"
-              title="Añadir a playlist"
-              className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-accent-text')}
-            >
-              <Plus className="h-4 w-4" aria-hidden />
-            </button>
+              <button
+                type="button"
+                onClick={() => setQueueOpen(true)}
+                aria-label="Ver cola"
+                title="Cola"
+                className={cn(transportBtn, 'text-text-muted hover:text-accent-text')}
+              >
+                <ListMusic className="h-5 w-5" aria-hidden />
+              </button>
 
-            <TrackDownloadButton
-              track={currentTrack}
-              className={cn(controlBtn, 'hidden sm:flex')}
-            />
-
-            <button
-              type="button"
-              onClick={toggleShuffle}
-              aria-label={shuffle ? 'Desactivar aleatorio' : 'Activar aleatorio'}
-              aria-pressed={shuffle}
-              title="Aleatorio"
-              className={cn(
-                controlBtn,
-                'hidden sm:flex',
-                shuffle ? 'text-accent-text' : 'text-text-muted hover:text-text',
-              )}
-            >
-              <Shuffle className="h-4 w-4" aria-hidden />
-            </button>
-
-            <button
-              type="button"
-              onClick={cycleRepeat}
-              aria-label={`Repetición: ${repeat === 'ONE' ? 'una' : repeat === 'ALL' ? 'todo' : 'ninguna'}`}
-              aria-pressed={repeat !== 'NONE'}
-              title="Repetición"
-              className={cn(
-                controlBtn,
-                'hidden sm:flex',
-                repeat !== 'NONE' ? 'text-accent-text' : 'text-text-muted hover:text-text',
-              )}
-            >
-              {repeat === 'ONE' ? (
-                <Repeat1 className="h-4 w-4" aria-hidden />
-              ) : (
-                <Repeat className="h-4 w-4" aria-hidden />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={prev}
-              disabled={!hasPrev}
-              aria-label="Anterior"
-              title="Anterior"
-              className={cn(controlBtn, 'text-text hover:text-accent-text disabled:opacity-30')}
-            >
-              <SkipBack className="h-5 w-5" aria-hidden />
-            </button>
-
-            <button
-              type="button"
-              onClick={toggle}
-              aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
-              title={isPlaying ? 'Pausar' : 'Reproducir'}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-neon-cyan text-black neon-glow transition-colors hover:bg-neon-pink hover:text-white"
-            >
-              {isPlaying ? (
-                <Pause className="h-5 w-5" aria-hidden />
-              ) : (
-                <Play className="h-5 w-5 translate-x-[1px]" aria-hidden />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={next}
-              disabled={!hasNext}
-              aria-label="Siguiente"
-              title="Siguiente"
-              className={cn(controlBtn, 'text-text hover:text-accent-text disabled:opacity-30')}
-            >
-              <SkipForward className="h-5 w-5" aria-hidden />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setVolume(muted ? 1 : 0)}
-              aria-label={muted ? 'Activar sonido' : 'Silenciar'}
-              title={muted ? 'Activar sonido' : 'Silenciar'}
-              className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-accent-text')}
-            >
-              {muted ? (
-                <VolumeX className="h-4 w-4" aria-hidden />
-              ) : (
-                <Volume2 className="h-4 w-4" aria-hidden />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setVizOpen(true)}
-              aria-label="Visualizador"
-              title="Visualizador"
-              className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-neon-pink')}
-            >
-              <Waves className="h-4 w-4" aria-hidden />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => void startRadio(currentTrack.id)}
-              disabled={radioBusy}
-              aria-label="Radio basada en esta canción"
-              title="Radio basada en esta canción"
-              className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-neon-purple disabled:opacity-50')}
-            >
-              {radioBusy ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <Radio className="h-4 w-4" aria-hidden />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setLyricsOpen(true)}
-              aria-label="Ver letras"
-              title="Letras"
-              className={cn(controlBtn, 'text-text-muted hover:text-accent-text')}
-            >
-              <FileText className="h-4 w-4" aria-hidden />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setQueueOpen(true)}
-              aria-label="Ver cola"
-              title="Cola"
-              className={cn(controlBtn, 'text-text-muted hover:text-accent-text')}
-            >
-              <ListMusic className="h-5 w-5" aria-hidden />
-            </button>
+              <PlayerMoreMenu
+                track={currentTrack}
+                onAddToPlaylist={() => setAddOpen(true)}
+                onOpenLyrics={() => setLyricsOpen(true)}
+                onStartRadio={() => void startRadio(currentTrack.id)}
+                radioBusy={radioBusy}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -316,32 +355,6 @@ export default function PlayerBar() {
       <LyricsSheet open={lyricsOpen} onClose={() => setLyricsOpen(false)} />
       <AddToPlaylistSheet open={addOpen} trackId={currentTrack.id} onClose={() => setAddOpen(false)} />
       <NowPlayingView open={nowPlayingOpen} onClose={() => setNowPlayingOpen(false)} />
-
-      {vizOpen && (
-        <div
-          ref={vizRef}
-          tabIndex={-1}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Visualizador de audio"
-          className="fixed inset-0 z-50 flex flex-col bg-black/95 outline-none"
-        >
-          <div className="flex items-center justify-between px-5 pt-5">
-            <p className="text-lg font-bold text-white">Visualizador</p>
-            <button
-              type="button"
-              onClick={() => setVizOpen(false)}
-              aria-label="Cerrar visualizador"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-alt text-text hover:text-accent-text"
-            >
-              <X className="h-5 w-5" aria-hidden />
-            </button>
-          </div>
-          <div className="flex flex-1 px-4 py-6">
-            <Visualizer />
-          </div>
-        </div>
-      )}
     </>
   );
 }
