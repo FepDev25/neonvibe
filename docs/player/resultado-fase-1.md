@@ -104,7 +104,7 @@ cumplía `Range`/`206`/`Content-Range`/`416` y aceptaba `?token=` solo en media.
 ### Tests nuevos
 
 `frontend/src/stores/playerStore.test.ts` (38), `queueNavigation.test.ts` (17),
-`playbackErrors.test.ts` (10), `playable.test.ts` (12), `mediaSession.test.ts` (8),
+`playbackErrors.test.ts` (10), `playable.test.ts` (13), `mediaSession.test.ts` (8),
 `audioGraph.test.ts` (8), `prefetch.test.ts` (9), `diagnostics.test.ts` (5) y `playbackStore.test.ts` (5);
 `client.test.ts` ampliado a 11.
 
@@ -124,7 +124,7 @@ cumplía `Range`/`206`/`Content-Range`/`416` y aceptaba `?token=` solo en media.
 
 | Comando | Resultado |
 |---|---|
-| `cd frontend && pnpm test` | **44 archivos, 234 tests, 0 fallos** |
+| `cd frontend && pnpm test` | **44 archivos, 235 tests, 0 fallos** |
 | `cd frontend && npx tsc -b` | Sin errores |
 | `cd frontend && pnpm build` | Build correcto (tsc + Vite + PWA) |
 | `cd backend && ./mvnw test` | **570 tests, 0 fallos, 4 omitidos** (93 clases) |
@@ -184,7 +184,7 @@ del producto.
 | Eje | Estado | Motivo |
 |---|---|---|
 | 1. Reproductor fiable en segundo plano y controles externos | **Parcial** | Semántica, eventos, Media Session y errores corregidos y probados; la continuidad con el proceso suspendido depende de Android y queda pendiente de validación |
-| 2. Pruebas automatizadas del motor | **Completado** | 116 tests nuevos/ampliados del motor y utilidades; suite total 234 en verde |
+| 2. Pruebas automatizadas del motor | **Completado** | 117 tests nuevos/ampliados del motor y utilidades; suite total 235 en verde |
 | 3. Precarga inteligente | **Implementado (acotado)** | Solo siguiente pista, 12 MB, opt-out, sin shuffle, cancelable; fallback a streaming |
 | 4. Modo offline consistente | **Parcial** | Blob preferente, error visible, sin bucles, limpieza de blobs; cuota/corrupción real y descargas a medias quedan documentadas, no simuladas |
 | 5. Recuperación de sesiones | **Implementado** | Cola, pista, posición, repeat/shuffle/volumen; sin autoplay; guardas de carrera; limpieza por usuario |

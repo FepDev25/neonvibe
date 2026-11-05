@@ -17,6 +17,8 @@ vi.mock('@/offline/offlineDb', () => ({ offlineDb: { get: m.offlineGet } }));
 import {
   OfflineUnavailableError,
   clearBlobUrlCache,
+  deferRevokeBlobUrl,
+  flushDeferredRevokes,
   getImmediatePlayableSrc,
   getPrefetchableStreamUrl,
   resolvePlayableSrc,
@@ -127,6 +129,19 @@ describe('playable sources', () => {
     m.offlineGet.mockResolvedValue({ blob: new Blob(['audio']) });
     await resolvePlayableSrc(4);
     clearBlobUrlCache();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mocked');
+  });
+
+  it('defers revocation while the track is playing, then revokes it later', async () => {
+    online = false;
+    m.offlineGet.mockResolvedValue({ blob: new Blob(['audio']) });
+    await resolvePlayableSrc(4);
+
+    deferRevokeBlobUrl(4);
+    flushDeferredRevokes(4);
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+
+    flushDeferredRevokes();
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:mocked');
   });
 });
