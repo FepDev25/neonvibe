@@ -79,7 +79,7 @@ quiere impacto visible rápido, pero necesita B0.
 | Bloque | Estado | Fecha | Notas / desviaciones |
 |---|---|---|---|
 | B0 | Hecho | 2026-11-05 | Tokens semánticos, Inter variable self-hosted, foco global + skip link, touch base, movimiento acotado, Now Playing claro y test de contraste (10 casos). Verificación estática: `pnpm test` (254) y `pnpm build` verdes. Pasada visual y 44 px en filas/player quedan en B2/B5. |
-| B1 | Pendiente | — | — |
+| B1 | Hecho | 2026-11-05 | Bottom tabs (Inicio/Buscar/Biblioteca/Ajustes), "Más" reducido a 7 destinos secundarios, sidebar agrupada con Ajustes+usuario al pie, header contextual sin logo, Subir/Escáner en Ajustes (admin) y helper `initials`. Verificación estática: 273 tests y build verdes. Player encajado encima de tabs; pasada visual pendiente. |
 | B2 | Pendiente | — | — |
 | B3 | Pendiente | — | — |
 | B4 | Pendiente | — | — |
@@ -225,29 +225,30 @@ que en desktop la navegación esté agrupada y sin duplicidades.
 
 **Tareas**
 
-- [ ] Nuevo `BottomTabs` mobile (fixed, safe-bottom):
+- [x] Nuevo `BottomTabs` mobile (fixed, safe-bottom):
   `Inicio · Buscar · Biblioteca · Ajustes` + mini-player encima (B2).
-- [ ] Mover destinos secundarios: Playlists/Favoritos/Historial/Estadísticas/
+- [x] Mover destinos secundarios: Playlists/Favoritos/Historial/Estadísticas/
   Descargas → secciones dentro de Biblioteca (segmented) o sheet "Más".
-- [ ] "Subir" y "Escáner" → Ajustes (admin). Eliminar "Subir" de la nav
+- [x] "Subir" y "Escáner" → Ajustes (admin). Eliminar "Subir" de la nav
   primaria.
-- [ ] Desktop: sidebar agrupada (Principal / Colecciones / Actividad / Admin),
+- [x] Desktop: sidebar agrupada (Principal / Colecciones / Actividad / Admin),
   Ajustes anclado abajo con el usuario.
-- [ ] Header: quitar el logo duplicado; mostrar título contextual de la página,
+- [x] Header: quitar el logo duplicado; mostrar título contextual de la página,
   acceso a búsqueda y acciones. Mantener tema/avatar.
-- [ ] Drawer: eliminarlo o reducirlo a "Más"; si se conserva, añadir fade de
+- [x] Drawer: eliminarlo o reducirlo a "Más"; si se conserva, añadir fade de
   scroll y garantizar que 360×640 muestra todos los destinos.
-- [ ] Actualizar `navItems.ts` (fuente única) y rutas; redirects para rutas
-  movidas.
-- [ ] Revisar `aria-current`, landmarks (`nav`, `main`) y orden de tabulación.
+- [x] Actualizar `navItems.ts` (fuente única) y rutas; redirects para rutas
+  movidas. *(No se movió ninguna ruta: solo cambió la navegación visible;
+  `/upload` sigue existiendo para admin.)*
+- [x] Revisar `aria-current`, landmarks (`nav`, `main`) y orden de tabulación.
 
 **Criterios de aceptación**
 
-- [ ] Desde cualquier pantalla: Inicio/Buscar/Biblioteca en 1 toque.
-- [ ] A 360×640 todos los destinos son alcanzables sin adivinar que hay scroll.
-- [ ] No hay logo duplicado; el header aporta contexto, no marca.
-- [ ] La sidebar desktop no supera 5 ítems primarios y separa admin.
-- [ ] Tests de `MobileMenu`/nav actualizados y verdes.
+- [x] Desde cualquier pantalla: Inicio/Buscar/Biblioteca en 1 toque.
+- [x] A 360×640 todos los destinos son alcanzables sin adivinar que hay scroll.
+- [x] No hay logo duplicado; el header aporta contexto, no marca.
+- [x] La sidebar desktop no supera 5 ítems primarios y separa admin.
+- [x] Tests de `MobileMenu`/nav actualizados y verdes.
 
 **Archivos probables:** `components/Layout.tsx`, `Sidebar.tsx`, `MobileMenu.tsx`,
 `TopHeader.tsx`, `navItems.ts`, `App.tsx`, nuevo `BottomTabs.tsx`.
