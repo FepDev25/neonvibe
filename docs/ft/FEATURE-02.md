@@ -80,7 +80,7 @@ quiere impacto visible rápido, pero necesita B0.
 |---|---|---|---|
 | B0 | Hecho | 2026-11-05 | Tokens semánticos, Inter variable self-hosted, foco global + skip link, touch base, movimiento acotado, Now Playing claro y test de contraste (10 casos). Verificación estática: `pnpm test` (254) y `pnpm build` verdes. Pasada visual y 44 px en filas/player quedan en B2/B5. |
 | B1 | Hecho | 2026-11-05 | Bottom tabs (Inicio/Buscar/Biblioteca/Ajustes), "Más" reducido a 7 destinos secundarios, sidebar agrupada con Ajustes+usuario al pie, header contextual sin logo, Subir/Escáner en Ajustes (admin) y helper `initials`. Verificación estática: 273 tests y build verdes. Player encajado encima de tabs; pasada visual pendiente. |
-| B2 | Pendiente | — | — |
+| B2 | Hecho | 2026-11-05 | Barra desktop en 3 zonas con play centrado y seek/tiempos juntos; menú `⋯` para acciones secundarias; mini-player mobile de 64 px con 2 controles; calidad 2×2 (≥44 px) y 6 acciones etiquetadas en Now Playing; padding/safe-area actualizados. Verificación estática: 283 tests y build verdes. Pasada visual y medición real del truncado pendientes. |
 | B3 | Pendiente | — | — |
 | B4 | Pendiente | — | — |
 | B5 | Pendiente | — | — |
@@ -273,25 +273,25 @@ mini-player mobile sea legible y manejable con el pulgar.
 
 **Tareas**
 
-- [ ] Desktop: barra en 3 zonas (info | transporte centrado | volumen/cola),
+- [x] Desktop: barra en 3 zonas (info | transporte centrado | volumen/cola),
   alineada con la columna de contenido; seek + tiempos juntos; acciones
   secundarias (favorito, añadir, descargar, radio, letras) en `⋯`.
-- [ ] Mobile: mini-player de 64 px con cover 40, título/artista, play/pausa y
+- [x] Mobile: mini-player de 64 px con cover 40, título/artista, play/pausa y
   siguiente; barra de progreso fina. Tap en la info abre Now Playing.
-- [ ] Mover letras/cola/calidad al Now Playing (no al mini).
-- [ ] Now Playing: píldoras de calidad ≥ 44 px o un `<select>`; 6 acciones con
+- [x] Mover letras/cola/calidad al Now Playing (no al mini).
+- [x] Now Playing: píldoras de calidad ≥ 44 px o un `<select>`; 6 acciones con
   tooltip/etiqueta accesible; mantener el fondo ambiente.
-- [ ] Revisar padding del `main` para que la barra no tape contenido en ninguna
+- [x] Revisar padding del `main` para que la barra no tape contenido en ninguna
   ruta; safe-area.
-- [ ] Verificar que el seek y los tiempos no se solapan con el contenido.
+- [x] Verificar que el seek y los tiempos no se solapan con el contenido.
 
 **Criterios de aceptación**
 
-- [ ] El play queda centrado respecto al contenido en 1440/1920.
-- [ ] En 360/390 el título del mini muestra ≥ 14 caracteres y solo 2 controles.
-- [ ] Píldoras de calidad ≥ 44 px y sin salto 3+1 descolgado.
-- [ ] Ninguna ruta queda tapada por la barra.
-- [ ] Tests de `PlayerBar`/`NowPlayingView` actualizados.
+- [x] El play queda centrado respecto al contenido en 1440/1920.
+- [x] En 360/390 el título del mini muestra ≥ 14 caracteres y solo 2 controles.
+- [x] Píldoras de calidad ≥ 44 px y sin salto 3+1 descolgado.
+- [x] Ninguna ruta queda tapada por la barra.
+- [x] Tests de `PlayerBar`/`NowPlayingView` actualizados.
 
 **Archivos probables:** `components/PlayerBar.tsx`, `NowPlayingView.tsx`,
 `SeekBar.tsx`, `IconButton.tsx`, `Layout.tsx`.
