@@ -19,10 +19,16 @@ const TRACK_FIELDS: MetadataField[] = [
 interface TrackEditButtonProps {
   track: Track;
   className?: string;
+  /** Icon-only button (dense contexts); the actions sheet uses the label. */
+  compact?: boolean;
 }
 
 /** Pencil action to edit a single track's tags (writes them to the file). */
-export default function TrackEditButton({ track, className }: TrackEditButtonProps) {
+export default function TrackEditButton({
+  track,
+  className,
+  compact = true,
+}: TrackEditButtonProps) {
   const queryClient = useQueryClient();
 
   const initial: Record<string, string> = {
@@ -59,7 +65,7 @@ export default function TrackEditButton({ track, className }: TrackEditButtonPro
 
   return (
     <MetadataEditButton
-      compact
+      compact={compact}
       label={`Editar metadata de ${track.title}`}
       title="Editar canción"
       fields={TRACK_FIELDS}

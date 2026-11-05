@@ -9,13 +9,20 @@ interface RadioButtonProps {
   label?: string;
   size?: 'sm' | 'md';
   variant?: 'secondary' | 'ghost';
+  className?: string;
 }
 
 /**
  * Starts a similarity radio from a seed track: fetches the radio queue and
  * plays it immediately.
  */
-export default function RadioButton({ trackId, label = 'Radio', size = 'sm', variant = 'secondary' }: RadioButtonProps) {
+export default function RadioButton({
+  trackId,
+  label = 'Radio',
+  size = 'sm',
+  variant = 'secondary',
+  className,
+}: RadioButtonProps) {
   const playTrack = usePlayerStore((s) => s.playTrack);
   const [busy, setBusy] = useState(false);
 
@@ -35,7 +42,13 @@ export default function RadioButton({ trackId, label = 'Radio', size = 'sm', var
   };
 
   return (
-    <Button variant={variant} size={size} onClick={() => void start()} disabled={busy}>
+    <Button
+      variant={variant}
+      size={size}
+      onClick={() => void start()}
+      disabled={busy}
+      className={className}
+    >
       {busy ? (
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
       ) : (

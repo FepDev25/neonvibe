@@ -29,7 +29,7 @@ export default function ArtistBrowserPage() {
       />
 
       {artistsQuery.isPending ? (
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8">
           {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="flex flex-col items-center gap-2 p-2">
               <Skeleton className="h-24 w-24 rounded-full" />
@@ -42,7 +42,7 @@ export default function ArtistBrowserPage() {
           {q ? `Sin resultados para “${q}”.` : 'No hay artistas todavía.'}
         </p>
       ) : (
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8">
           {artists.map((artist) => (
             <ArtistCard key={artist.id} artist={artist} />
           ))}

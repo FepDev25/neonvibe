@@ -24,7 +24,7 @@ const TABS: Array<{ id: Tab; label: string; icon: typeof Music }> = [
 
 function AlbumGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="flex flex-col gap-2 p-2">
           <Skeleton className="aspect-square w-full rounded-xl" />
@@ -54,7 +54,14 @@ function TracksTab({ q }: { q: string }) {
           {q ? `Sin resultados para “${q}”.` : 'No hay canciones todavía.'}
         </p>
       ) : (
-        tracks.map((track) => <TrackRow key={track.id} track={track} queue={queue} />)
+        tracks.map((track, index) => (
+          <TrackRow
+            key={track.id}
+            track={track}
+            number={index + 1}
+            queue={queue}
+          />
+        ))
       )}
       <LoadMore query={query} />
     </div>
@@ -74,7 +81,7 @@ function AlbumsTab({ q }: { q: string }) {
           {q ? `Sin resultados para “${q}”.` : 'No hay álbumes todavía.'}
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
           {albums.map((album) => (
             <AlbumCard key={album.id} album={album} />
           ))}
@@ -92,7 +99,7 @@ function ArtistsTab({ q }: { q: string }) {
   return (
     <div>
       {query.isPending ? (
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8">
           {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="flex flex-col items-center gap-2 p-2">
               <Skeleton className="h-24 w-24 rounded-full" />
@@ -105,7 +112,7 @@ function ArtistsTab({ q }: { q: string }) {
           {q ? `Sin resultados para “${q}”.` : 'No hay artistas todavía.'}
         </p>
       ) : (
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8">
           {artists.map((artist) => (
             <ArtistCard key={artist.id} artist={artist} />
           ))}
@@ -156,9 +163,9 @@ export default function LibraryPage() {
   return (
     <PullToRefresh onRefresh={refresh}>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
-        <h1 className="neon-text text-2xl font-bold">Tu biblioteca</h1>
-        <div className="flex shrink-0 gap-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="neon-text whitespace-nowrap text-2xl font-bold">Tu biblioteca</h1>
+        <div className="flex shrink-0 gap-1 self-start sm:self-auto">
           <Link
             to="/playlists"
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-muted transition-colors hover:text-accent-text"

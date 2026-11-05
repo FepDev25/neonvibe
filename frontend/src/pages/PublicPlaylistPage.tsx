@@ -44,6 +44,8 @@ export default function PublicPlaylistPage() {
 
   const tracks = query.data?.tracks ?? [];
   const queue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
+  const sharedArtist =
+    tracks.length > 0 && tracks.every((track) => track.artist === tracks[0].artist);
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg text-text">
@@ -107,7 +109,13 @@ export default function PublicPlaylistPage() {
                 </p>
               ) : (
                 tracks.map((track, index) => (
-                  <TrackRow key={track.id} track={track} number={index + 1} queue={queue} />
+                  <TrackRow
+                    key={track.id}
+                    track={track}
+                    number={index + 1}
+                    queue={queue}
+                    showArtist={!sharedArtist}
+                  />
                 ))
               )}
             </div>

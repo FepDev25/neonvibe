@@ -127,8 +127,15 @@ export default function AlbumDetailPage() {
             <Skeleton key={i} className="h-12 w-full rounded-xl" />
           ))
         ) : (
-          tracks.map((track) => (
-            <TrackRow key={track.id} track={track} number={track.track_number} queue={queue} />
+          tracks.map((track, index) => (
+            <TrackRow
+              key={track.id}
+              track={track}
+              number={track.track_number ?? index + 1}
+              queue={queue}
+              showArtist={false}
+              showAlbum={false}
+            />
           ))
         )}
       </div>

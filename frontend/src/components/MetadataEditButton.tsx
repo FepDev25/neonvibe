@@ -62,7 +62,7 @@ export default function MetadataEditButton({
           className={className}
         >
           {glyph}
-          <span>{label}</span>
+          <span className="min-w-0 truncate">{label}</span>
         </Button>
       )}
 

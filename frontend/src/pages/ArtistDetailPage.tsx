@@ -113,7 +113,7 @@ export default function ArtistDetailPage() {
       {albums.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-bold text-text">Álbumes</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
             {albums.map((album) => (
               <AlbumCard key={album.id} album={album} />
             ))}
@@ -125,8 +125,14 @@ export default function ArtistDetailPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-bold text-text">Canciones</h2>
           <div className="flex flex-col gap-1">
-            {tracks.map((track) => (
-              <TrackRow key={track.id} track={track} queue={queue} />
+            {tracks.map((track, index) => (
+              <TrackRow
+                key={track.id}
+                track={track}
+                number={index + 1}
+                queue={queue}
+                showArtist={false}
+              />
             ))}
           </div>
         </section>

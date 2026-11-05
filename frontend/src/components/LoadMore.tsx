@@ -55,12 +55,12 @@ export default function LoadMore<T>({ query, loading }: LoadMoreProps<T>) {
   }
 
   return (
-    <div ref={sentinelRef} className="py-2">
+    <div ref={sentinelRef} className="flex justify-center py-3">
       <button
         type="button"
         onClick={() => void query.fetchNextPage()}
         className={cn(
-          'w-full rounded-xl border border-accent-text py-3 text-sm font-semibold text-accent-text',
+          'min-h-[44px] rounded-xl border border-accent-text px-6 text-sm font-semibold text-accent-text',
           'transition-colors hover:bg-accent-soft',
         )}
       >

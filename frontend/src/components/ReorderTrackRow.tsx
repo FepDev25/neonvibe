@@ -1,8 +1,10 @@
-import { ChevronUp, ChevronDown, Trash2, Play } from 'lucide-react';
-import { usePlayerStore, type PlayerTrack } from '@/stores/playerStore';
-import NowPlayingBars from './NowPlayingIndicator';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, Ellipsis, Trash2 } from 'lucide-react';
+import { useFavoritesStore } from '@/stores/favoritesStore';
+import type { PlayerTrack } from '@/stores/playerStore';
+import TrackRowBase from './TrackRowBase';
+import ActionsSheet, { ACTION_ROW } from './ActionsSheet';
 import type { Track } from '@/types';
-import { formatDuration } from '@/utils/format';
 import { cn } from '@/utils/cn';
 
 interface ReorderTrackRowProps {
@@ -12,6 +14,10 @@ interface ReorderTrackRowProps {
   canEdit: boolean;
   /** Surrounding list used to build the play queue. */
   queue?: PlayerTrack[];
+  /** Hide the artist when every track in the list shares it. */
+  showArtist?: boolean;
+  /** Hide the album column when it would repeat context. */
+  showAlbum?: boolean;
   /** Disables move buttons while a reorder request is in flight. */
   busy?: boolean;
   onMove: (index: number, direction: -1 | 1) => void;
@@ -19,8 +25,8 @@ interface ReorderTrackRowProps {
 }
 
 /**
- * Playlist track row with owner-only actions: move up/down and remove. Read-only
- * (just play) when `canEdit` is false.
+ * Playlist track row with owner-only actions. Move/remove are revealed on
+ * desktop hover; on tablets/mobile they live in the row's action sheet.
  */
 export default function ReorderTrackRow({
   track,
@@ -28,105 +34,112 @@ export default function ReorderTrackRow({
   total,
   canEdit,
   queue,
+  showArtist = true,
+  showAlbum = true,
   busy = false,
   onMove,
   onRemove,
 }: ReorderTrackRowProps) {
-  const playTrack = usePlayerStore((s) => s.playTrack);
-  const currentTrack = usePlayerStore((s) => s.currentTrack);
-  const isPlaying = usePlayerStore((s) => s.isPlaying);
-  const isCurrent = currentTrack != null && currentTrack.id === track.id;
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const isFavorite = useFavoritesStore((s) => s.isFavorite('TRACK', track.id));
+
+  const moveUp = () => onMove(index, -1);
+  const moveDown = () => onMove(index, 1);
+  const remove = () => {
+    onRemove(track.id);
+    setSheetOpen(false);
+  };
 
   return (
-    <div
-      className={cn(
-        'group flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors',
-        isCurrent ? 'bg-surface-alt' : 'hover:bg-surface-alt/60',
-      )}
-    >
-      <span className="flex w-6 shrink-0 items-center justify-center">
-        {isCurrent && isPlaying ? (
-          <NowPlayingBars />
-        ) : (
-          <span
-            className={cn(
-              'text-sm tabular-nums',
-              isCurrent ? 'text-accent-text' : 'text-text-muted',
-            )}
-          >
-            {index + 1}
-          </span>
-        )}
-      </span>
+    <>
+      <TrackRowBase
+        track={track}
+        number={index + 1}
+        queue={queue}
+        showArtist={showArtist}
+        showAlbum={showAlbum}
+        favorite={isFavorite}
+        actions={
+          canEdit ? (
+            <>
+              <div className="hidden items-center gap-0.5 lg:flex lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
+                <button
+                  type="button"
+                  disabled={busy || index === 0}
+                  onClick={moveUp}
+                  aria-label={`Mover arriba: ${track.title}`}
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-accent-text disabled:opacity-30"
+                >
+                  <ChevronUp className="h-4 w-4" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || index === total - 1}
+                  onClick={moveDown}
+                  aria-label={`Mover abajo: ${track.title}`}
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-accent-text disabled:opacity-30"
+                >
+                  <ChevronDown className="h-4 w-4" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={remove}
+                  aria-label={`Quitar de la playlist: ${track.title}`}
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-danger-text"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                aria-label={`Acciones de ${track.title}`}
+                className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text lg:hidden"
+              >
+                <Ellipsis className="h-5 w-5" aria-hidden />
+              </button>
+            </>
+          ) : (
+            <span className="w-11" aria-hidden />
+          )
+        }
+      />
 
-      <button
-        type="button"
-        onClick={() => {
-          const playerTrack: PlayerTrack = {
-            id: track.id,
-            title: track.title,
-            artist: track.artist ?? '',
-            album: track.album,
-            durationSeconds: track.duration_seconds,
-          };
-          playTrack(playerTrack, queue);
-        }}
-        className="flex min-w-0 flex-1 items-center gap-3 py-1 text-left"
-        aria-label={`Reproducir ${track.title}`}
-      >
-        <Play
-          className={cn(
-            'h-4 w-4 shrink-0',
-            isCurrent ? 'text-accent-text' : 'text-text-muted group-hover:text-accent-text',
-          )}
-          aria-hidden
-        />
-        <span className="flex min-w-0 flex-col">
-          <span
-            className={cn('truncate text-sm font-medium', isCurrent ? 'text-accent-text' : 'text-text')}
-          >
-            {track.title}
-          </span>
-          {track.artist && (
-            <span className="truncate text-xs text-text-muted">{track.artist}</span>
-          )}
-        </span>
-      </button>
-
-      <span className="shrink-0 text-xs tabular-nums text-text-muted">
-        {formatDuration(track.duration_seconds)}
-      </span>
-
-      {canEdit && (
-        <span className="flex shrink-0 items-center gap-0.5">
+      {canEdit && sheetOpen && (
+        <ActionsSheet
+          open
+          onClose={() => setSheetOpen(false)}
+          title={track.title}
+          description={track.artist}
+        >
           <button
             type="button"
             disabled={busy || index === 0}
-            onClick={() => onMove(index, -1)}
-            aria-label={`Mover arriba: ${track.title}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:text-accent-text disabled:opacity-30"
+            onClick={moveUp}
+            className={ACTION_ROW}
           >
-            <ChevronUp className="h-4 w-4" aria-hidden />
+            <ChevronUp className="h-4 w-4 shrink-0" aria-hidden />
+            Mover arriba
           </button>
           <button
             type="button"
             disabled={busy || index === total - 1}
-            onClick={() => onMove(index, 1)}
-            aria-label={`Mover abajo: ${track.title}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:text-accent-text disabled:opacity-30"
+            onClick={moveDown}
+            className={ACTION_ROW}
           >
-            <ChevronDown className="h-4 w-4" aria-hidden />
+            <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+            Mover abajo
           </button>
           <button
             type="button"
-            onClick={() => onRemove(track.id)}
-            aria-label={`Quitar de la playlist: ${track.title}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:text-neon-pink"
+            onClick={remove}
+            className={cn(ACTION_ROW, 'text-danger-text hover:bg-danger-text/10')}
           >
-            <Trash2 className="h-4 w-4" aria-hidden />
+            <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
+            Quitar de la playlist
           </button>
-        </span>
+        </ActionsSheet>
       )}
-    </div>
+    </>
   );
 }

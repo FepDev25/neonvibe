@@ -104,6 +104,8 @@ export default function PlaylistDetailPage() {
 
   const playlist = playlistQuery.data;
   const tracks = playlist.tracks;
+  const sharedArtist =
+    tracks.length > 0 && tracks.every((track) => track.artist === tracks[0].artist);
 
   const handleMove = (index: number, direction: -1 | 1) => {
     if (reorder.isPending) {
@@ -287,6 +289,7 @@ export default function PlaylistDetailPage() {
               total={tracks.length}
               canEdit={isOwner}
               queue={queue}
+              showArtist={!sharedArtist}
               busy={reorder.isPending}
               onMove={handleMove}
               onRemove={handleRemove}

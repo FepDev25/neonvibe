@@ -29,7 +29,7 @@ export default function Layout() {
         id="main-content"
         tabIndex={-1}
         className={cn(
-          'mx-auto w-full max-w-5xl flex-1 px-4 pt-4 sm:px-6',
+          'mx-auto w-full max-w-[90rem] flex-1 px-4 pt-4 sm:px-6',
           hasPlayer ? 'pb-48 lg:pb-28' : 'pb-24 lg:pb-12',
         )}
       >

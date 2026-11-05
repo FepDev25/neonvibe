@@ -29,7 +29,7 @@ export default function AlbumBrowserPage() {
       />
 
       {albumsQuery.isPending ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-2 p-2">
               <Skeleton className="aspect-square w-full rounded-xl" />
@@ -43,7 +43,7 @@ export default function AlbumBrowserPage() {
           {q ? `Sin resultados para “${q}”.` : 'No hay álbumes todavía.'}
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
           {albums.map((album) => (
             <AlbumCard key={album.id} album={album} />
           ))}

@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { Play, Plus } from 'lucide-react';
-import { usePlayerStore, type PlayerTrack } from '@/stores/playerStore';
-import FavoriteButton from './FavoriteButton';
+import { Ellipsis } from 'lucide-react';
+import { useFavoritesStore } from '@/stores/favoritesStore';
+import type { PlayerTrack } from '@/stores/playerStore';
+import TrackRowBase from './TrackRowBase';
+import TrackActionsSheet from './TrackActionsSheet';
 import AddToPlaylistSheet from './AddToPlaylistSheet';
-import TrackEditButton from './TrackEditButton';
-import NowPlayingBars from './NowPlayingIndicator';
+import LyricsSheet from './LyricsSheet';
 import type { Track } from '@/types';
-import { formatDuration } from '@/utils/format';
-import { cn } from '@/utils/cn';
 
 interface TrackRowProps {
   track: Track;
@@ -15,97 +14,70 @@ interface TrackRowProps {
   number?: number;
   /** Surrounding list used to build the play queue (defaults to [track]). */
   queue?: PlayerTrack[];
+  /** Hide the artist line when the whole list shares it (album/artist pages). */
+  showArtist?: boolean;
+  /** Hide the album column when it would repeat the page title. */
+  showAlbum?: boolean;
 }
 
 /**
- * Single track list row: number, title/artist, duration, favorite heart and an
- * "add to playlist" action. Play starts (or jumps to) the track in the queue.
+ * Single track row. The title/cover start playback; every secondary action
+ * (favorite, playlist, download, radio, lyrics, admin metadata) lives in `⋯`,
+ * so mobile keeps one visible control and the title gets the width.
  */
-export default function TrackRow({ track, number, queue }: TrackRowProps) {
-  const playTrack = usePlayerStore((s) => s.playTrack);
-  const currentTrack = usePlayerStore((s) => s.currentTrack);
-  const isPlaying = usePlayerStore((s) => s.isPlaying);
-  const isCurrent = currentTrack != null && currentTrack.id === track.id;
-  const [sheetOpen, setSheetOpen] = useState(false);
+export default function TrackRow({
+  track,
+  number,
+  queue,
+  showArtist = true,
+  showAlbum = true,
+}: TrackRowProps) {
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [lyricsOpen, setLyricsOpen] = useState(false);
+  const isFavorite = useFavoritesStore((s) => s.isFavorite('TRACK', track.id));
 
   return (
-    <div
-      className={cn(
-        'group flex items-center gap-2 rounded-xl px-2 py-2 transition-colors',
-        isCurrent ? 'bg-surface-alt' : 'hover:bg-surface-alt/60',
-      )}
-    >
-      <span className="flex w-6 shrink-0 items-center justify-center">
-        {isCurrent && isPlaying ? (
-          <NowPlayingBars />
-        ) : (
-          <span
-            className={cn(
-              'text-sm tabular-nums',
-              isCurrent ? 'text-accent-text' : 'text-text-muted',
-            )}
+    <>
+      <TrackRowBase
+        track={track}
+        number={number}
+        queue={queue}
+        showArtist={showArtist}
+        showAlbum={showAlbum}
+        favorite={isFavorite}
+        actions={
+          <button
+            type="button"
+            onClick={() => setActionsOpen(true)}
+            aria-label={`Acciones de ${track.title}`}
+            title="Más acciones"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100"
           >
-            {number ?? track.track_number ?? '•'}
-          </span>
-        )}
-      </span>
-
-      <button
-        type="button"
-        onClick={() => {
-          const playerTrack: PlayerTrack = {
-            id: track.id,
-            title: track.title,
-            artist: track.artist ?? '',
-            album: track.album,
-            durationSeconds: track.duration_seconds,
-          };
-          playTrack(playerTrack, queue);
-        }}
-        className="flex min-w-0 flex-1 items-center gap-3 text-left"
-        aria-label={`Reproducir ${track.title}`}
-      >
-        <Play
-          className={cn(
-            'h-4 w-4 shrink-0 transition-colors',
-            isCurrent ? 'text-accent-text' : 'text-text-muted group-hover:text-accent-text',
-          )}
-          aria-hidden
-        />
-        <span className="flex min-w-0 flex-col">
-          <span
-            className={cn('truncate text-sm font-medium', isCurrent ? 'text-accent-text' : 'text-text')}
-          >
-            {track.title}
-          </span>
-          {track.artist && (
-            <span className="truncate text-xs text-text-muted">{track.artist}</span>
-          )}
-        </span>
-      </button>
-
-      <span className="shrink-0 text-xs tabular-nums text-text-muted">
-        {formatDuration(track.duration_seconds)}
-      </span>
-
-      <button
-        type="button"
-        onClick={() => setSheetOpen(true)}
-        aria-label={`Añadir ${track.title} a una playlist`}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:text-accent-text"
-      >
-        <Plus className="h-5 w-5" aria-hidden />
-      </button>
-
-      <FavoriteButton entityType="TRACK" entityId={track.id} />
-
-      <TrackEditButton track={track} />
-
-      <AddToPlaylistSheet
-        open={sheetOpen}
-        trackId={track.id}
-        onClose={() => setSheetOpen(false)}
+            <Ellipsis className="h-5 w-5" aria-hidden />
+          </button>
+        }
       />
-    </div>
+
+      {actionsOpen && (
+        <TrackActionsSheet
+          track={track}
+          open
+          onClose={() => setActionsOpen(false)}
+          onAddToPlaylist={() => {
+            setActionsOpen(false);
+            setAddOpen(true);
+          }}
+          onOpenLyrics={() => {
+            setActionsOpen(false);
+            setLyricsOpen(true);
+          }}
+        />
+      )}
+      {addOpen && (
+        <AddToPlaylistSheet open trackId={track.id} onClose={() => setAddOpen(false)} />
+      )}
+      {lyricsOpen && <LyricsSheet open onClose={() => setLyricsOpen(false)} track={track} />}
+    </>
   );
 }

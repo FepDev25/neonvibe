@@ -42,7 +42,7 @@ export default function TopHeader() {
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-border bg-surface safe-top">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-2 sm:px-6">
+        <div className="mx-auto flex w-full max-w-[90rem] items-center justify-between gap-3 px-4 py-2 sm:px-6">
           <div className="flex min-w-0 items-center gap-1.5">
             <button
               type="button"

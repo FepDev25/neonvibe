@@ -10,6 +10,8 @@ import { cn } from '@/utils/cn';
 interface LyricsSheetProps {
   open: boolean;
   onClose: () => void;
+  /** Optional target for row actions; defaults to the current player track. */
+  track?: { id: number; title: string; artist?: string } | null;
 }
 
 interface TimedLine {
@@ -51,15 +53,16 @@ function parseLrc(text: string): TimedLine[] {
  * Bottom sheet with the current track's lyrics. Synced (.lrc) lyrics highlight
  * the active line based on player progress; plain lyrics just scroll.
  */
-export default function LyricsSheet({ open, onClose }: LyricsSheetProps) {
+export default function LyricsSheet({ open, onClose, track }: LyricsSheetProps) {
   const currentTrack = usePlayerStore((s) => s.currentTrack);
   const progress = usePlayerStore((s) => s.progress);
+  const target = track ?? currentTrack;
   const sheetRef = useRef<HTMLDivElement>(null);
   useModalA11y(open, onClose, sheetRef);
   const query = useQuery({
-    queryKey: ['lyrics', currentTrack?.id],
-    queryFn: () => getLyrics(currentTrack!.id),
-    enabled: open && currentTrack != null,
+    queryKey: ['lyrics', target?.id],
+    queryFn: () => getLyrics(target!.id),
+    enabled: open && target != null,
   });
 
   const timed = useMemo(() => {
@@ -105,9 +108,10 @@ export default function LyricsSheet({ open, onClose }: LyricsSheetProps) {
         <div className="mb-1 flex items-center justify-between px-5 pt-5">
           <div className="min-w-0">
             <h2 className="text-lg font-bold text-text">Letras</h2>
-            {currentTrack && (
+            {target && (
               <p className="truncate text-xs text-text-muted">
-                {currentTrack.title} · {currentTrack.artist}
+                {target.title}
+                {target.artist ? ` · ${target.artist}` : ''}
               </p>
             )}
           </div>

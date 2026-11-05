@@ -94,7 +94,7 @@ export default function SearchPage() {
       {albums.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-lg font-bold text-text">Álbumes</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
             {albums.map((album) => (
               <AlbumCard key={album.id} album={album} />
             ))}
@@ -106,7 +106,7 @@ export default function SearchPage() {
       {artists.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-lg font-bold text-text">Artistas</h2>
-          <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+          <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8">
             {artists.map((artist) => (
               <ArtistCard key={artist.id} artist={artist} />
             ))}
