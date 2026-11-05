@@ -202,6 +202,12 @@ let currentSrcKind: 'stream' | 'blob' | null = null;
 let offlineRetried = false;
 let authRetried = false;
 let currentLoadId: number | null = null;
+/**
+ * Blob URL owned by the player (prefetched track). Offline blobs live in the
+ * playable cache and are revoked by that cache; this one must be released when
+ * playback moves away to avoid leaking up to 12 MB per skipped prefetch.
+ */
+let externalBlobUrl: string | null = null;
 let loadGen = 0;
 /**
  * Monotonic counter of local user intents. Async restores and remote sync
@@ -286,6 +292,13 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
     }
   };
 
+  const releaseExternalBlob = () => {
+    if (externalBlobUrl) {
+      URL.revokeObjectURL(externalBlobUrl);
+      externalBlobUrl = null;
+    }
+  };
+
   const syncMediaSession = () => {
     const { currentTrack, isPlaying } = get();
     updateMediaSession(currentTrack, isPlaying);
@@ -349,6 +362,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
       return;
     }
     flushDeferredRevokes(trackId);
+    if (externalBlobUrl && externalBlobUrl !== src) {
+      releaseExternalBlob();
+    }
     currentLoadId = trackId;
     currentSrcKind = kind;
     logPlayerEvent('source.ready', { trackId, detail: kind });
@@ -437,6 +453,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
     // A prefetched blob is available locally: use it without a network round trip.
     const prefetched = takePrefetched(track.id);
     if (prefetched) {
+      if (externalBlobUrl !== prefetched) {
+        releaseExternalBlob();
+        externalBlobUrl = prefetched;
+      }
       applySource(prefetched, 'blob', gen, track.id, positionSeconds, autoplay);
       return;
     }
@@ -982,6 +1002,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
       stopPeriodicPersist();
       cancelPrefetch();
       clearPrefetch();
+      releaseExternalBlob();
       clearBlobUrlCache();
       try {
         audio.pause();

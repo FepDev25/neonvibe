@@ -223,6 +223,10 @@ beforeEach(() => {
   }));
   h.client.expiring.mockReturnValue(false);
   h.client.refresh.mockResolvedValue('fresh-token');
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: vi.fn(),
+  });
 
   useAuthStore.setState({
     isAuthenticated: true,
@@ -825,11 +829,15 @@ describe('persistence, seek, volume and prefetch consumption', () => {
 
   it('consumes a prefetched next track instead of the stream URL', () => {
     h.prefetch.take.mockImplementation((id: number) => (id === 2 ? 'blob:prefetched-2' : null));
-    usePlayerStore.getState().playTrack(track(1), [track(1), track(2)]);
+    usePlayerStore.getState().playTrack(track(1), [track(1), track(2), track(3)]);
 
     usePlayerStore.getState().next();
 
     expect(h.prefetch.take).toHaveBeenCalledWith(2);
     expect(h.audio.src).toBe('blob:prefetched-2');
+
+    // Moving on releases the prefetched blob (no 12 MB leak per skip).
+    usePlayerStore.getState().next();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:prefetched-2');
   });
 });
