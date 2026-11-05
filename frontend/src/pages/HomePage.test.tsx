@@ -132,7 +132,7 @@ describe('HomePage', () => {
     expect(screen.getByText('Escuchado recientemente')).toBeInTheDocument();
     expect(screen.getByText('Añadido recientemente')).toBeInTheDocument();
     expect(screen.getByText('Tus playlists')).toBeInTheDocument();
-    expect(await screen.findByText('Top artistas')).toBeInTheDocument();
+    expect(await screen.findByText('Artistas más escuchados')).toBeInTheDocument();
 
     expect(screen.queryByText(/próximo/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Explorar biblioteca')).not.toBeInTheDocument();

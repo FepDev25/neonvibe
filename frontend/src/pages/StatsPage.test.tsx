@@ -71,6 +71,10 @@ describe('StatsPage', () => {
     expect(screen.getByText('2 h 15 min')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
     expect(screen.getByText('Radiohead')).toBeInTheDocument();
+    expect(screen.getByText('Reproducciones por día')).toBeInTheDocument();
+    expect(screen.getByText(/7 reproducciones/)).toBeInTheDocument();
+    expect(screen.queryByText(/\bplays?\b/)).not.toBeInTheDocument();
+    expect(screen.getByRole('figure', { name: /reproducciones por día/ })).toBeInTheDocument();
   });
 
   it('shows an error with a retry when the overview request fails', () => {
@@ -110,6 +114,6 @@ describe('StatsPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(/no hay datos de escucha/i)).toBeInTheDocument();
+    expect(screen.getByText(/sin datos de escucha/i)).toBeInTheDocument();
   });
 });

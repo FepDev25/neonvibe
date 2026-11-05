@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatBytes,
+  formatDate,
   formatDateTime,
   formatDuration,
   formatListeningTime,
+  formatNumber,
+  formatPlays,
+  formatRelativeDay,
+  formatTime,
   formatTotalDuration,
   formatTrackCount,
 } from './format';
@@ -56,9 +61,9 @@ describe('formatTotalDuration', () => {
 describe('formatBytes', () => {
   it('formats bytes, KB, MB and GB', () => {
     expect(formatBytes(512)).toBe('512 B');
-    expect(formatBytes(1536)).toBe('1.5 KB');
-    expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 MB');
-    expect(formatBytes(3 * 1024 * 1024 * 1024)).toBe('3.0 GB');
+    expect(formatBytes(1536)).toBe('1,5 KB');
+    expect(formatBytes(5 * 1024 * 1024)).toBe('5,0 MB');
+    expect(formatBytes(3 * 1024 * 1024 * 1024)).toBe('3,0 GB');
   });
 
   it('returns an empty string for missing/invalid values', () => {
@@ -92,5 +97,36 @@ describe('formatListeningTime', () => {
   it('handles zero and invalid values', () => {
     expect(formatListeningTime(0)).toBe('0 min');
     expect(formatListeningTime()).toBe('0 min');
+  });
+});
+
+
+describe('Spanish dates and counts', () => {
+  it('formats dates in Spanish with a short month', () => {
+    const value = formatDate('2026-11-05');
+    expect(value).toMatch(/5/);
+    expect(value).toMatch(/nov/i);
+    expect(value).toMatch(/2026/);
+    expect(value).not.toMatch(/Nov/);
+  });
+
+  it('formats 24-hour times and combines them with the date', () => {
+    expect(formatTime('2026-11-05T07:52:00')).toBe('07:52');
+    expect(formatDateTime('2026-11-05T07:52:00')).toBe(
+      `${formatDate('2026-11-05T07:52:00')}, 07:52`,
+    );
+  });
+
+  it('labels today and yesterday relative to a fixed now', () => {
+    const now = new Date(2026, 10, 5, 18, 0, 0);
+    expect(formatRelativeDay('2026-11-05', now)).toBe('Hoy');
+    expect(formatRelativeDay('2026-11-04', now)).toBe('Ayer');
+    expect(formatRelativeDay('2026-11-02', now)).toMatch(/nov/i);
+  });
+
+  it('formats play counts and numbers in Spanish', () => {
+    expect(formatPlays(1)).toBe('1 reproducción');
+    expect(formatPlays(12)).toBe('12 reproducciones');
+    expect(formatNumber(12345)).toBe('12.345');
   });
 });

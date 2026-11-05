@@ -292,7 +292,7 @@ export default function HomePage() {
           )}
 
           {topArtists.length > 0 && (
-            <Section title="Top artistas">
+            <Section title="Artistas más escuchados">
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {topArtists.map((item) => (
                   <div key={item.id} className="w-28 shrink-0">
