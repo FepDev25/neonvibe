@@ -116,7 +116,7 @@ export default function PlayerBar() {
                   <button
                     type="button"
                     onClick={() => retry()}
-                    className="rounded px-2 py-0.5 font-semibold text-neon-cyan hover:bg-surface-alt"
+                    className="rounded px-2 py-0.5 font-semibold text-accent-text hover:bg-surface-alt"
                   >
                     Reintentar
                   </button>
@@ -170,7 +170,7 @@ export default function PlayerBar() {
               onClick={() => setAddOpen(true)}
               aria-label="Añadir a playlist"
               title="Añadir a playlist"
-              className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-neon-cyan')}
+              className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-accent-text')}
             >
               <Plus className="h-4 w-4" aria-hidden />
             </button>
@@ -189,7 +189,7 @@ export default function PlayerBar() {
               className={cn(
                 controlBtn,
                 'hidden sm:flex',
-                shuffle ? 'text-neon-cyan' : 'text-text-muted hover:text-text',
+                shuffle ? 'text-accent-text' : 'text-text-muted hover:text-text',
               )}
             >
               <Shuffle className="h-4 w-4" aria-hidden />
@@ -204,7 +204,7 @@ export default function PlayerBar() {
               className={cn(
                 controlBtn,
                 'hidden sm:flex',
-                repeat !== 'NONE' ? 'text-neon-cyan' : 'text-text-muted hover:text-text',
+                repeat !== 'NONE' ? 'text-accent-text' : 'text-text-muted hover:text-text',
               )}
             >
               {repeat === 'ONE' ? (
@@ -220,7 +220,7 @@ export default function PlayerBar() {
               disabled={!hasPrev}
               aria-label="Anterior"
               title="Anterior"
-              className={cn(controlBtn, 'text-text hover:text-neon-cyan disabled:opacity-30')}
+              className={cn(controlBtn, 'text-text hover:text-accent-text disabled:opacity-30')}
             >
               <SkipBack className="h-5 w-5" aria-hidden />
             </button>
@@ -245,7 +245,7 @@ export default function PlayerBar() {
               disabled={!hasNext}
               aria-label="Siguiente"
               title="Siguiente"
-              className={cn(controlBtn, 'text-text hover:text-neon-cyan disabled:opacity-30')}
+              className={cn(controlBtn, 'text-text hover:text-accent-text disabled:opacity-30')}
             >
               <SkipForward className="h-5 w-5" aria-hidden />
             </button>
@@ -255,7 +255,7 @@ export default function PlayerBar() {
               onClick={() => setVolume(muted ? 1 : 0)}
               aria-label={muted ? 'Activar sonido' : 'Silenciar'}
               title={muted ? 'Activar sonido' : 'Silenciar'}
-              className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-neon-cyan')}
+              className={cn(controlBtn, 'hidden sm:flex text-text-muted hover:text-accent-text')}
             >
               {muted ? (
                 <VolumeX className="h-4 w-4" aria-hidden />
@@ -294,7 +294,7 @@ export default function PlayerBar() {
               onClick={() => setLyricsOpen(true)}
               aria-label="Ver letras"
               title="Letras"
-              className={cn(controlBtn, 'text-text-muted hover:text-neon-cyan')}
+              className={cn(controlBtn, 'text-text-muted hover:text-accent-text')}
             >
               <FileText className="h-4 w-4" aria-hidden />
             </button>
@@ -304,7 +304,7 @@ export default function PlayerBar() {
               onClick={() => setQueueOpen(true)}
               aria-label="Ver cola"
               title="Cola"
-              className={cn(controlBtn, 'text-text-muted hover:text-neon-cyan')}
+              className={cn(controlBtn, 'text-text-muted hover:text-accent-text')}
             >
               <ListMusic className="h-5 w-5" aria-hidden />
             </button>
@@ -327,12 +327,12 @@ export default function PlayerBar() {
           className="fixed inset-0 z-50 flex flex-col bg-black/95 outline-none"
         >
           <div className="flex items-center justify-between px-5 pt-5">
-            <p className="neon-text text-lg font-bold">Visualizador</p>
+            <p className="text-lg font-bold text-white">Visualizador</p>
             <button
               type="button"
               onClick={() => setVizOpen(false)}
               aria-label="Cerrar visualizador"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-alt text-text hover:text-neon-cyan"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-alt text-text hover:text-accent-text"
             >
               <X className="h-5 w-5" aria-hidden />
             </button>

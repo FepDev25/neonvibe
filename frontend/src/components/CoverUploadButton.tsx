@@ -101,7 +101,7 @@ export default function CoverUploadButton({
     status === 'uploading' ? (
       <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
     ) : status === 'success' ? (
-      <Check className="h-4 w-4 text-neon-cyan" aria-hidden />
+      <Check className="h-4 w-4 text-accent-text" aria-hidden />
     ) : (
       <ImagePlus className="h-4 w-4" aria-hidden />
     );

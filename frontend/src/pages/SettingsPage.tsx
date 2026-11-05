@@ -55,7 +55,7 @@ function Toggle({
       onClick={() => onChange(!checked)}
       className={cn(
         'relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50',
-        checked ? 'bg-neon-cyan' : 'bg-surface-alt',
+        checked ? 'bg-accent-strong' : 'bg-text-muted/80',
       )}
     >
       <span
@@ -235,7 +235,7 @@ export default function SettingsPage() {
       <Card className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           {theme === 'dark' ? (
-            <Moon className="h-6 w-6 text-neon-cyan" aria-hidden />
+            <Moon className="h-6 w-6 text-accent-text" aria-hidden />
           ) : (
             <Sun className="h-6 w-6 text-neon-yellow" aria-hidden />
           )}
@@ -301,7 +301,7 @@ export default function SettingsPage() {
               Desactivado por defecto (bypass). No es normalización de volumen.
             </p>
             {eqError && (
-              <p className="text-xs text-neon-pink">
+              <p className="text-xs text-danger-text">
                 Este navegador no permite procesar el audio en tiempo real.
               </p>
             )}
@@ -339,7 +339,7 @@ export default function SettingsPage() {
       {/* Notificaciones */}
       <Card className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Bell className="h-6 w-6 text-neon-cyan" aria-hidden />
+          <Bell className="h-6 w-6 text-accent-text" aria-hidden />
           <div>
             <p className="font-semibold">Notificaciones</p>
             <p className="text-sm text-text-muted">
@@ -349,7 +349,7 @@ export default function SettingsPage() {
                   ? 'Push no configurado en el servidor.'
                   : 'Avisos nativos (p. ej. escaneo completado).'}
             </p>
-            {pushError && <p className="text-xs text-neon-pink">{pushError}</p>}
+            {pushError && <p className="text-xs text-danger-text">{pushError}</p>}
             {pushSent != null && (
               <p className="text-xs text-text-muted">
                 {pushSent > 0

@@ -74,7 +74,7 @@ export default function QueueSheet({ open, onClose }: QueueSheetProps) {
                     {isCurrent && isPlaying ? (
                       <NowPlayingBars />
                     ) : (
-                      <span className={cn('text-xs tabular-nums', isCurrent ? 'text-neon-cyan' : 'text-text-muted')}>
+                      <span className={cn('text-xs tabular-nums', isCurrent ? 'text-accent-text' : 'text-text-muted')}>
                         {index + 1}
                       </span>
                     )}
@@ -83,7 +83,7 @@ export default function QueueSheet({ open, onClose }: QueueSheetProps) {
                     <span
                       className={cn(
                         'truncate text-sm font-medium',
-                        isCurrent ? 'text-neon-cyan' : 'text-text',
+                        isCurrent ? 'text-accent-text' : 'text-text',
                       )}
                     >
                       {track.title}

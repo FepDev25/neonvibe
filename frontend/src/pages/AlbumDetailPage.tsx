@@ -54,7 +54,7 @@ export default function AlbumDetailPage() {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
         <p className="text-text-muted">No se encontró el álbum.</p>
-        <Link to="/library" className="text-sm text-neon-cyan">
+        <Link to="/library" className="text-sm text-accent-text">
           ← Volver a la biblioteca
         </Link>
       </div>
@@ -68,7 +68,7 @@ export default function AlbumDetailPage() {
     <div className="flex flex-col gap-5">
       <Link
         to="/library"
-        className="inline-flex w-fit items-center gap-1.5 text-sm text-text-muted hover:text-neon-cyan"
+        className="inline-flex w-fit items-center gap-1.5 text-sm text-text-muted hover:text-accent-text"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Biblioteca

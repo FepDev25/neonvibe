@@ -49,8 +49,8 @@ export default function TrackDownloadButton({ track, className }: TrackDownloadB
       className={cn(
         className,
         downloading || done
-          ? 'text-neon-cyan'
-          : 'text-text-muted hover:text-neon-cyan',
+          ? 'text-accent-text'
+          : 'text-text-muted hover:text-accent-text',
       )}
     >
       {done ? (

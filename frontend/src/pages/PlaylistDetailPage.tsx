@@ -86,7 +86,7 @@ export default function PlaylistDetailPage() {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
         <p className="text-text-muted">No se encontró la playlist.</p>
-        <Link to="/playlists" className="text-sm text-neon-cyan">
+        <Link to="/playlists" className="text-sm text-accent-text">
           ← Volver a playlists
         </Link>
       </div>
@@ -128,7 +128,7 @@ export default function PlaylistDetailPage() {
     <div className="flex flex-col gap-5">
       <Link
         to="/playlists"
-        className="inline-flex w-fit items-center gap-1.5 text-sm text-text-muted hover:text-neon-cyan"
+        className="inline-flex w-fit items-center gap-1.5 text-sm text-text-muted hover:text-accent-text"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Playlists
@@ -148,7 +148,7 @@ export default function PlaylistDetailPage() {
         <div className="flex min-w-0 flex-1 flex-col justify-end gap-1">
           <h1 className="neon-text text-2xl font-bold sm:text-3xl">{playlist.name}</h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
-            <span className={playlist.is_public ? 'text-neon-cyan' : ''}>
+            <span className={playlist.is_public ? 'text-accent-text' : ''}>
               {playlist.is_public ? 'Pública' : 'Privada'}
             </span>
             <span>{formatTrackCount(tracks.length)}</span>

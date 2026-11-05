@@ -10,7 +10,7 @@ export default function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-surface lg:flex">
       <div className="flex items-center gap-2 px-5 pb-2 pt-5">
-        <Music2 className="h-6 w-6 text-neon-cyan" aria-hidden />
+        <Music2 className="h-6 w-6 text-accent-text" aria-hidden />
         <span className="neon-text text-lg font-bold tracking-tight">NeonVibe</span>
       </div>
       <nav className="flex flex-col gap-0.5 px-3 py-2">
@@ -23,7 +23,7 @@ export default function Sidebar() {
               cn(
                 'relative flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-neon-purple/15 text-neon-cyan'
+                  ? 'bg-accent-soft text-accent-text'
                   : 'text-text-muted hover:bg-surface-alt hover:text-text',
               )
             }

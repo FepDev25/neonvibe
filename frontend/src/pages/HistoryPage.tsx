@@ -59,7 +59,7 @@ export default function HistoryPage() {
               </span>
               <span className="shrink-0 text-right text-[11px] text-text-muted">
                 <span className="block">{formatDateTime(entry.played_at)}</span>
-                {entry.completed && <span className="text-neon-cyan">Completada</span>}
+                {entry.completed && <span className="text-accent-text">Completada</span>}
               </span>
             </button>
           ))}

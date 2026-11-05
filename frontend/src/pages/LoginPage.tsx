@@ -106,7 +106,7 @@ export default function LoginPage() {
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-bg px-4 text-center">
       <div className="flex flex-col items-center gap-3">
         <div className="neon-border flex h-20 w-20 items-center justify-center rounded-3xl bg-surface">
-          <Music2 className="h-10 w-10 text-neon-cyan" aria-hidden />
+          <Music2 className="h-10 w-10 text-accent-text" aria-hidden />
         </div>
         <h1 className="neon-text text-4xl font-extrabold tracking-tight">NeonVibe</h1>
         <p className="max-w-sm text-sm text-text-muted">
@@ -122,7 +122,7 @@ export default function LoginPage() {
       )}
 
       {error && (
-        <p className="flex items-center gap-2 rounded-xl border border-neon-pink/40 bg-neon-pink/10 px-4 py-2 text-sm text-neon-pink">
+        <p className="flex items-center gap-2 rounded-xl border border-danger-text/40 bg-danger-text/10 px-4 py-2 text-sm text-danger-text">
           <AlertTriangle className="h-4 w-4" aria-hidden />
           {error}
         </p>
@@ -135,7 +135,7 @@ export default function LoginPage() {
             Reconstruye el frontend con la variable{' '}
             <code className="rounded bg-surface-alt px-1">VITE_GOOGLE_CLIENT_ID</code>{' '}
             apuntando a tu Client ID de Google Cloud Console (OAuth 2.0 → Web).
-            Consulta <span className="text-neon-cyan">docs/DEPLOY.md</span>.
+            Consulta <span className="text-accent-text">docs/DEPLOY.md</span>.
           </p>
         </div>
       ) : (

@@ -36,7 +36,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
         // Custom push/notificationclick handlers, injected into the generated SW.
         importScripts: ['push-handler.js'],
         runtimeCaching: [

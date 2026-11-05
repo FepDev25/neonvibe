@@ -55,7 +55,7 @@ export default function DownloadButton({ tracks }: DownloadButtonProps) {
   if (allDone) {
     return (
       <Button variant="secondary" size="sm" onClick={handleDelete} disabled={busy}>
-        <Check className="h-4 w-4 text-neon-cyan" aria-hidden />
+        <Check className="h-4 w-4 text-accent-text" aria-hidden />
         Descargado
       </Button>
     );

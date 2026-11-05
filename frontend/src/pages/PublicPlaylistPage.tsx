@@ -50,10 +50,10 @@ export default function PublicPlaylistPage() {
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2" aria-label="NeonVibe">
-            <Music2 className="h-5 w-5 text-neon-cyan" aria-hidden />
+            <Music2 className="h-5 w-5 text-accent-text" aria-hidden />
             <span className="neon-text text-lg font-bold">NeonVibe</span>
           </Link>
-          <Link to="/" className="text-sm text-text-muted hover:text-neon-cyan">
+          <Link to="/" className="text-sm text-text-muted hover:text-accent-text">
             Abrir la app
           </Link>
         </div>
@@ -62,7 +62,7 @@ export default function PublicPlaylistPage() {
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-16 pt-6">
         <Link
           to="/"
-          className="inline-flex w-fit items-center gap-1.5 text-sm text-text-muted hover:text-neon-cyan"
+          className="inline-flex w-fit items-center gap-1.5 text-sm text-text-muted hover:text-accent-text"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Inicio

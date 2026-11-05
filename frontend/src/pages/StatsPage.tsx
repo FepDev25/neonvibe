@@ -30,7 +30,7 @@ const TOP_TABS: Array<{ id: StatsTopTypeParam; label: string }> = [
 function StatCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neon-purple/15 text-neon-cyan">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-text">
         <Icon className="h-5 w-5" aria-hidden />
       </span>
       <div className="min-w-0">
@@ -97,7 +97,7 @@ export default function StatsPage() {
               className={cn(
                 'min-h-[36px] rounded-lg px-3 text-xs font-semibold transition-colors',
                 range === option.id
-                  ? 'bg-neon-purple/15 text-neon-cyan'
+                  ? 'bg-accent-soft text-accent-text'
                   : 'text-text-muted hover:text-text',
               )}
             >
@@ -114,7 +114,7 @@ export default function StatsPage() {
           <button
             type="button"
             onClick={retryAll}
-            className="rounded-xl border border-neon-cyan px-4 py-2 text-sm font-semibold text-neon-cyan transition-colors hover:bg-neon-cyan/10"
+            className="rounded-xl border border-accent-text px-4 py-2 text-sm font-semibold text-accent-text transition-colors hover:bg-accent-soft"
           >
             Reintentar
           </button>
@@ -176,7 +176,7 @@ export default function StatsPage() {
                     className={cn(
                       'rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors',
                       topType === tab.id
-                        ? 'bg-neon-purple/15 text-neon-cyan'
+                        ? 'bg-accent-soft text-accent-text'
                         : 'text-text-muted hover:text-text',
                     )}
                   >
@@ -247,7 +247,7 @@ export default function StatsPage() {
 
           <section className="rounded-2xl border border-border bg-surface p-4">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text">
-              <Disc3 className="h-4 w-4 text-neon-cyan" aria-hidden />
+              <Disc3 className="h-4 w-4 text-accent-text" aria-hidden />
               Por hora del día
             </h2>
             {hours.isPending ? (

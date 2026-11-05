@@ -64,7 +64,7 @@ export default function UploadCard() {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <UploadCloud className="h-6 w-6 text-neon-cyan" aria-hidden />
+        <UploadCloud className="h-6 w-6 text-accent-text" aria-hidden />
         <div>
           <p className="font-semibold">Subir música</p>
           <p className="text-sm text-text-muted">
@@ -140,9 +140,9 @@ export default function UploadCard() {
       {result && (
         <div className="flex items-start gap-2 text-sm">
           {result.failed > 0 ? (
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-neon-yellow" aria-hidden />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-text" aria-hidden />
           ) : (
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-neon-cyan" aria-hidden />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-text" aria-hidden />
           )}
           <div className="min-w-0">
             <p className="text-text">

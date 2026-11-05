@@ -40,7 +40,7 @@ interface NowPlayingViewProps {
 
 /** Shared visual for the round action tiles below the cover. */
 const TILE =
-  'flex h-12 w-12 items-center justify-center rounded-full border border-border/60 bg-surface/60 backdrop-blur transition-all hover:-translate-y-0.5 hover:border-neon-cyan/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan';
+  'flex h-12 w-12 items-center justify-center rounded-full border border-border/60 bg-surface/60 backdrop-blur transition duration-150 hover:-translate-y-0.5 hover:border-accent-text/60';
 
 /**
  * Full-screen "Now Playing" overlay, opened by tapping the current track in the
@@ -149,15 +149,15 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
         role="dialog"
         aria-modal="true"
         aria-label={`Reproduciendo ${currentTrack.title}`}
-        className="fixed inset-0 z-50 flex flex-col bg-bg/90 backdrop-blur-2xl"
+        className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-2xl"
       >
         {/* Ambient wash built from the cover itself, tinted by the neon palette. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
-            className="absolute inset-0 scale-125 opacity-40 blur-3xl"
+            className="absolute inset-0 scale-125 opacity-20 blur-3xl dark:opacity-40"
             style={{ backgroundImage: `url(${coverSrc})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-bg/70 via-bg/85 to-bg" />
+          <div className="absolute inset-0 bg-gradient-to-b from-bg/90 via-bg/95 to-bg dark:from-bg/70 dark:via-bg/85 dark:to-bg" />
           <div className="np-orb np-orb--purple np-orb--a left-[12%] top-[-12%] h-80 w-80" />
           <div className="np-orb np-orb--cyan np-orb--b bottom-[-14%] right-[-10%] h-72 w-72" />
           <div className="np-orb np-orb--pink np-orb--c left-[-14%] top-[42%] h-64 w-64" />
@@ -174,7 +174,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               onClick={onClose}
               aria-label="Cerrar reproductor"
               title="Cerrar"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text"
             >
               <ChevronDown className="h-6 w-6" aria-hidden />
             </button>
@@ -186,7 +186,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               onClick={() => setQueueOpen(true)}
               aria-label="Ver cola"
               title="Cola"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-neon-cyan"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-accent-text"
             >
               <ListMusic className="h-5 w-5" aria-hidden />
             </button>
@@ -221,7 +221,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               aria-label={shuffle ? 'Desactivar aleatorio' : 'Activar aleatorio'}
               aria-pressed={shuffle}
               title="Aleatorio"
-              className={cn(iconBtn, shuffle ? 'text-neon-cyan' : 'text-text-muted hover:text-text')}
+              className={cn(iconBtn, shuffle ? 'text-accent-text' : 'text-text-muted hover:text-text')}
             >
               <Shuffle className="h-5 w-5" aria-hidden />
             </button>
@@ -232,7 +232,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               disabled={!hasPrev}
               aria-label="Anterior"
               title="Anterior"
-              className={cn(iconBtn, 'text-text hover:text-neon-cyan disabled:opacity-30')}
+              className={cn(iconBtn, 'text-text hover:text-accent-text disabled:opacity-30')}
             >
               <SkipBack className="h-6 w-6" aria-hidden />
             </button>
@@ -257,7 +257,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               disabled={!hasNext}
               aria-label="Siguiente"
               title="Siguiente"
-              className={cn(iconBtn, 'text-text hover:text-neon-cyan disabled:opacity-30')}
+              className={cn(iconBtn, 'text-text hover:text-accent-text disabled:opacity-30')}
             >
               <SkipForward className="h-6 w-6" aria-hidden />
             </button>
@@ -268,7 +268,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               aria-label={`Repetición: ${repeat === 'ONE' ? 'una' : repeat === 'ALL' ? 'todo' : 'ninguna'}`}
               aria-pressed={repeat !== 'NONE'}
               title="Repetición"
-              className={cn(iconBtn, repeat !== 'NONE' ? 'text-neon-cyan' : 'text-text-muted hover:text-text')}
+              className={cn(iconBtn, repeat !== 'NONE' ? 'text-accent-text' : 'text-text-muted hover:text-text')}
             >
               {repeat === 'ONE' ? (
                 <Repeat1 className="h-5 w-5" aria-hidden />
@@ -286,7 +286,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               onClick={() => setAddOpen(true)}
               aria-label="Añadir a playlist"
               title="Añadir a playlist"
-              className={cn(TILE, 'text-text-muted hover:text-neon-cyan')}
+              className={cn(TILE, 'text-text-muted hover:text-accent-text')}
             >
               <Plus className="h-5 w-5" aria-hidden />
             </button>
@@ -298,7 +298,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               onClick={() => setLyricsOpen(true)}
               aria-label="Ver letras"
               title="Letras"
-              className={cn(TILE, 'text-text-muted hover:text-neon-cyan')}
+              className={cn(TILE, 'text-text-muted hover:text-accent-text')}
             >
               <FileText className="h-5 w-5" aria-hidden />
             </button>
@@ -344,8 +344,8 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
                       quality === option.id
-                        ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan'
-                        : 'border-border text-text-muted hover:border-neon-cyan/50 hover:text-text',
+                        ? 'border-accent-text bg-accent-soft text-accent-text'
+                        : 'border-border text-text-muted hover:border-accent-text/50 hover:text-text',
                     )}
                   >
                     {option.label}
@@ -360,7 +360,7 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
               type="button"
               onClick={() => setVolume(muted ? 1 : 0)}
               aria-label={muted ? 'Activar sonido' : 'Silenciar'}
-              className={cn(iconBtn, 'shrink-0 text-text-muted hover:text-neon-cyan')}
+              className={cn(iconBtn, 'shrink-0 text-text-muted hover:text-accent-text')}
             >
               {muted ? (
                 <VolumeX className="h-5 w-5" aria-hidden />
@@ -395,12 +395,12 @@ export default function NowPlayingView({ open, onClose }: NowPlayingViewProps) {
           className="fixed inset-0 z-[60] flex flex-col bg-black/95 outline-none"
         >
           <div className="flex items-center justify-between px-5 pt-5">
-            <p className="neon-text text-lg font-bold">Visualizador</p>
+            <p className="text-lg font-bold text-white">Visualizador</p>
             <button
               type="button"
               onClick={() => setVizOpen(false)}
               aria-label="Cerrar visualizador"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-alt text-text hover:text-neon-cyan"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-alt text-text hover:text-accent-text"
             >
               <ChevronDown className="h-5 w-5" aria-hidden />
             </button>

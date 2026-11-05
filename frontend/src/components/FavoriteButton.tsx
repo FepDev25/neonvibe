@@ -44,7 +44,6 @@ export default function FavoriteButton({
       }}
       className={cn(
         'flex shrink-0 items-center justify-center rounded-full transition-colors',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan',
         SIZE_CLASSES[size],
         active ? 'text-neon-pink' : 'text-text-muted hover:text-neon-pink',
         className,

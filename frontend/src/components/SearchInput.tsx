@@ -41,7 +41,7 @@ export default function SearchInput({
         placeholder={placeholder ?? label}
         className={cn(
           'h-11 w-full rounded-xl border border-border bg-surface pl-10 pr-10 text-text',
-          'placeholder:text-text-muted focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan',
+          'placeholder:text-text-muted focus:border-accent-text',
           '[&::-webkit-search-cancel-button]:appearance-none',
         )}
       />

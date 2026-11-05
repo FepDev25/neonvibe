@@ -35,4 +35,22 @@ describe('Button', () => {
     await user.click(screen.getByRole('button', { name: 'Play' }));
     expect(onClick).not.toHaveBeenCalled();
   });
+
+  it('keeps a >= 44px touch target in every size', () => {
+    const { rerender } = render(<Button size="sm">Pequeño</Button>);
+    expect(screen.getByRole('button')).toHaveClass('h-11');
+
+    rerender(<Button size="lg">Grande</Button>);
+    expect(screen.getByRole('button')).toHaveClass('h-12');
+  });
+
+  it('does not suppress the global focus ring', async () => {
+    const user = userEvent.setup();
+    render(<Button>Reproducir</Button>);
+
+    await user.tab();
+    const button = screen.getByRole('button', { name: 'Reproducir' });
+    expect(button).toHaveFocus();
+    expect(button).not.toHaveClass('focus:outline-none');
+  });
 });

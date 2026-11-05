@@ -12,21 +12,22 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary:
-    'bg-neon-purple text-white hover:bg-neon-pink neon-glow hover:brightness-110',
-  secondary:
-    'border border-neon-cyan text-neon-cyan hover:bg-neon-cyan/10',
+    'bg-accent-strong text-white hover:brightness-110 neon-glow',
+  secondary: 'border border-accent-text text-accent-text hover:bg-accent-soft',
   ghost: 'text-text-muted hover:text-text hover:bg-surface-alt',
 };
 
 const SIZE_CLASSES: Record<Size, string> = {
-  sm: 'h-9 px-3 text-sm',
+  // Every size meets the 44x44 minimum touch target (tap-target token).
+  sm: 'h-11 px-3 text-sm',
   md: 'h-11 px-5 text-sm',
   lg: 'h-12 px-6 text-base',
 };
 
 /**
  * Neon-styled button with hover effects. Accepts `className` for composition
- * and supports `variant`/`size`. Min touch height 36px (48px in md).
+ * and supports `variant`/`size`. Focus is provided globally by the
+ * `:focus-visible` ring in `index.css`; touch height is always >= 44px.
  */
 export default function Button({
   variant = 'primary',
@@ -40,7 +41,7 @@ export default function Button({
     <button
       type={type}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-150 disabled:cursor-not-allowed disabled:opacity-50',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         className,

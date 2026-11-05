@@ -60,8 +60,8 @@ export default function LoadMore<T>({ query, loading }: LoadMoreProps<T>) {
         type="button"
         onClick={() => void query.fetchNextPage()}
         className={cn(
-          'w-full rounded-xl border border-neon-cyan py-3 text-sm font-semibold text-neon-cyan',
-          'transition-colors hover:bg-neon-cyan/10',
+          'w-full rounded-xl border border-accent-text py-3 text-sm font-semibold text-accent-text',
+          'transition-colors hover:bg-accent-soft',
         )}
       >
         Cargar más

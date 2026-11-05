@@ -117,7 +117,7 @@ export default function EditMetadataDialog({
             <label key={field.key} className="flex flex-col gap-1">
               <span className="text-sm font-medium text-text">
                 {field.label}
-                {field.required && <span className="text-neon-cyan"> *</span>}
+                {field.required && <span className="text-accent-text"> *</span>}
               </span>
               <input
                 type={field.type ?? 'text'}
@@ -125,7 +125,7 @@ export default function EditMetadataDialog({
                 onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
                 placeholder={field.placeholder}
                 autoFocus={field.required}
-                className="h-11 rounded-xl border border-border bg-surface-alt px-3 text-text placeholder:text-text-muted focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan"
+                className="h-11 rounded-xl border border-border bg-surface-alt px-3 text-text placeholder:text-text-muted focus:border-accent-text"
               />
             </label>
           ))}

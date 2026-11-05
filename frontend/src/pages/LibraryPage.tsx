@@ -161,7 +161,7 @@ export default function LibraryPage() {
         <div className="flex shrink-0 gap-1">
           <Link
             to="/playlists"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-muted transition-colors hover:text-neon-cyan"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-muted transition-colors hover:text-accent-text"
           >
             <ListMusic className="h-4 w-4" aria-hidden />
             Playlists
@@ -203,7 +203,7 @@ export default function LibraryPage() {
             className={cn(
               'flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition-colors',
               tab === id
-                ? 'bg-neon-purple/15 text-neon-cyan'
+                ? 'bg-accent-soft text-accent-text'
                 : 'text-text-muted hover:text-text',
             )}
           >

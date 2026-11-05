@@ -52,12 +52,12 @@ export default function TopHeader() {
               type="button"
               onClick={() => setMenuOpen(true)}
               aria-label="Abrir menú"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text lg:hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text lg:hidden"
             >
               <Menu className="h-5 w-5" aria-hidden />
             </button>
             <Link to="/" className="flex items-center gap-2" aria-label="NeonVibe inicio">
-              <Music2 className="h-6 w-6 text-neon-cyan" aria-hidden />
+              <Music2 className="h-6 w-6 text-accent-text" aria-hidden />
               <span className="neon-text text-lg font-bold tracking-tight">
                 NeonVibe
               </span>
@@ -66,7 +66,7 @@ export default function TopHeader() {
 
           <div className="flex items-center gap-2">
             {!online && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-neon-yellow/40 bg-neon-yellow/10 px-2 py-1 text-[10px] font-semibold text-neon-yellow">
+              <span className="inline-flex items-center gap-1 rounded-full border border-neon-yellow/40 bg-neon-yellow/10 px-2 py-1 text-[10px] font-semibold text-warning-text">
                 <WifiOff className="h-3 w-3" aria-hidden />
                 Sin conexión
               </span>
@@ -86,7 +86,7 @@ export default function TopHeader() {
               to="/settings"
               aria-label="Ir a ajustes"
               className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold',
+                'flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold',
                 isAuthenticated && user
                   ? 'bg-neon-purple text-white neon-glow'
                   : 'border border-border bg-surface-alt text-text-muted',

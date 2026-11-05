@@ -92,7 +92,7 @@ export default function PlaylistForm({
               onChange={(e) => setName(e.target.value)}
               placeholder="Mi playlist"
               autoFocus
-              className="h-11 rounded-xl border border-border bg-surface-alt px-3 text-text placeholder:text-text-muted focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan"
+              className="h-11 rounded-xl border border-border bg-surface-alt px-3 text-text placeholder:text-text-muted focus:border-accent-text"
             />
           </label>
 
@@ -103,7 +103,7 @@ export default function PlaylistForm({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Opcional"
               rows={2}
-              className="rounded-xl border border-border bg-surface-alt px-3 py-2 text-text placeholder:text-text-muted focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan"
+              className="rounded-xl border border-border bg-surface-alt px-3 py-2 text-text placeholder:text-text-muted focus:border-accent-text"
             />
           </label>
 
@@ -114,7 +114,7 @@ export default function PlaylistForm({
             className={cn(
               'flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition-colors',
               isPublic
-                ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan'
+                ? 'border-accent-text bg-accent-soft text-accent-text'
                 : 'border-border bg-surface-alt text-text',
             )}
           >

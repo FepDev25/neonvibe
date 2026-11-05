@@ -42,7 +42,7 @@ export default function TrackRow({ track, number, queue }: TrackRowProps) {
           <span
             className={cn(
               'text-sm tabular-nums',
-              isCurrent ? 'text-neon-cyan' : 'text-text-muted',
+              isCurrent ? 'text-accent-text' : 'text-text-muted',
             )}
           >
             {number ?? track.track_number ?? '•'}
@@ -68,13 +68,13 @@ export default function TrackRow({ track, number, queue }: TrackRowProps) {
         <Play
           className={cn(
             'h-4 w-4 shrink-0 transition-colors',
-            isCurrent ? 'text-neon-cyan' : 'text-text-muted group-hover:text-neon-cyan',
+            isCurrent ? 'text-accent-text' : 'text-text-muted group-hover:text-accent-text',
           )}
           aria-hidden
         />
         <span className="flex min-w-0 flex-col">
           <span
-            className={cn('truncate text-sm font-medium', isCurrent ? 'text-neon-cyan' : 'text-text')}
+            className={cn('truncate text-sm font-medium', isCurrent ? 'text-accent-text' : 'text-text')}
           >
             {track.title}
           </span>
@@ -92,7 +92,7 @@ export default function TrackRow({ track, number, queue }: TrackRowProps) {
         type="button"
         onClick={() => setSheetOpen(true)}
         aria-label={`Añadir ${track.title} a una playlist`}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:text-neon-cyan"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:text-accent-text"
       >
         <Plus className="h-5 w-5" aria-hidden />
       </button>

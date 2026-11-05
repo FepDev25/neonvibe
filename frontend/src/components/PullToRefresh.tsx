@@ -70,7 +70,7 @@ export default function PullToRefresh({ onRefresh, children, className }: PullTo
           aria-hidden
         >
           <RefreshCw
-            className={cn('h-5 w-5 text-neon-cyan', (pull > THRESHOLD || refreshing) && 'animate-spin')}
+            className={cn('h-5 w-5 text-accent-text', (pull > THRESHOLD || refreshing) && 'animate-spin')}
             style={{ opacity: refreshing ? 1 : Math.min(1, pull / THRESHOLD) }}
           />
         </div>

@@ -51,7 +51,7 @@ export default function ReorderTrackRow({
           <span
             className={cn(
               'text-sm tabular-nums',
-              isCurrent ? 'text-neon-cyan' : 'text-text-muted',
+              isCurrent ? 'text-accent-text' : 'text-text-muted',
             )}
           >
             {index + 1}
@@ -77,13 +77,13 @@ export default function ReorderTrackRow({
         <Play
           className={cn(
             'h-4 w-4 shrink-0',
-            isCurrent ? 'text-neon-cyan' : 'text-text-muted group-hover:text-neon-cyan',
+            isCurrent ? 'text-accent-text' : 'text-text-muted group-hover:text-accent-text',
           )}
           aria-hidden
         />
         <span className="flex min-w-0 flex-col">
           <span
-            className={cn('truncate text-sm font-medium', isCurrent ? 'text-neon-cyan' : 'text-text')}
+            className={cn('truncate text-sm font-medium', isCurrent ? 'text-accent-text' : 'text-text')}
           >
             {track.title}
           </span>
@@ -104,7 +104,7 @@ export default function ReorderTrackRow({
             disabled={busy || index === 0}
             onClick={() => onMove(index, -1)}
             aria-label={`Mover arriba: ${track.title}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:text-neon-cyan disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:text-accent-text disabled:opacity-30"
           >
             <ChevronUp className="h-4 w-4" aria-hidden />
           </button>
@@ -113,7 +113,7 @@ export default function ReorderTrackRow({
             disabled={busy || index === total - 1}
             onClick={() => onMove(index, 1)}
             aria-label={`Mover abajo: ${track.title}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:text-neon-cyan disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:text-accent-text disabled:opacity-30"
           >
             <ChevronDown className="h-4 w-4" aria-hidden />
           </button>

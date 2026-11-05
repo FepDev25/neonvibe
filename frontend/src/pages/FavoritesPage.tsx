@@ -76,7 +76,7 @@ export default function FavoritesPage() {
             className={cn(
               'flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition-colors',
               tab === id
-                ? 'bg-neon-purple/15 text-neon-cyan'
+                ? 'bg-accent-soft text-accent-text'
                 : 'text-text-muted hover:text-text',
             )}
           >

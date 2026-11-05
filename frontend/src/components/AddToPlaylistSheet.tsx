@@ -88,7 +88,7 @@ export default function AddToPlaylistSheet({ open, trackId, onClose }: AddToPlay
                     {playlist.name}
                   </span>
                   {contains ? (
-                    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-neon-cyan">
+                    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-accent-text">
                       <Check className="h-4 w-4" aria-hidden />
                       Añadida
                     </span>

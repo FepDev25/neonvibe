@@ -42,7 +42,7 @@ export default function ScannerCard() {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <Radar className="h-6 w-6 text-neon-cyan" aria-hidden />
+        <Radar className="h-6 w-6 text-accent-text" aria-hidden />
         <div>
           <p className="font-semibold">Escáner</p>
           <p className="text-sm text-text-muted">
@@ -61,7 +61,7 @@ export default function ScannerCard() {
           </div>
           <div className="rounded-xl bg-surface-alt py-2">
             <dt className="text-text-muted">Añadidos</dt>
-            <dd className="text-sm font-semibold text-neon-cyan">{data.processed}</dd>
+            <dd className="text-sm font-semibold text-accent-text">{data.processed}</dd>
           </div>
           <div className="rounded-xl bg-surface-alt py-2">
             <dt className="text-text-muted">Fallos</dt>

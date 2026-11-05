@@ -51,7 +51,7 @@ export default function SearchPage() {
           placeholder="Buscar canciones, álbumes, artistas…"
           className={cn(
             'h-12 w-full rounded-xl border border-border bg-surface pl-10 pr-4 text-text',
-            'placeholder:text-text-muted focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan',
+            'placeholder:text-text-muted focus:border-accent-text',
           )}
         />
       </div>

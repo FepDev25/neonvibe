@@ -12,7 +12,7 @@ export default function HomePage() {
     <div className="flex flex-col items-center gap-8 py-8 text-center">
       <div className="flex flex-col items-center gap-3">
         <div className="neon-border flex h-20 w-20 items-center justify-center rounded-3xl bg-surface">
-          <Music2 className="h-10 w-10 text-neon-cyan" aria-hidden />
+          <Music2 className="h-10 w-10 text-accent-text" aria-hidden />
         </div>
         <h1 className="neon-text text-4xl font-extrabold tracking-tight sm:text-5xl">
           NeonVibe
@@ -39,7 +39,7 @@ export default function HomePage() {
           </p>
         </Card>
         <Card className="flex flex-col items-center gap-2 text-center">
-          <Music2 className="h-8 w-8 text-neon-cyan" aria-hidden />
+          <Music2 className="h-8 w-8 text-accent-text" aria-hidden />
           <h2 className="font-semibold">Reproductor</h2>
           <p className="text-sm text-text-muted">
             Streaming con seek, cola e historial (próximo).

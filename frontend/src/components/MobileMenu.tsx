@@ -60,14 +60,14 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
-            <Music2 className="h-6 w-6 text-neon-cyan" aria-hidden />
+            <Music2 className="h-6 w-6 text-accent-text" aria-hidden />
             <span className="neon-text text-lg font-bold tracking-tight">NeonVibe</span>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Cerrar menú"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text"
           >
             <X className="h-5 w-5" aria-hidden />
           </button>
@@ -96,7 +96,7 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
                 cn(
                   'relative flex min-h-[48px] items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-neon-purple/15 text-neon-cyan'
+                    ? 'bg-accent-soft text-accent-text'
                     : 'text-text-muted hover:bg-surface-alt hover:text-text',
                 )
               }
