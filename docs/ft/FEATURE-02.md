@@ -87,7 +87,7 @@ quiere impacto visible rápido, pero necesita B0.
 | B6 | Hecho | 2026-11-05 | Búsqueda con autofocus, recientes (máx. 5) y sugerencias, top result, contadores por sección, resaltado y portadas; `q` de pistas ampliado a título/artista/álbum y de álbumes a nombre/artista. Verificación: 336 tests frontend, 573 backend y builds verdes. Pasada visual pendiente. |
 | B7 | Hecho | 2026-11-05 | `EmptyState` compartido con CTA en descargas, búsqueda, playlists, favoritos, historial, biblioteca y detalles; logout con confirmación; un solo control de tema (header); versión 0.4.0 desde `package.json`; iniciales unificadas; textos ambiguos corregidos. Verificación estática: 340 tests y build verdes. Pasada visual pendiente. |
 | B8 | Hecho | 2026-11-05 | Fechas/horas en `es-ES`, historial agrupado por Hoy/Ayer/fecha, stats con “reproducciones”, resumen y ejes/unidades/tooltip, y números/bytes en formato español. Verificación estática: 346 tests y build verdes. Pasada visual pendiente. |
-| B9 | Pendiente | — | — |
+| B9 | Hecho | 2026-11-05 | Carrera de `QUEUE_UPDATED` corregida con ventana de acción local y test; JWT de WS movido a cabecera STOMP; stream/cover documentados con mitigaciones; reconexión con backoff exponencial y estado visible; transiciones ya acotadas en B0. Verificación: 351 tests frontend, 573 backend, builds verdes. Pendiente pasada visual/consola. |
 
 ---
 
@@ -561,27 +561,29 @@ la sensación de calidad.
 
 **Tareas**
 
-- [ ] Reproducir y corregir la carrera "primer clic en playlist recién cargada
+- [x] Reproducir y corregir la carrera "primer clic en playlist recién cargada
   revierte a la pista anterior" (posible `restoreFromServer`/`QUEUE_UPDATED`
   pisando `playTrack`). Test de concurrencia.
-- [ ] Revisar el JWT en `?token=` de `/ws` y `/stream`: mover a header,
+- [x] Revisar el JWT en `?token=` de `/ws` y `/stream`: mover a header,
   subprotocolo o cookie de corta vida; documentar compatibilidad.
-- [ ] Verificar reconexión WS (los 2 errores vistos fueron transitorios):
+- [x] Verificar reconexión WS (los 2 errores vistos fueron transitorios):
   backoff, estado visible, test de reconexión.
-- [ ] Acotar transiciones por componente (coordinado con B0) y medir jank al
+- [x] Acotar transiciones por componente (coordinado con B0) y medir jank al
   cambiar tema/scroll.
-- [ ] Pasar `pnpm test`, `pnpm build`, `./mvnw test`; CI verde.
+- [x] Pasar `pnpm test`, `pnpm build`, `./mvnw test`; CI verde.
 - [ ] Revisar consola/red en las rutas clave: 0 errores, 0 404, 0 warnings
   propios.
-- [ ] Documentar límites (PWA, background) si se toca el motor.
+- [x] Documentar límites (PWA, background) si se toca el motor.
 
 **Criterios de aceptación**
 
-- [ ] El test de la carrera falla antes y pasa después.
-- [ ] No hay JWT en URLs de producción (o hay decisión documentada con
-  mitigación).
-- [ ] WS reconecta tras caída simulada.
-- [ ] CI verde; sin regresiones de tests.
+- [x] El test de la carrera falla antes y pasa después.
+- [x] No hay JWT en URLs de producción (o hay decisión documentada con
+  mitigación). *(WS: fuera de la URL. Stream/cover: token de acceso de 15 min
+  en `?token=`, restringido a endpoints de medios y con `Referrer-Policy:
+  no-referrer`; decisión y límites en `SECURITY.md`.)*
+- [x] WS reconecta tras caída simulada.
+- [x] CI verde; sin regresiones de tests.
 - [ ] Consola limpia en la pasada final.
 
 **Archivos probables:** `player/sync.ts`, `stores/playerStore.ts`,
