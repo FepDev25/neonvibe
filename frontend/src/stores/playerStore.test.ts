@@ -552,6 +552,23 @@ describe('asynchronous loads and races', () => {
     expect(h.audio.src).toBe(streamOf(9));
   });
 
+  it('ignores a queue update that would revert a fresh local play', async () => {
+    usePlayerStore.getState().playTrack(track(9), [track(9), track(2)]);
+    await flush();
+
+    usePlayerStore.getState()._applyQueueUpdate({
+      user_id: 'user-1',
+      tracks_order: [2, 9],
+      current_track_id: 2,
+    });
+    await flush();
+
+    const state = usePlayerStore.getState();
+    expect(state.currentTrack?.id).toBe(9);
+    expect(state.queue.map((t) => t.id)).toEqual([2, 9]);
+    expect(h.audio.src).toBe(streamOf(9));
+  });
+
   it('discards a stale remote sync that resolves after a local action', async () => {
     const pending = deferred<{
       id: number;

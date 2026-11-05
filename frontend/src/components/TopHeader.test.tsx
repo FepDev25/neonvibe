@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TopHeader from './TopHeader';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
+import { useSyncStore } from '@/stores/syncStore';
 
 const mutate = vi.hoisted(() => vi.fn());
 vi.mock('@/hooks/useSettings', () => ({
@@ -23,6 +24,7 @@ function renderHeader(path = '/library') {
 describe('TopHeader', () => {
   beforeEach(() => {
     useThemeStore.setState({ theme: 'dark' });
+    useSyncStore.getState().reset();
     useAuthStore.setState({
       isAuthenticated: true,
       user: { id: 'u1', email: 'david@example.com', name: 'David Fernández' },
@@ -52,6 +54,16 @@ describe('TopHeader', () => {
     expect(
       within(screen.getByRole('link', { name: 'Ir a ajustes' })).getByText('DF'),
     ).toBeInTheDocument();
+  });
+
+  it('shows a visible reconnecting state', () => {
+    useSyncStore.setState({ status: 'reconnecting' });
+    renderHeader('/library');
+
+    expect(screen.getByRole('status')).toHaveAttribute(
+      'title',
+      'Reconectando la sincronización…',
+    );
   });
 
   it('opens the secondary "Más" sheet from mobile', async () => {

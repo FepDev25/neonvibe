@@ -56,6 +56,29 @@ tunnel. The following controls are part of its security posture:
   profile without `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `ALLOWED_EMAILS`, and
   `ADMIN_EMAILS`.
 
+## Tokens in media and WebSocket URLs
+
+Browser APIs impose two constraints that shaped this decision:
+
+- **WebSocket/SockJS:** the JWT is **not** in the URL. It travels in the STOMP
+  `CONNECT` `Authorization: Bearer …` header, refreshed before every reconnect.
+- **Audio/cover elements:** `<audio src>` and `<img src>` cannot send custom
+  headers. Their URLs still carry the short-lived **access token** in `?token=`.
+  This is a documented residual risk, mitigated as follows:
+  - only the **access token** (15 min TTL) is used; the refresh token is never in
+    a URL;
+  - the backend accepts query tokens **only** on `/stream` and `/cover` media
+    paths (not on other APIs);
+  - responses set `Referrer-Policy: no-referrer` (backend header + document
+    meta tag) so the URL is not forwarded to third parties;
+  - Cloudflare access logs containing the token are bounded by the access-token
+    TTL and cannot be used to mint new sessions.
+
+**Future hardening:** replace `?token=` with a dedicated short-lived media
+ticket or an `HttpOnly` media cookie consumed by the stream/cover endpoints.
+Both require backend changes and a migration window; they are tracked as a
+follow-up rather than mixed into the UI remediation phase.
+
 ## Deployment Hardening
 
 - Keep `/opt/neonvibe/neonvibe.env` mode `0640` (`root:neonvibe`) and out of version control.

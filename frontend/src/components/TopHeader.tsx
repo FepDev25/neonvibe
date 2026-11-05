@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, Moon, WifiOff, Menu, Search } from 'lucide-react';
+import { Sun, Moon, WifiOff, Menu, RefreshCw, Search } from 'lucide-react';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useUpdateSettings } from '@/hooks/useSettings';
 import { useThemeHydration } from '@/hooks/useThemeHydration';
 import { useOnline } from '@/offline/useOnline';
+import { useSyncStore } from '@/stores/syncStore';
 import { initials } from '@/utils/initials';
 import IconButton from './IconButton';
 import MobileMenu from './MobileMenu';
@@ -23,6 +24,7 @@ export default function TopHeader() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const online = useOnline();
+  const syncStatus = useSyncStore((s) => s.status);
   const updateSettings = useUpdateSettings();
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
@@ -62,6 +64,16 @@ export default function TopHeader() {
               <span className="hidden items-center gap-1 rounded-full border border-neon-yellow/40 bg-neon-yellow/10 px-2 py-1 text-[10px] font-semibold text-warning-text sm:inline-flex">
                 <WifiOff className="h-3 w-3" aria-hidden />
                 Sin conexión
+              </span>
+            )}
+            {online && syncStatus === 'reconnecting' && (
+              <span
+                role="status"
+                title="Reconectando la sincronización…"
+                className="inline-flex items-center gap-1 rounded-full border border-warning-text/40 bg-warning-text/10 px-2 py-1 text-[10px] font-semibold text-warning-text"
+              >
+                <RefreshCw className="h-3 w-3 animate-spin" aria-hidden />
+                <span className="hidden sm:inline">Reconectando…</span>
               </span>
             )}
             <Link

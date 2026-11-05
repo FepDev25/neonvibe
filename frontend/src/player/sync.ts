@@ -1,6 +1,8 @@
-import { Client, type IMessage } from '@stomp/stompjs';
+import { Client, ReconnectionTimeMode, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuthStore } from '@/stores/authStore';
+import { isAccessTokenExpiring, refreshAccessToken } from '@/api/client';
+import { useSyncStore } from '@/stores/syncStore';
 import type { PlayerSyncMessage, QueueUpdateMessage } from '@/types';
 
 export type SyncInbound =
@@ -42,9 +44,9 @@ const SCANNER_TOPIC = '/topic/admin/scanner';
  * client can ignore its own echoes without time-based windows — real actions
  * from other tabs are never swallowed.
  *
- * Token handling: the SockJS factory reads the JWT fresh on every (re)connect,
- * so a re-login with a new token reconnects correctly. Full refresh-token
- * rotation is pending (prod OAuth flow).
+ * Token handling: the JWT travels in the STOMP CONNECT `Authorization` header
+ * (refreshed before every connect), never in the WebSocket URL. Reconnects use
+ * exponential backoff and publish their state through `syncStore`.
  */
 let client: Client | null = null;
 let messageHandler: SyncHandler | null = null;
@@ -67,8 +69,9 @@ function clientId(): string {
 }
 
 function wsUrl(): string {
-  const token = useAuthStore.getState().token;
-  return `/ws${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  // The token is sent in the STOMP CONNECT headers, so it never appears in the
+  // WebSocket/SockJS URL (and therefore not in access logs).
+  return '/ws';
 }
 
 function isPlayerSync(b: unknown): b is PlayerSyncMessage {
@@ -170,6 +173,7 @@ function handleFrame(frame: IMessage) {
 function deactivate() {
   started = false;
   subscribedUser = null;
+  useSyncStore.getState().reset();
   const c = client;
   client = null;
   if (c) {
@@ -193,12 +197,28 @@ export function connectSync() {
   started = true;
   subscribedUser = userId;
 
+  useSyncStore.getState().setStatus('connecting');
+
   client = new Client({
     webSocketFactory: () => new SockJS(wsUrl()),
-    reconnectDelay: 4000,
+    // Exponential backoff: 1s, 2s, 4s… capped at 30s.
+    reconnectDelay: 1000,
+    maxReconnectDelay: 30_000,
+    reconnectTimeMode: ReconnectionTimeMode.EXPONENTIAL,
     heartbeatIncoming: 10_000,
     heartbeatOutgoing: 10_000,
+    beforeConnect: async (stomp) => {
+      let token = useAuthStore.getState().token;
+      if (!token) {
+        return;
+      }
+      if (isAccessTokenExpiring(token)) {
+        token = await refreshAccessToken().catch(() => token);
+      }
+      stomp.connectHeaders = { Authorization: `Bearer ${token}` };
+    },
     onConnect: () => {
+      useSyncStore.getState().setStatus('connected');
       const currentUser = useAuthStore.getState().user?.id;
       if (currentUser && subscribedUser === currentUser) {
         client?.subscribe(`/topic/sync/${currentUser}`, handleFrame);
@@ -206,9 +226,14 @@ export function connectSync() {
       // Scanner events are broadcast to a shared topic (admin UI listens).
       client?.subscribe(SCANNER_TOPIC, handleFrame);
     },
+    onStompError: () => {
+      useSyncStore.getState().setStatus('reconnecting');
+    },
     onWebSocketClose: () => {
       if (!useAuthStore.getState().token) {
         deactivate();
+      } else {
+        useSyncStore.getState().setStatus('reconnecting');
       }
     },
   });

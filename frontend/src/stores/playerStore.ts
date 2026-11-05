@@ -218,6 +218,8 @@ let resetting = false;
 let prefetchScheduledFor: number | null = null;
 /** Server timestamp of the last applied PLAYER_SYNC (drops out-of-order frames). */
 let lastRemoteSyncAt = 0;
+/** When the user last changed the queue locally (guards stale QUEUE_UPDATED). */
+let lastLocalQueueActionAt = 0;
 
 export interface PlayerState {
   queue: PlayerTrack[];
@@ -592,6 +594,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
       return;
     }
     prefetchScheduledFor = null;
+    lastLocalQueueActionAt = Date.now();
     set({
       currentIndex: index,
       currentTrack: target,
@@ -779,6 +782,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
         index = 0;
       }
       actionSeq++;
+      lastLocalQueueActionAt = Date.now();
       consecutiveErrors = 0;
       shuffleHistory.length = 0;
       prefetchScheduledFor = null;
@@ -919,6 +923,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
         return;
       }
       actionSeq++;
+      lastLocalQueueActionAt = Date.now();
       consecutiveErrors = 0;
       loadTrack(currentTrack, progress, isPlaying, { force: true });
       updateMediaSession(currentTrack, isPlaying);
@@ -930,6 +935,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
         return;
       }
       actionSeq++;
+      lastLocalQueueActionAt = Date.now();
       consecutiveErrors = 0;
       authRetried = false;
       offlineRetried = false;
@@ -1211,8 +1217,32 @@ export const usePlayerStore = create<PlayerState>()((set, get) => {
 
     _applyQueueUpdate: (msg) => {
       const seq = actionSeq;
+      const localTrackId = get().currentTrack?.id ?? null;
+      const localActionFresh = Date.now() - lastLocalQueueActionAt < 2000;
       void resolveTracks(msg.tracks_order).then((tracks) => {
         if (seq !== actionSeq) {
+          return;
+        }
+        // A QUEUE_UPDATED broadcast can arrive just after a local play/next.
+        // Applying its old current_track_id would visually revert the track the
+        // user just chose (the reported first-click race). Keep the local track
+        // and only refresh the queue order during that short window.
+        if (localActionFresh && msg.current_track_id !== localTrackId) {
+          const localTrack = get().currentTrack;
+          let nextQueue = tracks;
+          let localIndex = localTrackId != null
+            ? nextQueue.findIndex((t) => t.id === localTrackId)
+            : -1;
+          if (localTrack && localIndex < 0) {
+            nextQueue = [...nextQueue, localTrack];
+            localIndex = nextQueue.length - 1;
+          }
+          set({
+            queue: nextQueue,
+            currentIndex: localIndex >= 0 ? localIndex : get().currentIndex,
+            currentTrack: localTrack,
+          });
+          saveQueueCache(nextQueue);
           return;
         }
         const index = msg.current_track_id != null
