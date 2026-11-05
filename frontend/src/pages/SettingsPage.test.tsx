@@ -177,3 +177,42 @@ describe('SettingsPage notifications', () => {
     expect(notificationsSwitch()).toBeDisabled();
   });
 });
+
+describe('SettingsPage admin section', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+    useThemeStore.setState({ theme: 'dark' });
+    mocks.getSettings.mockResolvedValue(SERVER_SETTINGS);
+    mocks.updateSettings.mockResolvedValue(SERVER_SETTINGS);
+    mocks.getPushKey.mockResolvedValue({ public_key: 'BPUB', configured: true });
+    mocks.pushSupported.mockReturnValue(true);
+  });
+
+  it('links to the upload page for administrators', async () => {
+    mocks.getScanStatus.mockResolvedValue({
+      state: 'idle',
+      total_scanned: 0,
+      processed: 0,
+      failed: 0,
+      running: false,
+    });
+    renderPage();
+    await screen.findByText('Ajustes');
+
+    expect(await screen.findByRole('link', { name: 'Abrir' })).toHaveAttribute(
+      'href',
+      '/upload',
+    );
+  });
+
+  it('hides the upload entry when the admin endpoint is forbidden', async () => {
+    mocks.getScanStatus.mockRejectedValue(new Error('403'));
+    renderPage();
+    await screen.findByText('Ajustes');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: 'Abrir' })).not.toBeInTheDocument();
+    });
+  });
+});

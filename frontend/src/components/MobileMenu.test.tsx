@@ -22,22 +22,27 @@ describe('MobileMenu', () => {
     });
   });
 
-  it('exposes every navigation route, including playlists and downloads', () => {
+  it('exposes only the secondary destinations', () => {
     renderMenu(true);
 
     for (const label of [
-      'Biblioteca',
-      'Subir',
       'Álbumes',
       'Artistas',
       'Playlists',
       'Favoritos',
       'Historial',
+      'Estadísticas',
       'Descargas',
-      'Buscar',
-      'Ajustes',
     ]) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it('does not duplicate bottom tabs or admin destinations', () => {
+    renderMenu(true);
+
+    for (const label of ['Inicio', 'Biblioteca', 'Buscar', 'Ajustes', 'Subir']) {
+      expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument();
     }
   });
 

@@ -1,13 +1,14 @@
 import { Outlet } from 'react-router-dom';
 import TopHeader from './TopHeader';
 import Sidebar from './Sidebar';
+import BottomTabs from './BottomTabs';
 import PlayerBar from './PlayerBar';
 import { usePlayerStore } from '@/stores/playerStore';
 import { cn } from '@/utils/cn';
 
 /**
- * App shell: desktop left sidebar (lg+), sticky top header with a hamburger
- * drawer on mobile, scrollable content and a fixed player bar.
+ * App shell: desktop left sidebar (lg+), sticky contextual header, grouped
+ * mobile bottom tabs, scrollable content and the player docked above the tabs.
  */
 export default function Layout() {
   const hasPlayer = usePlayerStore((s) => s.currentTrack != null);
@@ -28,12 +29,13 @@ export default function Layout() {
         tabIndex={-1}
         className={cn(
           'mx-auto w-full max-w-5xl flex-1 px-4 pt-4 sm:px-6',
-          hasPlayer ? 'pb-32 lg:pb-28' : 'pb-8 lg:pb-12',
+          hasPlayer ? 'pb-48 lg:pb-28' : 'pb-24 lg:pb-12',
         )}
       >
         <Outlet />
       </main>
 
+      <BottomTabs />
       <PlayerBar />
     </div>
   );

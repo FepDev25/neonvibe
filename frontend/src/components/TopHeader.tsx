@@ -1,18 +1,21 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Sun, Moon, Music2, WifiOff, Menu } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Sun, Moon, WifiOff, Menu, Search } from 'lucide-react';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useUpdateSettings } from '@/hooks/useSettings';
 import { useThemeHydration } from '@/hooks/useThemeHydration';
 import { useOnline } from '@/offline/useOnline';
+import { initials } from '@/utils/initials';
 import IconButton from './IconButton';
 import MobileMenu from './MobileMenu';
+import { pageTitle } from './navItems';
 import { cn } from '@/utils/cn';
 
 /**
- * Top header: menu trigger (mobile), NeonVibe logo/name, offline badge, theme
- * toggle, user avatar. Sticky and respects the iOS/notch safe area.
+ * Top header: contextual page title, secondary-navigation trigger (mobile),
+ * search shortcut (desktop), offline badge, theme toggle and user avatar.
+ * Sticky and respects the iOS/notch safe area.
  */
 export default function TopHeader() {
   const theme = useThemeStore((s) => s.theme);
@@ -22,6 +25,8 @@ export default function TopHeader() {
   const online = useOnline();
   const updateSettings = useUpdateSettings();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+  const title = pageTitle(pathname);
 
   // Applies the server theme once, at the shell level (see the hook).
   useThemeHydration();
@@ -34,43 +39,38 @@ export default function TopHeader() {
     updateSettings.mutate({ theme: next });
   };
 
-  const initials = user?.name
-    ? user.name
-        .split(/\s+/)
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
-    : '?';
-
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-border bg-surface safe-top">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-1.5">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-2 sm:px-6">
+          <div className="flex min-w-0 items-center gap-1.5">
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
-              aria-label="Abrir menú"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text lg:hidden"
+              aria-label="Abrir más secciones"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text lg:hidden"
             >
               <Menu className="h-5 w-5" aria-hidden />
             </button>
-            <Link to="/" className="flex items-center gap-2" aria-label="NeonVibe inicio">
-              <Music2 className="h-6 w-6 text-accent-text" aria-hidden />
-              <span className="neon-text text-lg font-bold tracking-tight">
-                NeonVibe
-              </span>
-            </Link>
+            <p className="truncate text-sm font-semibold text-text sm:text-base">
+              {title}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             {!online && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-neon-yellow/40 bg-neon-yellow/10 px-2 py-1 text-[10px] font-semibold text-warning-text">
+              <span className="hidden items-center gap-1 rounded-full border border-neon-yellow/40 bg-neon-yellow/10 px-2 py-1 text-[10px] font-semibold text-warning-text sm:inline-flex">
                 <WifiOff className="h-3 w-3" aria-hidden />
                 Sin conexión
               </span>
             )}
+            <Link
+              to="/search"
+              aria-label="Buscar"
+              className="hidden h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-text lg:flex"
+            >
+              <Search className="h-5 w-5" aria-hidden />
+            </Link>
             <IconButton
               label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
               onClick={handleToggleTheme}
@@ -92,7 +92,7 @@ export default function TopHeader() {
                   : 'border border-border bg-surface-alt text-text-muted',
               )}
             >
-              {isAuthenticated && user ? initials : <Music2 className="h-4 w-4" aria-hidden />}
+              {isAuthenticated && user ? initials(user.name) : '?'}
             </Link>
           </div>
         </div>

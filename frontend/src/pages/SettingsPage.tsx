@@ -9,9 +9,11 @@ import {
   Bell,
   Trash2,
   RefreshCw,
+  UploadCloud,
 } from 'lucide-react';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import {
   EQ_BANDS,
   EQ_MAX_DB,
@@ -32,6 +34,7 @@ import Card from '@/components/Card';
 import Button from '@/components/Button';
 import ScannerCard from '@/components/ScannerCard';
 import Skeleton from '@/components/Skeleton';
+import { initials } from '@/utils/initials';
 import { cn } from '@/utils/cn';
 
 function Toggle({
@@ -78,6 +81,7 @@ export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
+  const isAdmin = useIsAdmin();
 
   const { data: settings, isPending } = useSettings();
   const updateSettings = useUpdateSettings();
@@ -205,7 +209,7 @@ export default function SettingsPage() {
       <Card className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-purple text-white neon-glow">
-            {user?.name ? user.name[0].toUpperCase() : '?'}
+            {user?.name ? initials(user.name) : '?'}
           </div>
           <div>
             <p className="font-semibold">
@@ -448,7 +452,26 @@ export default function SettingsPage() {
         </Button>
       </Card>
 
-      {/* Scanner (admin only; hidden for non-admins) */}
+      {/* Admin: upload + scanner. Both hide themselves for regular users. */}
+      {isAdmin && (
+        <Card className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <UploadCloud className="h-6 w-6 text-accent-text" aria-hidden />
+            <div>
+              <p className="font-semibold">Subir música</p>
+              <p className="text-sm text-text-muted">
+                Añade canciones o un ZIP; se organizan por artista y álbum.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/upload"
+            className="inline-flex min-h-[44px] shrink-0 items-center rounded-xl border border-accent-text px-4 text-sm font-semibold text-accent-text transition-colors hover:bg-accent-soft"
+          >
+            Abrir
+          </Link>
+        </Card>
+      )}
       <ScannerCard />
 
       <p className="text-xs text-text-muted">
