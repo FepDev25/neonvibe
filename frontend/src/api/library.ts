@@ -16,6 +16,8 @@ export interface AlbumFilters {
   artist?: string;
   page?: number;
   size?: number;
+  /** Spring Pageable sort, e.g. `createdAt,desc` for recent additions. */
+  sort?: string;
 }
 
 export interface ArtistFilters {
