@@ -93,3 +93,12 @@ docker-compose.override.yml
 
 # opencode/agent tool state
 .commandcode/
+
+# -----------------------------------------------------------------------------
+# QA visual (Playwright MCP)
+# -----------------------------------------------------------------------------
+# Perfil del navegador: contiene tokens de sesión. NUNCA commitear.
+docs/qa/.browser/
+docs/qa/.auth/
+# Capturas, trazas y salidas automáticas del MCP (evidencia local).
+docs/qa/playwright/
