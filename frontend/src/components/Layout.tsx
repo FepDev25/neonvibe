@@ -3,6 +3,7 @@ import TopHeader from './TopHeader';
 import Sidebar from './Sidebar';
 import BottomTabs from './BottomTabs';
 import PlayerBar from './PlayerBar';
+import Toaster from './Toaster';
 import { usePlayerStore } from '@/stores/playerStore';
 import { cn } from '@/utils/cn';
 
@@ -37,6 +38,7 @@ export default function Layout() {
 
       <BottomTabs />
       <PlayerBar />
+      <Toaster />
     </div>
   );
 }

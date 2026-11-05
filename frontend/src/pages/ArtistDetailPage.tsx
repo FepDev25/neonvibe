@@ -11,7 +11,12 @@ import TrackRow from '@/components/TrackRow';
 import CoverUploadButton from '@/components/CoverUploadButton';
 import ArtistEditButton from '@/components/ArtistEditButton';
 import RadioButton from '@/components/RadioButton';
+import PageHero from '@/components/PageHero';
+import CollectionActions from '@/components/CollectionActions';
+import HeroMenu from '@/components/HeroMenu';
 import Skeleton from '@/components/Skeleton';
+import { formatTrackCount } from '@/utils/format';
+import { initials } from '@/utils/initials';
 
 /**
  * Artist detail: avatar header, discography (albums) and top tracks.
@@ -71,45 +76,39 @@ export default function ArtistDetailPage() {
         Biblioteca
       </Link>
 
-      <div className="flex flex-col items-center gap-3 py-2 text-center">
-        <div className="relative">
+      <PageHero
+        kind="Artista"
+        title={artist.name}
+        cover={
           <AlbumCover
             seed={artist.name}
             alt={`Avatar de ${artist.name}`}
             src={artistCoverUrl(artist.id, coverVersion)}
-            className="h-28 w-28 rounded-full"
+            className="h-40 w-40 rounded-full sm:h-48 sm:w-48"
           >
-            <span className="text-4xl font-bold text-white/90">
-              {artist.name.trim().charAt(0).toUpperCase() || '?'}
-            </span>
+            <span className="text-5xl font-bold text-white/90">{initials(artist.name)}</span>
           </AlbumCover>
-          <CoverUploadButton
-            compact
-            onUpload={(file) => uploadArtistCover(artist.id, file)}
-            onUploaded={handleCoverUploaded}
-            className="absolute -bottom-1 -right-1"
-          />
-        </div>
-        <div>
-          <h1 className="neon-text text-2xl font-bold sm:text-3xl">{artist.name}</h1>
-          {albums.length > 0 && (
-            <p className="text-sm text-text-muted">
-              {albums.length === 1 ? '1 álbum' : `${albums.length} álbumes`}
-            </p>
-          )}
-          {tracks.length > 0 && (
-            <div className="mt-2 flex items-center justify-center gap-2">
-              <RadioButton trackId={tracks[0].id} />
-              <ArtistEditButton artist={artist} />
-            </div>
-          )}
-          {tracks.length === 0 && (
-            <div className="mt-2 flex items-center justify-center">
-              <ArtistEditButton artist={artist} />
-            </div>
-          )}
-        </div>
-      </div>
+        }
+        meta={
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {albums.length > 0 && (
+              <span>{albums.length === 1 ? '1 álbum' : `${albums.length} álbumes`}</span>
+            )}
+            {tracks.length > 0 && <span>{formatTrackCount(tracks.length)}</span>}
+          </div>
+        }
+        actions={<CollectionActions queue={queue} />}
+        menu={
+          <HeroMenu label="Acciones del artista">
+            {tracks.length > 0 && <RadioButton trackId={tracks[0].id} />}
+            <CoverUploadButton
+              onUpload={(file) => uploadArtistCover(artist.id, file)}
+              onUploaded={handleCoverUploaded}
+            />
+            <ArtistEditButton artist={artist} />
+          </HeroMenu>
+        }
+      />
 
       {albums.length > 0 && (
         <section className="flex flex-col gap-3">

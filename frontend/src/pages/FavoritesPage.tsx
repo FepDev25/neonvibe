@@ -11,6 +11,7 @@ import { tracksToPlayerQueue } from '@/stores/playerStore';
 import TrackRow from '@/components/TrackRow';
 import AlbumCard from '@/components/AlbumCard';
 import ArtistCard from '@/components/ArtistCard';
+import CollectionActions from '@/components/CollectionActions';
 import PullToRefresh from '@/components/PullToRefresh';
 import Skeleton from '@/components/Skeleton';
 import { cn } from '@/utils/cn';
@@ -58,6 +59,8 @@ export default function FavoritesPage() {
     >
       <div className="flex flex-col gap-4">
       <h1 className="neon-text text-2xl font-bold">Favoritos</h1>
+
+      {trackQueue.length > 0 && <CollectionActions queue={trackQueue} />}
 
       <div
         role="tablist"

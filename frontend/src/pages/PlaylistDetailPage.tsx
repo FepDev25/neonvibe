@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, ListMusic, Pencil, Trash2, Clock, Share2 } from 'lucide-react';
+import { ArrowLeft, ListMusic, Pencil, Plus, Trash2, Clock, Share2 } from 'lucide-react';
 import {
+  useAddTrackToPlaylist,
   useDeletePlaylist,
   usePlaylist,
   useRemoveTrackFromPlaylist,
@@ -9,6 +10,7 @@ import {
   useUpdatePlaylist,
 } from '@/hooks/usePlaylists';
 import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
 import { queryClient } from '@/api/queryClient';
 import { tracksToPlayerQueue } from '@/stores/playerStore';
 import AlbumCover from '@/components/AlbumCover';
@@ -16,6 +18,10 @@ import ReorderTrackRow from '@/components/ReorderTrackRow';
 import PlaylistForm from '@/components/PlaylistForm';
 import DownloadButton from '@/components/DownloadButton';
 import Button from '@/components/Button';
+import PageHero from '@/components/PageHero';
+import CollectionActions from '@/components/CollectionActions';
+import HeroMenu from '@/components/HeroMenu';
+import AddTracksToPlaylistSheet from '@/components/AddTracksToPlaylistSheet';
 import Skeleton from '@/components/Skeleton';
 import { formatTrackCount, formatTotalDuration } from '@/utils/format';
 import type { PlaylistDetail } from '@/types';
@@ -34,9 +40,12 @@ export default function PlaylistDetailPage() {
   const updatePlaylist = useUpdatePlaylist();
   const deletePlaylist = useDeletePlaylist();
   const removeTrack = useRemoveTrackFromPlaylist();
+  const addTrack = useAddTrackToPlaylist();
   const reorder = useReorderPlaylist();
+  const showToast = useToastStore((s) => s.show);
 
   const [formOpen, setFormOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -115,7 +124,40 @@ export default function PlaylistDetailPage() {
   };
 
   const handleRemove = (trackId: number) => {
-    void removeTrack.mutate({ playlistId, trackId });
+    const previous = tracks;
+    const removed = previous.find((track) => track.id === trackId);
+    if (!removed) {
+      return;
+    }
+
+    // Optimistic removal so the row disappears immediately; the toast offers a
+    // reversible path that re-adds the track and restores the original order.
+    queryClient.setQueryData<PlaylistDetail>(['playlist', playlistId], (prev) =>
+      prev ? { ...prev, tracks: prev.tracks.filter((track) => track.id !== trackId) } : prev,
+    );
+    removeTrack.mutate(
+      { playlistId, trackId },
+      {
+        onError: () => {
+          queryClient.setQueryData<PlaylistDetail>(['playlist', playlistId], (prev) =>
+            prev ? { ...prev, tracks: previous } : prev,
+          );
+        },
+        onSuccess: () => {
+          showToast(`«${removed.title}» quitada de la playlist`, {
+            actionLabel: 'Deshacer',
+            onAction: () => {
+              void addTrack
+                .mutateAsync({ playlistId, trackId })
+                .then(() =>
+                  reorder.mutateAsync({ playlistId, trackIds: previous.map((track) => track.id) }),
+                )
+                .catch(() => undefined);
+            },
+          });
+        },
+      },
+    );
   };
 
   const handleDelete = () => {
@@ -134,20 +176,20 @@ export default function PlaylistDetailPage() {
         Playlists
       </Link>
 
-      <div className="flex gap-4">
-        <div className="relative">
+      <PageHero
+        kind="Playlist"
+        title={playlist.name}
+        cover={
           <AlbumCover
             seed={playlist.name}
             alt={`Carátula de ${playlist.name}`}
-            className="h-32 w-32 shrink-0 rounded-2xl sm:h-40 sm:w-40"
+            className="h-40 w-40 rounded-2xl sm:h-48 sm:w-48"
           >
             <ListMusic className="h-12 w-12 text-white/80" aria-hidden />
           </AlbumCover>
-        </div>
-
-        <div className="flex min-w-0 flex-1 flex-col justify-end gap-1">
-          <h1 className="neon-text text-2xl font-bold sm:text-3xl">{playlist.name}</h1>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+        }
+        meta={
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className={playlist.is_public ? 'text-accent-text' : ''}>
               {playlist.is_public ? 'Pública' : 'Privada'}
             </span>
@@ -159,49 +201,83 @@ export default function PlaylistDetailPage() {
               </span>
             )}
           </div>
-          {playlist.description && (
-            <p className="mt-1 line-clamp-3 text-sm text-text-muted">{playlist.description}</p>
-          )}
-        </div>
-      </div>
-
-      {isOwner && (
-        <div className="flex flex-wrap gap-2">
-          <DownloadButton tracks={queue} />
-          <Button variant="secondary" size="sm" onClick={() => setFormOpen(true)}>
-            <Pencil className="h-4 w-4" aria-hidden />
-            Editar
-          </Button>
-          {playlist.is_public && (
-            <Button variant="secondary" size="sm" onClick={handleShare}>
-              <Share2 className="h-4 w-4" aria-hidden />
-              {copied ? '¡Copiado!' : 'Compartir'}
-            </Button>
-          )}
-          <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete((v) => !v)}>
-            <Trash2 className="h-4 w-4 text-neon-pink" aria-hidden />
-            Eliminar
-          </Button>
-          {confirmingDelete && (
-            <span className="flex items-center gap-2">
-              <span className="text-xs text-text-muted">¿Seguro?</span>
-              <Button variant="ghost" size="sm" onClick={handleDelete}>
-                Sí, eliminar
+        }
+        description={playlist.description}
+        actions={
+          <>
+            <CollectionActions queue={queue} compact />
+            {isOwner && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setAddOpen(true)}
+                aria-label="Añadir canciones"
+                className="px-3"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                <span className="hidden sm:inline">Añadir canciones</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(false)}>
-                No
+            )}
+          </>
+        }
+        menu={
+          isOwner ? (
+            <HeroMenu label="Acciones de la playlist">
+              <DownloadButton tracks={queue} />
+              {playlist.is_public && (
+                <Button variant="secondary" size="sm" onClick={handleShare}>
+                  <Share2 className="h-4 w-4" aria-hidden />
+                  {copied ? '¡Copiado!' : 'Compartir'}
+                </Button>
+              )}
+              <Button variant="secondary" size="sm" onClick={() => setFormOpen(true)}>
+                <Pencil className="h-4 w-4" aria-hidden />
+                Editar
               </Button>
-            </span>
-          )}
-        </div>
-      )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmingDelete((value) => !value)}
+              >
+                <Trash2 className="h-4 w-4 text-neon-pink" aria-hidden />
+                Eliminar
+              </Button>
+              {confirmingDelete && (
+                <div className="flex flex-col gap-1 border-t border-border px-3 pt-2">
+                  <span className="text-xs text-text-muted">
+                    ¿Eliminar esta playlist? No se puede deshacer.
+                  </span>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={handleDelete}>
+                      Sí, eliminar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setConfirmingDelete(false)}
+                    >
+                      No
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </HeroMenu>
+          ) : undefined
+        }
+      />
 
       <div className="flex flex-col gap-1">
         {tracks.length === 0 ? (
-          <p className="py-8 text-center text-sm text-text-muted">
-            Esta playlist está vacía.
-            {isOwner && ' Añade canciones desde el botón + de cualquier track.'}
-          </p>
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <ListMusic className="h-10 w-10 text-text-muted" aria-hidden />
+            <p className="text-sm text-text-muted">Esta playlist todavía no tiene canciones.</p>
+            {isOwner && (
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus className="h-4 w-4" aria-hidden />
+                Añadir canciones
+              </Button>
+            )}
+          </div>
         ) : (
           tracks.map((track, index) => (
             <ReorderTrackRow
@@ -218,6 +294,13 @@ export default function PlaylistDetailPage() {
           ))
         )}
       </div>
+
+      <AddTracksToPlaylistSheet
+        open={addOpen}
+        playlistId={playlistId}
+        existingTrackIds={tracks.map((track) => track.id)}
+        onClose={() => setAddOpen(false)}
+      />
 
       <PlaylistForm
         open={formOpen}

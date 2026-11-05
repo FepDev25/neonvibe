@@ -8,6 +8,8 @@ interface SearchInputProps {
   label?: string;
   placeholder?: string;
   id?: string;
+  /** Focus the field when it mounts (used by sheets and the search page). */
+  autoFocus?: boolean;
   className?: string;
 }
 
@@ -22,6 +24,7 @@ export default function SearchInput({
   label = 'Buscar',
   placeholder,
   id = 'search-input',
+  autoFocus = false,
   className,
 }: SearchInputProps) {
   return (
@@ -37,6 +40,7 @@ export default function SearchInput({
         id={id}
         type="search"
         value={value}
+        autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? label}
         className={cn(

@@ -11,6 +11,9 @@ import CoverUploadButton from '@/components/CoverUploadButton';
 import AlbumEditButton from '@/components/AlbumEditButton';
 import DownloadButton from '@/components/DownloadButton';
 import RadioButton from '@/components/RadioButton';
+import PageHero from '@/components/PageHero';
+import CollectionActions from '@/components/CollectionActions';
+import HeroMenu from '@/components/HeroMenu';
 import Skeleton from '@/components/Skeleton';
 import { formatTrackCount, formatTotalDuration } from '@/utils/format';
 
@@ -74,24 +77,23 @@ export default function AlbumDetailPage() {
         Biblioteca
       </Link>
 
-      <div className="flex gap-4">
-        <AlbumCover
-          seed={`${album.name}-${album.artist ?? ''}`}
-          alt={`Carátula de ${album.name}`}
-          src={albumCoverUrl(album.id, coverVersion)}
-          className="h-32 w-32 shrink-0 rounded-2xl sm:h-40 sm:w-40"
-        >
-          <Disc3 className="h-12 w-12 text-white/80" aria-hidden />
-        </AlbumCover>
-        <div className="flex min-w-0 flex-col justify-end gap-1">
-          <h1 className="neon-text text-2xl font-bold sm:text-3xl">{album.name}</h1>
-          {album.artist && (
-            <p className="text-sm text-text-muted">
-              <span className="font-medium text-text">{album.artist}</span>
-              {album.year ? ` · ${album.year}` : ''}
-            </p>
-          )}
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+      <PageHero
+        kind="Álbum"
+        title={album.name}
+        cover={
+          <AlbumCover
+            seed={`${album.name}-${album.artist ?? ''}`}
+            alt={`Carátula de ${album.name}`}
+            src={albumCoverUrl(album.id, coverVersion)}
+            className="h-40 w-40 rounded-2xl sm:h-48 sm:w-48"
+          >
+            <Disc3 className="h-12 w-12 text-white/80" aria-hidden />
+          </AlbumCover>
+        }
+        meta={
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {album.artist && <span className="font-medium text-text">{album.artist}</span>}
+            {album.year && <span>{album.year}</span>}
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" aria-hidden />
               {formatTrackCount(album.track_count)}
@@ -104,7 +106,10 @@ export default function AlbumDetailPage() {
             )}
             {album.genre && <span>{album.genre}</span>}
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+        }
+        actions={<CollectionActions queue={queue} />}
+        menu={
+          <HeroMenu label="Acciones del álbum">
             <DownloadButton tracks={queue} />
             {tracks.length > 0 && <RadioButton trackId={tracks[0].id} />}
             <CoverUploadButton
@@ -112,9 +117,9 @@ export default function AlbumDetailPage() {
               onUploaded={handleCoverUploaded}
             />
             <AlbumEditButton album={album} />
-          </div>
-        </div>
-      </div>
+          </HeroMenu>
+        }
+      />
 
       <div className="flex flex-col gap-1">
         {tracksQuery.isPending ? (
