@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Music, Disc3, UserRound, Heart } from 'lucide-react';
 import {
   useFavoriteAlbums,
@@ -12,6 +13,8 @@ import TrackRow from '@/components/TrackRow';
 import AlbumCard from '@/components/AlbumCard';
 import ArtistCard from '@/components/ArtistCard';
 import CollectionActions from '@/components/CollectionActions';
+import EmptyState from '@/components/EmptyState';
+import Button from '@/components/Button';
 import PullToRefresh from '@/components/PullToRefresh';
 import Skeleton from '@/components/Skeleton';
 import { cn } from '@/utils/cn';
@@ -97,13 +100,16 @@ export default function FavoritesPage() {
           <Skeleton className="h-12 w-full rounded-xl" />
         </div>
       ) : empty ? (
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <Heart className="h-10 w-10 text-text-muted" aria-hidden />
-          <p className="text-sm text-text-muted">
-            Aún no has marcado favoritos aquí. Toca el corazón en canciones,
-            álbumes o artistas para guardarlos.
-          </p>
-        </div>
+        <EmptyState
+          icon={<Heart className="h-10 w-10" aria-hidden />}
+          title="Aún no tienes favoritos aquí"
+          description="Toca el corazón en canciones, álbumes o artistas para guardarlos en este espacio."
+          action={
+            <Link to="/library">
+              <Button variant="secondary">Explorar biblioteca</Button>
+            </Link>
+          }
+        />
       ) : tab === 'tracks' ? (
         <div className="flex flex-col gap-1">
           {tracks.map((track, index) => (

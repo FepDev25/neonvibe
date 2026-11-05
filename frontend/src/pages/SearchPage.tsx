@@ -17,6 +17,7 @@ import LoadMore from '@/components/LoadMore';
 import SearchInput from '@/components/SearchInput';
 import Skeleton from '@/components/Skeleton';
 import Button from '@/components/Button';
+import EmptyState from '@/components/EmptyState';
 import { initials } from '@/utils/initials';
 
 /**
@@ -101,9 +102,22 @@ export default function SearchPage() {
 
       {!hasQuery && (
         <div className="flex flex-col gap-5">
-          <p className="text-sm text-text-muted">
-            Busca por título, artista o álbum en toda tu biblioteca.
-          </p>
+          {!suggestionsQuery.isPending && recent.length === 0 && suggestions.length === 0 ? (
+            <EmptyState
+              icon={<SearchX className="h-10 w-10" aria-hidden />}
+              title="Busca en tu biblioteca"
+              description="Encuentra canciones, álbumes y artistas por título, artista o álbum."
+              action={
+                <Link to="/library">
+                  <Button variant="secondary">Ir a la biblioteca</Button>
+                </Link>
+              }
+            />
+          ) : (
+            <p className="text-sm text-text-muted">
+              Busca por título, artista o álbum en toda tu biblioteca.
+            </p>
+          )}
 
           {recent.length > 0 && (
             <section className="flex flex-col gap-2">

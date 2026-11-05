@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 
+
 interface ImportMetaEnv {
   /** Google OAuth client id for the Identity Services login button. */
   readonly VITE_GOOGLE_CLIENT_ID?: string;
@@ -10,6 +11,9 @@ interface ImportMeta {
 }
 
 declare global {
+  /** Injected from package.json by vite.config.ts. */
+  const __APP_VERSION__: string;
+
   interface Window {
     google?: {
       accounts: {

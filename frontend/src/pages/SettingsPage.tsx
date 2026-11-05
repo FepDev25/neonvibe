@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Sun,
-  Moon,
   LogOut,
   LogIn,
   Bell,
@@ -11,7 +9,6 @@ import {
   RefreshCw,
   UploadCloud,
 } from 'lucide-react';
-import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import {
@@ -72,12 +69,10 @@ function Toggle({
 }
 
 /**
- * Settings: account, theme (persisted to DB), notifications, Last.fm scrobbling,
- * cover sources and cache management.
+ * Settings: account/logout, playback, notifications, Last.fm, cover sources and
+ * cache management. Theme lives only in the header toggle.
  */
 export default function SettingsPage() {
-  const theme = useThemeStore((s) => s.theme);
-  const setTheme = useThemeStore((s) => s.setTheme);
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
@@ -86,6 +81,7 @@ export default function SettingsPage() {
   const { data: settings, isPending } = useSettings();
   const updateSettings = useUpdateSettings();
 
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -206,7 +202,7 @@ export default function SettingsPage() {
       <h1 className="neon-text text-2xl font-bold">Ajustes</h1>
 
       {/* Cuenta */}
-      <Card className="flex items-center justify-between gap-3">
+      <Card className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neon-purple text-white neon-glow">
             {user?.name ? initials(user.name) : '?'}
@@ -221,10 +217,30 @@ export default function SettingsPage() {
           </div>
         </div>
         {isAuthenticated ? (
-          <Button variant="ghost" size="sm" onClick={() => void handleLogout()}>
-            <LogOut className="h-4 w-4" aria-hidden />
-            Cerrar
-          </Button>
+          confirmLogout ? (
+            <div
+              role="group"
+              aria-label="Confirmar cierre de sesión"
+              className="flex flex-col items-end gap-1"
+            >
+              <p className="text-right text-xs text-text-muted">
+                Se cerrará la sesión en todos los dispositivos.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="secondary" size="sm" onClick={() => void handleLogout()}>
+                  Cerrar sesión
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmLogout(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => setConfirmLogout(true)}>
+              <LogOut className="h-4 w-4" aria-hidden />
+              Cerrar sesión
+            </Button>
+          )
         ) : (
           <Link to="/settings">
             <Button variant="secondary" size="sm" disabled>
@@ -233,49 +249,6 @@ export default function SettingsPage() {
             </Button>
           </Link>
         )}
-      </Card>
-
-      {/* Tema */}
-      <Card className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          {theme === 'dark' ? (
-            <Moon className="h-6 w-6 text-accent-text" aria-hidden />
-          ) : (
-            <Sun className="h-6 w-6 text-neon-yellow" aria-hidden />
-          )}
-          <div>
-            <p className="font-semibold">Tema</p>
-            <p className="text-sm text-text-muted">
-              {theme === 'dark' ? 'Oscuro (neón, por defecto)' : 'Claro'}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={theme === 'dark' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => {
-              if (theme !== 'dark') {
-                setTheme('dark');
-                set({ theme: 'dark' });
-              }
-            }}
-          >
-            Oscuro
-          </Button>
-          <Button
-            variant={theme === 'light' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => {
-              if (theme !== 'light') {
-                setTheme('light');
-                set({ theme: 'light' });
-              }
-            }}
-          >
-            Claro
-          </Button>
-        </div>
       </Card>
 
       {/* Reproducción */}
@@ -475,7 +448,7 @@ export default function SettingsPage() {
       <ScannerCard />
 
       <p className="text-xs text-text-muted">
-        NeonVibe v0.1 — preproducción. Los ajustes se guardan en la base de datos.
+        NeonVibe v{__APP_VERSION__}. Los ajustes se guardan en la base de datos.
       </p>
     </div>
   );

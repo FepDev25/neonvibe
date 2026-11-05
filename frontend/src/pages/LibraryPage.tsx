@@ -12,6 +12,8 @@ import LoadMore from '@/components/LoadMore';
 import PullToRefresh from '@/components/PullToRefresh';
 import SearchInput from '@/components/SearchInput';
 import Skeleton from '@/components/Skeleton';
+import EmptyState from '@/components/EmptyState';
+import Button from '@/components/Button';
 import { cn } from '@/utils/cn';
 
 type Tab = 'tracks' | 'albums' | 'artists';
@@ -36,7 +38,7 @@ function AlbumGridSkeleton() {
   );
 }
 
-function TracksTab({ q }: { q: string }) {
+function TracksTab({ q, onClear }: { q: string; onClear: () => void }) {
   const query = useInfiniteTracks(q ? { q, size: 20 } : { size: 20 });
   const tracks = query.data?.pages.flatMap((p) => p.content) ?? [];
   const queue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
@@ -50,9 +52,26 @@ function TracksTab({ q }: { q: string }) {
           ))}
         </div>
       ) : tracks.length === 0 ? (
-        <p className="py-8 text-center text-sm text-text-muted">
-          {q ? `Sin resultados para “${q}”.` : 'No hay canciones todavía.'}
-        </p>
+        <EmptyState
+          icon={<Music className="h-10 w-10" aria-hidden />}
+          title={q ? 'Sin resultados' : 'No hay canciones todavía'}
+          description={
+            q
+              ? `No encontramos canciones para “${q}”.`
+              : 'Escanea la carpeta de música o sube tus primeros archivos.'
+          }
+          action={
+            q ? (
+              <Button variant="secondary" onClick={onClear}>
+                Limpiar búsqueda
+              </Button>
+            ) : (
+              <Link to="/upload">
+                <Button variant="secondary">Subir música</Button>
+              </Link>
+            )
+          }
+        />
       ) : (
         tracks.map((track, index) => (
           <TrackRow
@@ -68,7 +87,7 @@ function TracksTab({ q }: { q: string }) {
   );
 }
 
-function AlbumsTab({ q }: { q: string }) {
+function AlbumsTab({ q, onClear }: { q: string; onClear: () => void }) {
   const query = useInfiniteAlbums(q ? { q, size: 20 } : { size: 20 });
   const albums = query.data?.pages.flatMap((p) => p.content) ?? [];
 
@@ -77,9 +96,26 @@ function AlbumsTab({ q }: { q: string }) {
       {query.isPending ? (
         <AlbumGridSkeleton />
       ) : albums.length === 0 ? (
-        <p className="py-8 text-center text-sm text-text-muted">
-          {q ? `Sin resultados para “${q}”.` : 'No hay álbumes todavía.'}
-        </p>
+        <EmptyState
+          icon={<Disc3 className="h-10 w-10" aria-hidden />}
+          title={q ? 'Sin resultados' : 'No hay álbumes todavía'}
+          description={
+            q
+              ? `No encontramos álbumes para “${q}”.`
+              : 'Los álbumes aparecen al escanear o subir música.'
+          }
+          action={
+            q ? (
+              <Button variant="secondary" onClick={onClear}>
+                Limpiar búsqueda
+              </Button>
+            ) : (
+              <Link to="/upload">
+                <Button variant="secondary">Subir música</Button>
+              </Link>
+            )
+          }
+        />
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
           {albums.map((album) => (
@@ -92,7 +128,7 @@ function AlbumsTab({ q }: { q: string }) {
   );
 }
 
-function ArtistsTab({ q }: { q: string }) {
+function ArtistsTab({ q, onClear }: { q: string; onClear: () => void }) {
   const query = useInfiniteArtists(q ? { q, size: 20 } : { size: 20 });
   const artists = query.data?.pages.flatMap((p) => p.content) ?? [];
 
@@ -108,9 +144,26 @@ function ArtistsTab({ q }: { q: string }) {
           ))}
         </div>
       ) : artists.length === 0 ? (
-        <p className="py-8 text-center text-sm text-text-muted">
-          {q ? `Sin resultados para “${q}”.` : 'No hay artistas todavía.'}
-        </p>
+        <EmptyState
+          icon={<UserRound className="h-10 w-10" aria-hidden />}
+          title={q ? 'Sin resultados' : 'No hay artistas todavía'}
+          description={
+            q
+              ? `No encontramos artistas para “${q}”.`
+              : 'Los artistas aparecen al escanear o subir música.'
+          }
+          action={
+            q ? (
+              <Button variant="secondary" onClick={onClear}>
+                Limpiar búsqueda
+              </Button>
+            ) : (
+              <Link to="/upload">
+                <Button variant="secondary">Subir música</Button>
+              </Link>
+            )
+          }
+        />
       ) : (
         <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8">
           {artists.map((artist) => (
@@ -221,9 +274,9 @@ export default function LibraryPage() {
       </div>
 
       <div role="tabpanel" id={`library-panel-${tab}`} aria-labelledby={`library-tab-${tab}`}>
-        {tab === 'tracks' && <TracksTab q={q} />}
-        {tab === 'albums' && <AlbumsTab q={q} />}
-        {tab === 'artists' && <ArtistsTab q={q} />}
+        {tab === 'tracks' && <TracksTab q={q} onClear={() => setQuery('')} />}
+        {tab === 'albums' && <AlbumsTab q={q} onClear={() => setQuery('')} />}
+        {tab === 'artists' && <ArtistsTab q={q} onClear={() => setQuery('')} />}
       </div>
       </div>
     </PullToRefresh>

@@ -44,7 +44,7 @@ interface CoverUploadButtonProps {
 export default function CoverUploadButton({
   onUpload,
   onUploaded,
-  label = 'Subir carátula',
+  label = 'Cambiar carátula',
   compact = false,
   className,
 }: CoverUploadButtonProps) {

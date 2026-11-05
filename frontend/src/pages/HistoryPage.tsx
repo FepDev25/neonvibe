@@ -1,8 +1,11 @@
+import { Link } from 'react-router-dom';
 import { History as HistoryIcon, Play } from 'lucide-react';
 import { useInfiniteHistory } from '@/hooks/useHistory';
 import { usePlayerStore } from '@/stores/playerStore';
 import LoadMore from '@/components/LoadMore';
 import Skeleton from '@/components/Skeleton';
+import EmptyState from '@/components/EmptyState';
+import Button from '@/components/Button';
 import { formatDateTime } from '@/utils/format';
 
 /**
@@ -25,12 +28,16 @@ export default function HistoryPage() {
           <Skeleton className="h-12 w-full rounded-xl" />
         </div>
       ) : entries.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <HistoryIcon className="h-10 w-10 text-text-muted" aria-hidden />
-          <p className="text-sm text-text-muted">
-            Aún no hay reproducciones registradas.
-          </p>
-        </div>
+        <EmptyState
+          icon={<HistoryIcon className="h-10 w-10" aria-hidden />}
+          title="Aún no hay reproducciones"
+          description="Cuando escuches una canción aparecerá aquí."
+          action={
+            <Link to="/library">
+              <Button variant="secondary">Ir a la biblioteca</Button>
+            </Link>
+          }
+        />
       ) : (
         <div className="flex flex-col gap-1">
           {entries.map((entry) => (

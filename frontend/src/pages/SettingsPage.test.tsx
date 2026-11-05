@@ -42,6 +42,7 @@ vi.mock('@/push/notifications', () => ({
 
 import SettingsPage from './SettingsPage';
 import { useThemeStore } from '@/stores/themeStore';
+import { useAuthStore } from '@/stores/authStore';
 import type { Settings } from '@/api/settings';
 
 const SERVER_SETTINGS: Settings = {
@@ -214,5 +215,45 @@ describe('SettingsPage admin section', () => {
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: 'Abrir' })).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('SettingsPage account and version', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+    mocks.getSettings.mockResolvedValue(SERVER_SETTINGS);
+    mocks.updateSettings.mockResolvedValue(SERVER_SETTINGS);
+    mocks.getScanStatus.mockRejectedValue(new Error('403'));
+    mocks.getPushKey.mockResolvedValue({ public_key: 'BPUB', configured: true });
+    mocks.pushSupported.mockReturnValue(true);
+    mocks.logout.mockResolvedValue(undefined);
+    useAuthStore.setState({
+      isAuthenticated: true,
+      user: { id: 'u1', email: 'david@example.com', name: 'David Fernández' },
+      token: 't',
+      refreshToken: 'r',
+    });
+  });
+
+  it('asks for confirmation before logging out', async () => {
+    renderPage();
+    await screen.findByText('Ajustes');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
+    expect(screen.getByText(/todos los dispositivos/)).toBeInTheDocument();
+    expect(mocks.logout).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
+    await waitFor(() => expect(mocks.logout).toHaveBeenCalledTimes(1));
+  });
+
+  it('keeps a single theme control (header) and shows the real version', async () => {
+    renderPage();
+    await screen.findByText('Ajustes');
+
+    expect(screen.queryByText('Tema')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Oscuro' })).not.toBeInTheDocument();
+    expect(screen.getByText(/NeonVibe v0\.4\.0/)).toBeInTheDocument();
   });
 });

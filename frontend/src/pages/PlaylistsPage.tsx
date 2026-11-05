@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { ListMusic, Plus } from 'lucide-react';
 import { useCreatePlaylist, usePlaylists } from '@/hooks/usePlaylists';
 import PlaylistCard from '@/components/PlaylistCard';
+import EmptyState from '@/components/EmptyState';
 import PlaylistForm from '@/components/PlaylistForm';
 import Button from '@/components/Button';
 import Skeleton from '@/components/Skeleton';
@@ -35,10 +36,12 @@ export default function PlaylistsPage() {
           ))}
         </div>
       ) : !playlists || playlists.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <p className="text-text-muted">Todavía no tienes playlists.</p>
-          <Button onClick={() => setFormOpen(true)}>Crear tu primera playlist</Button>
-        </div>
+        <EmptyState
+          icon={<ListMusic className="h-10 w-10" aria-hidden />}
+          title="Todavía no tienes playlists"
+          description="Agrupa tus canciones favoritas en una playlist para escucharlas cuando quieras."
+          action={<Button onClick={() => setFormOpen(true)}>Crear playlist</Button>}
+        />
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
           {playlists.map((playlist) => (

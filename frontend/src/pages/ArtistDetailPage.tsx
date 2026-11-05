@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, UserRound } from 'lucide-react';
 import { useArtist, useArtistAlbums, useArtistTracks } from '@/hooks/useLibrary';
 import { tracksToPlayerQueue } from '@/stores/playerStore';
 import { artistCoverUrl, uploadArtistCover } from '@/api/cover';
@@ -15,6 +15,8 @@ import PageHero from '@/components/PageHero';
 import CollectionActions from '@/components/CollectionActions';
 import HeroMenu from '@/components/HeroMenu';
 import Skeleton from '@/components/Skeleton';
+import EmptyState from '@/components/EmptyState';
+import Button from '@/components/Button';
 import { formatTrackCount } from '@/utils/format';
 import { initials } from '@/utils/initials';
 
@@ -139,9 +141,16 @@ export default function ArtistDetailPage() {
       )}
 
       {albums.length === 0 && tracks.length === 0 && (
-        <p className="py-8 text-center text-sm text-text-muted">
-          Sin canciones de este artista todavía.
-        </p>
+        <EmptyState
+          icon={<UserRound className="h-10 w-10" aria-hidden />}
+          title="Sin música de este artista"
+          description="Todavía no hay álbumes ni canciones disponibles."
+          action={
+            <Link to="/library">
+              <Button variant="secondary">Ir a la biblioteca</Button>
+            </Link>
+          }
+        />
       )}
     </div>
   );

@@ -1,6 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Download, Trash2 } from 'lucide-react';
 import { useOfflineStore } from '@/offline/offlineStore';
+import Button from '@/components/Button';
+import EmptyState from '@/components/EmptyState';
 import Skeleton from '@/components/Skeleton';
 import { formatBytes, formatDateTime } from '@/utils/format';
 
@@ -40,12 +43,16 @@ export default function DownloadsPage() {
           <Skeleton className="h-14 w-full rounded-xl" />
         </div>
       ) : records.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <Download className="h-10 w-10 text-text-muted" aria-hidden />
-          <p className="text-sm text-text-muted">
-            No tienes descargas. Usa el botón Descargar en una canción, álbum o playlist.
-          </p>
-        </div>
+        <EmptyState
+          icon={<Download className="h-10 w-10" aria-hidden />}
+          title="No tienes descargas"
+          description="Usa el botón Descargar en una canción, álbum o playlist para escucharla sin conexión."
+          action={
+            <Link to="/library">
+              <Button variant="secondary">Ir a la biblioteca</Button>
+            </Link>
+          }
+        />
       ) : (
         <div className="flex flex-col gap-1">
           {records.map((record) => (
@@ -71,7 +78,7 @@ export default function DownloadsPage() {
                 type="button"
                 aria-label={`Borrar descarga de ${record.title}`}
                 onClick={() => void handleDelete(record.id)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-neon-pink"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-neon-pink"
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
               </button>

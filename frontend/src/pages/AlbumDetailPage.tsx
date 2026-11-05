@@ -15,6 +15,8 @@ import PageHero from '@/components/PageHero';
 import CollectionActions from '@/components/CollectionActions';
 import HeroMenu from '@/components/HeroMenu';
 import Skeleton from '@/components/Skeleton';
+import EmptyState from '@/components/EmptyState';
+import Button from '@/components/Button';
 import { formatTrackCount, formatTotalDuration } from '@/utils/format';
 
 /**
@@ -126,6 +128,17 @@ export default function AlbumDetailPage() {
           Array.from({ length: album.track_count || 5 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full rounded-xl" />
           ))
+        ) : tracks.length === 0 ? (
+          <EmptyState
+            icon={<Disc3 className="h-10 w-10" aria-hidden />}
+            title="Este álbum no tiene pistas disponibles"
+            description="Puede que los archivos se hayan movido o estén fuera de la biblioteca."
+            action={
+              <Link to="/library">
+                <Button variant="secondary">Volver a la biblioteca</Button>
+              </Link>
+            }
+          />
         ) : (
           tracks.map((track, index) => (
             <TrackRow
