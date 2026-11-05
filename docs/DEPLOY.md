@@ -2,8 +2,10 @@
 
 > Despliega NeonVibe en tu servidor Debian Trixie (bare-metal) como un único JAR servido por systemd, detrás de Cloudflare. El frontend va embebido en el JAR.
 
-**Estado (2026-10-02):** NeonVibe está desplegado en `https://neonvibe.fepdev.app`.
-Esta guía describe el proceso de despliegue y operación tal como se ejecutó.
+**Estado (2026-11-05):** NeonVibe está desplegado en `https://neonvibe.fepdev.app`,
+con el fix de confiabilidad del motor web (Fase 1) y la reproducción en segundo
+plano/pantalla apagada validada en Android por el propietario. Esta guía describe
+el proceso de despliegue y operación tal como se ejecutó.
 
 ---
 

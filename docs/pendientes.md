@@ -21,11 +21,12 @@
 - [ ] **Verificar en producción:** editar metadata (MP3/álbum/artista) sin que el
   watcher revierta; subir un álbum por `/upload` y por la carpeta de entrada
   comprobando que entra **una sola vez** y que `incoming` queda vacío.
-- [ ] **Validar el reproductor en Android real** con
-  `docs/player/plan-pruebas-android.md`: pantalla bloqueada, controles del
-  sistema, Doze/ahorro de batería, Bluetooth, Wi-Fi/datos y token entre pistas.
-  El motor ya está corregido y probado en CI, pero la continuidad en segundo
-  plano depende de la plataforma y no se declara superada hasta esa prueba.
+- [x] **Validación Android esencial (2026-11-05):** reproducción con la app en
+  segundo plano y pantalla apagada confirmada como correcta por el propietario.
+- [ ] **Resto de la matriz Android (opcional):** controles concretos del sistema,
+  Doze/ahorro de batería extremo, Bluetooth, Wi-Fi/datos, token entre pistas y
+  `AudioContext` suspendido. Ver `docs/player/plan-pruebas-android.md`; no se
+  declaran superados sin ejecutarlos.
 - [ ] Audiolibros / podcasts y Chromecast / Bluetooth (resto de v0.4).
 
 ### Permisos (referencia)

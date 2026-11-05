@@ -415,3 +415,18 @@ Estas no se «corrigen» con JavaScript; se documentan para no prometer de más:
   Bluetooth, Wi-Fi/datos y 3+ pistas.
 - Los escenarios que dependen del SO **no** se marcarán como superados sin la
   ejecución real del propietario.
+
+---
+
+## 8. Nota de validación posterior (2026-11-05)
+
+Este documento conserva el diagnóstico **tal como se escribió antes de tocar
+código**. El propietario desplegó la corrección y confirmó el 2026-11-05 que la
+reproducción con la app en segundo plano y la pantalla apagada funciona
+correctamente, que era el síntoma principal.
+
+Esa validación cierra el caso principal, pero no convierte en superados los
+escenarios no ejecutados de la matriz (controles concretos del sistema, Doze
+extremo, Bluetooth, cambio de red, `AudioContext` suspendido). El estado real y
+la tabla de registro viven en `docs/player/plan-pruebas-android.md` y
+`docs/player/resultado-fase-1.md`.

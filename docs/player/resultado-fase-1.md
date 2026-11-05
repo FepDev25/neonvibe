@@ -1,8 +1,8 @@
 # Resultado — Fase 1: confiabilidad del motor web de reproducción
 
-> Rama local: `fix/player-engine-reliability` (sin push, sin despliegue, sin
-> migraciones ni cambios de datos). Base: `main` @ `3576a7b`.
-> Fecha: 2026-11-04.
+> Rama `fix/player-engine-reliability`, fusionada en `main` (`baef2c4`) y
+> desplegada por el propietario. Sin migraciones ni cambios de datos.
+> Ejecución: 2026-11-04. Validación Android: 2026-11-05.
 
 ---
 
@@ -39,8 +39,9 @@ Lo que **realmente** cambió:
 - Diagnóstico opt-in con búfer acotado y export saneado.
 
 **No** se puede afirmar que el audio siga indefinidamente en Android con el
-proceso suspendido; eso requiere la prueba real del propietario y sigue siendo
-una limitación estructural de la PWA.
+proceso suspendido. El propietario validó el caso principal (app en segundo
+plano y pantalla apagada) el 2026-11-05 y funciona correctamente; la limitación
+estructural sigue aplicando si el sistema mata el proceso.
 
 ---
 
@@ -64,7 +65,7 @@ una limitación estructural de la PWA.
 | H-14 | `prev` ignora historial de shuffle | `playerStore.ts:335-356` | Solo índice anterior | Pila `shuffleHistory` | «prev returns to the previous track in shuffle history» | Corregido |
 | H-15 | Offline sin copia: 3 saltos y silencio | `playable.ts`, `_onError` | Sin error tipado ni estado visible | `OfflineUnavailableError` + `PlayerError` + aviso con reintento | «shows a visible error… when offline without a copy» | Corregido |
 | H-16 | Caché de cola compartida entre usuarios y sin modos | `playerStore.ts:21,39-54` | Clave única; solo tracks | Clave por usuario + shuffle/repeat/volumen locales | «does not reuse a queue cache saved for a different user», «restores local repeat/shuffle…» | Corregido |
-| H-17 | `AudioContext` suspendido silencia el elemento | `audioGraph.ts` | Sin reanudación al volver/playing ni fallback | Cadena robusta, `prepareAudioOutput`, reanudación en `playing`/visibilidad | `audioGraph.test.ts` (8 tests) | Mitigado (Android pendiente) |
+| H-17 | `AudioContext` suspendido silencia el elemento | `audioGraph.ts` | Sin reanudación al volver/playing ni fallback | Cadena robusta, `prepareAudioOutput`, reanudación en `playing`/visibilidad | `audioGraph.test.ts` (8 tests) | Mitigado (AudioContext en Android no probado) |
 | H-18 | Contratos de streaming con huecos de prueba | `StreamControllerTest` | Faltaba token inválido y Cache-Control | 2 asserts nuevos | `StreamControllerTest` (7 tests) | Cubierto |
 | H-19 | Cola con ids duplicados resuelve por id | `playTrack` `findIndex(id)` | Identidad solo por id | Documentado como riesgo residual (no P0) | — | Documentado |
 
@@ -158,16 +159,23 @@ ha añadido código backend de producción. El frontend no tiene umbral configur
   reanudación, fallback sin silencio).
 - Contrato HTTP de streaming (`206`, `Content-Range`, `416`, `200`, token query).
 
-### Pendiente de prueba real en Android (no se declara superado)
+### Validado en Android por el propietario (2026-11-05)
 
-- Pantalla bloqueada y controles del sistema durante 3+ pistas.
-- Proceso suspendido/muerto por Doze/ahorro de batería.
+- **Reproducción con la app fuera y pantalla apagada:** confirmada como
+  correcta. Es el síntoma principal de esta fase y se considera cerrado.
+
+### Pendiente opcional de la matriz (no ejecutado o no reportado)
+
+- Controles de pantalla bloqueada en todos los transportes (play/pause,
+  siguiente/anterior) durante 3+ pistas.
+- Doze/ahorro de batería extremo y fabricantes agresivos.
 - Auriculares Bluetooth y pérdida de foco de audio.
 - Cambio Wi-Fi/datos y portal cautivo reales.
-- `AudioContext` suspendido por el SO con el visualizador/EQ activos.
+- `AudioContext` suspendido por el SO con visualizador/EQ activos.
 - Latencia real del cambio de pista con y sin precarga.
 
-Pasos y tabla de registro: `docs/player/plan-pruebas-android.md`.
+Estos escenarios no se marcan como superados. Pasos y tabla de registro:
+`docs/player/plan-pruebas-android.md`.
 
 ### Limitación estructural de la PWA
 
@@ -183,7 +191,7 @@ del producto.
 
 | Eje | Estado | Motivo |
 |---|---|---|
-| 1. Reproductor fiable en segundo plano y controles externos | **Parcial** | Semántica, eventos, Media Session y errores corregidos y probados; la continuidad con el proceso suspendido depende de Android y queda pendiente de validación |
+| 1. Reproductor fiable en segundo plano y controles externos | **Completado en lo esencial** | Segundo plano y pantalla apagada validados por el propietario (2026-11-05); semántica, Media Session y errores cubiertos por tests. El resto de la matriz Android es opcional y no se declara superado |
 | 2. Pruebas automatizadas del motor | **Completado** | 118 tests nuevos/ampliados del motor y utilidades; suite total 236 en verde |
 | 3. Precarga inteligente | **Implementado (acotado)** | Solo siguiente pista, 12 MB, opt-out, sin shuffle, cancelable; fallback a streaming |
 | 4. Modo offline consistente | **Parcial** | Blob preferente, error visible, sin bucles, limpieza de blobs; cuota/corrupción real y descargas a medias quedan documentadas, no simuladas |
@@ -194,9 +202,10 @@ del producto.
 
 ## 7. Riesgos residuales y regresiones potenciales
 
-- **Motor en Android real:** la validación humana puede descubrir que el
-  navegador pausa el elemento al bloquear la pantalla; los tests no reproducen
-  Doze ni las políticas del fabricante.
+- **Android, escenarios no ejecutados:** el caso principal (segundo plano y
+  pantalla apagada) está validado. Doze extremo, Bluetooth, cambio de red y
+  controles concretos del sistema siguen sin datos y pueden variar por
+  fabricante.
 - **AudioContext:** si el SO lo suspende sin gesto, la reanudación puede ser
   rechazada; el EQ/visualizador seguirían silenciosos hasta interactuar.
 - **Precarga en datos móviles:** 12 MB por pista siguiente; si el usuario salta
@@ -232,11 +241,11 @@ del producto.
 
 ## 9. Próximos pasos (ordenados por impacto/esfuerzo)
 
-1. **Validar en Android** el síntoma original y los controles (impacto máximo,
-   esfuerzo del propietario; no requiere código nuevo).
-2. **Revisar el export de diagnósticos** de esa prueba y corregir solo causas
-   demostradas (p. ej. si `ended` no llega, documentar límite; si llega y no se
-   carga, mirar red/token).
+1. ~~Validar en Android el síntoma original~~ **Hecho (2026-11-05):**
+   reproducción con la app fuera y pantalla apagada confirmada.
+2. **Completar la matriz Android opcional** si se quiere cerrar al 100 %:
+   controles concretos, Doze, Bluetooth, cambio de red y AudioContext
+   suspendido; no bloquea esta fase.
 3. **Medir la precarga** con y sin ella en 3–5 cambios de pista reales; si el
    ahorro no es claro o el consumo molesta, desactivarla por defecto.
 4. **ReplayGain/LUFS** en backend (diseño en `propuesta-eq-normalizacion.md`):
@@ -252,6 +261,7 @@ del producto.
 ## 10. Nota final
 
 El motor queda mejor fundamentado: bugs verificables corregidos, regresiones
-automatizadas, límites transparentes y un plan concreto para validar el síntoma
-original cuando el propietario pueda usar un Android real. No se ha desplegado,
-publicado ni modificado infraestructura o datos.
+automatizadas, límites transparentes y el síntoma original validado en Android
+por el propietario (segundo plano y pantalla apagada, 2026-11-05). La rama se
+fusionó en `main` y se desplegó; no se modificaron datos ni infraestructura
+desde esta ejecución.

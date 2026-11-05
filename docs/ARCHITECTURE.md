@@ -331,5 +331,8 @@ nunca afecta a la reproducción normal.
 ### Límites que no se pueden resolver en la PWA
 
 Si Android congela o mata el proceso, no se ejecuta `ended` ni los controles;
-un Service Worker no puede reproducir audio de forma persistente. El plan de
-validación real está en `docs/player/plan-pruebas-android.md`.
+un Service Worker no puede reproducir audio de forma persistente. La
+reproducción con la app en segundo plano y la pantalla apagada fue **validada en
+Android por el propietario el 2026-11-05**; la limitación estructural sigue
+aplicando si el sistema mata el proceso. Matriz y pasos restantes en
+`docs/player/plan-pruebas-android.md`.

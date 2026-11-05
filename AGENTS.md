@@ -18,7 +18,9 @@
   selector (transcodificación AAC) y stats personales. v0.4 en curso: **edición
   de metadata desde la UI** (escribe los tags en los ficheros reales) y **subida
   de música** (web `/upload` + carpeta de entrada `incoming`); pendiente
-  audiolibros/podcasts y Chromecast (ver §11).
+  audiolibros/podcasts y Chromecast (ver §11). El motor de reproducción web se
+  endureció y **validó en Android el 2026-11-05** con la app en segundo plano y
+  pantalla apagada.
 - **Testing/CI (2026-10-02):** backend con **570 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
   Testcontainers; frontend con **236 tests** (Vitest + Testing Library, incluida la suite del motor de reproducción); CI en
@@ -26,13 +28,18 @@
 
 ### Próximos pasos
 
-1. **Rebuild + deploy del JAR** con los fixes y features de v0.4:
+1. **Despliegue del motor de reproducción: hecho (2026-11-05).** El JAR de
+   `main` está desplegado y el propietario validó la reproducción con la app
+   fuera y la pantalla apagada. Para redeploys:
    `VITE_GOOGLE_CLIENT_ID="<client-id>.apps.googleusercontent.com" ./deploy/build.sh`
    → `scp dist/neonvibe.jar <host>:/tmp/` → `sudo /tmp/deploy.sh /tmp/neonvibe.jar`.
-2. **Verificar en producción:** editar metadata (pista/álbum/artista) sin que el
-   watcher lo revierta; subir un álbum por `/upload` y por `incoming` comprobando
-   que entra **una sola vez**; escaneo real de `/srv/Music`.
-3. **Resto de v0.4:** audiolibros/podcasts y Chromecast (roadmap en §11).
+2. **Validación Android opcional restante:** controles concretos del sistema,
+   Doze/ahorro extremo, Bluetooth, cambio de red y AudioContext suspendido
+   (`docs/player/plan-pruebas-android.md`). No bloquea la fase.
+3. **Verificar en producción (v0.4):** editar metadata (pista/álbum/artista) sin
+   que el watcher lo revierta; subir un álbum por `/upload` y por `incoming`
+   comprobando que entra **una sola vez**; escaneo real de `/srv/Music`.
+4. **Resto de v0.4:** audiolibros/podcasts y Chromecast (roadmap en §11).
 
 ---
 

@@ -30,7 +30,17 @@
 5. Anotar dispositivo, versión de Android, versión de Chrome, si es pestaña o
    PWA instalada, y si hay Bluetooth/auriculares conectados.
 
-## 2. Matriz mínima
+## 2. Registro de ejecución
+
+| Fecha | Alcance probado | Resultado |
+|---|---|---|
+| 2026-11-05 | Reproducción con la app en segundo plano y pantalla apagada | **Correcto** según el propietario; sin incidencias reportadas |
+| — | Resto de la matriz (controles concretos, Doze, Bluetooth, red, EQ) | No ejecutado o no reportado; **no se marca como superado** |
+
+Esta tabla solo recoge lo que el propietario ha confirmado. No se extrapolan
+resultados a escenarios no probados.
+
+## 3. Matriz mínima
 
 | # | Escenario | Cómo | Resultado esperado | Registro |
 |---|---|---|---|---|
@@ -61,7 +71,7 @@
 | 25 | Recarga de la PWA | Reproducir, cerrar del todo, reabrir | Cola, pista, posición, repeat/shuffle y volumen restaurados; **no autoplay** | |
 | 26 | Cambio de usuario | Cerrar sesión y entrar con otra cuenta | Cola, carátulas y notificación de la sesión anterior desaparecen | |
 
-## 3. Diagnóstico interpretable
+## 4. Diagnóstico interpretable
 
 Con `neonvibePlayerDiagnostics.export()` se obtiene una lista de eventos
 (`load.start`, `source.ready`, `play.request`, `playing`, `audio.ended`,
@@ -78,7 +88,7 @@ Con `neonvibePlayerDiagnostics.export()` se obtiene una lista de eventos
 | Silencio con barras moviéndose | `playing` pero sin sonido; abrir/cerrar visualizador | `AudioContext` suspendido; anotar si se recupera al volver |
 | Salta varias pistas seguidas | `error.skip` repetidos | Errores de archivo/red; el motor corta a los 3 intentos |
 
-## 4. Plantilla de registro
+## 5. Plantilla de registro
 
 | Fecha | Dispositivo / Android | Chrome | Pestaña/PWA | Escenario | Resultado | Diagnóstico (resumen) |
 |---|---|---|---|---|---|---|
@@ -86,10 +96,12 @@ Con `neonvibePlayerDiagnostics.export()` se obtiene una lista de eventos
 | | | | | | | |
 | | | | | | | |
 
-## 5. Criterio de cierre
+## 6. Criterio de cierre
 
-- Los escenarios 1–8, 12–18, 21–23 y 25–26 deben pasar para considerar el motor
-  «validado en Android».
+- El caso principal (app fuera/pantalla apagada, escenarios 3–4) ya está
+  reportado como correcto (2026-11-05). Para considerar el motor «validado al
+  100 % en Android», el resto de escenarios 1–8, 12–18, 21–23 y 25–26 debe
+  ejecutarse y registrarse.
 - Los escenarios 9–10 (ahorro/Doze) y 3–4 (segundo plano) se documentan aunque
   fallen: son límites de la plataforma, no necesariamente bugs.
 - Cualquier fallo debe adjuntar el export de diagnósticos y el modelo de móvil.

@@ -178,10 +178,16 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Testing
 
-- Backend **569 tests** (`./mvnw test`, cobertura JaCoCo ≥82% líneas / ≥63%
-  ramas) y frontend **118 tests** (`pnpm test`). Se añaden tests de la edición de
-  metadata, la ingesta (mover/organizar, ZIP anti *zip-slip*, carátula lateral) y
-  el filtrado de pistas no disponibles en álbumes/artistas.
+- Backend **570 tests** (`./mvnw test`, cobertura JaCoCo ≥82% líneas / ≥63%
+  ramas) y frontend **236 tests** (`pnpm test`). Se añaden tests de la edición de
+  metadata, la ingesta (mover/organizar, ZIP anti *zip-slip*, carátula lateral),
+  el filtrado de pistas no disponibles y **118 tests nuevos/ampliados del motor
+  de reproducción** (acciones, Media Session, carreras, offline, token, precarga,
+  EQ y diagnóstico).
+- **Validación Android (2026-11-05):** el propietario confirmó que la
+  reproducción con la app en segundo plano y la pantalla apagada funciona
+  correctamente. El resto de la matriz de `docs/player/plan-pruebas-android.md`
+  queda como comprobación opcional y no se declara superado.
 
 
 ## [0.2.0] - 2026-10-02
