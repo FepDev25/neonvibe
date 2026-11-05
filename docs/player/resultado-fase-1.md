@@ -131,6 +131,9 @@ cumplía `Range`/`206`/`Content-Range`/`416` y aceptaba `?token=` solo en media.
 | `cd backend && ./mvnw test` | **570 tests, 0 fallos, 4 omitidos** (93 clases) |
 | `./mvnw -Dtest=StreamControllerTest test` | 7 tests, 0 fallos |
 
+> **Snapshot de la fase 1.** Tras la remediación UI/UX (B0–B9, 2026-11-05) la
+> suite actual es **573 tests backend / 351 frontend**; ver `AGENTS.md` §14.
+
 Línea base antes de implementar: frontend 118 tests, backend 569 tests, typecheck
 sin errores. No hubo fallos previos que oculten regresiones; los 4 tests omitidos
 del backend son los que dependen de Docker/Testcontainers o entorno, ya

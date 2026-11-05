@@ -103,9 +103,13 @@ cd backend && ./mvnw test        # JUnit 5 + Mockito (+ PostgreSQL vía Testcont
 cd frontend && pnpm test         # Vitest + Testing Library (jsdom)
 ```
 
-El backend tiene **570 tests** (cobertura JaCoCo, build falla por debajo de
-**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **236 tests**. El CI de GitHub
+El backend tiene **573 tests** (cobertura JaCoCo, build falla por debajo de
+**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **351 tests**. El CI de GitHub
 Actions ejecuta ambos y empaqueta el JAR.
+
+La **ronda de QA visual (2026-11-05)** está cerrada: los 10 bloques de
+remediación de [`docs/ft/FEATURE-02.md`](docs/ft/FEATURE-02.md) están
+desplegados y validados en producción, en PC y mobile.
 
 ---
 
@@ -149,6 +153,7 @@ Auth, streaming, playlists, carátulas, letras, scanner real-time, visualizador,
 ### v0.4
 - [x] Edición de metadata desde la UI (se escribe en los ficheros del servidor)
 - [x] Subida de álbumes/canciones (web upload + carpeta de entrada)
+- [x] Remediación UI/UX de la auditoría visual 2026-11-05 (bloques B0–B9)
 - [ ] Audiolibros/podcasts y Chromecast/Bluetooth.
 
 ---

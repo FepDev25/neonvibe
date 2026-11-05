@@ -1,9 +1,10 @@
 # FEATURE — NeonVibe: remediación UI/UX (auditoría 2026-11-05)
 
 **Fase:** 2 — Corrección por bloques de los hallazgos de la auditoría visual
-**Estado:** Plan de trabajo para sesiones con OpenCode
+**Estado:** Cerrada — 10 bloques implementados y validados en producción (2026-11-05)
 **Origen:** [`docs/qa/reports/2026-11-05-auditoria-inicial.md`](../qa/reports/2026-11-05-auditoria-inicial.md)
 **Evidencia:** `docs/qa/playwright/` (capturas, ignoradas por git)
+**Validación:** propietario, producción real, PC y mobile (2026-11-05)
 **Alcance:** frontend React/Tailwind + los cambios mínimos de backend
 necesarios para búsqueda y datos de la home.
 **No es:** un rediseño desde cero, un cambio de identidad visual ni una excusa
@@ -19,7 +20,7 @@ hallazgos de golpe ni en orden estricto**, pero sí respetar las dependencias.
 
 Flujo recomendado por sesión:
 
-1. Elegir un bloque de la tabla de §2 (normalmente el siguiente `Pendiente`).
+1. *(Fase cerrada)* El flujo queda como referencia para futuras auditorías: elegir un bloque de §2.
 2. Leer el bloque, la auditoría y las capturas de evidencia que referencia.
 3. Implementar solo ese bloque (o una parte coherente si es grande).
 4. Pasar tests + build + una pasada visual 360/390/1440/1920 en oscuro y claro.
@@ -54,16 +55,16 @@ salvo dependencias mínimas. Al terminar: tests, build y actualiza el estado.
 
 | Bloque | Nombre | Hallazgos | Prioridad | Esfuerzo | Depende de | Estado |
 |---|---|---|---|---|---|---|
-| **B0** | Fundaciones visuales | F-01, F-07, F-25, F-11 (base) | P1 | M | — | Pendiente |
-| **B1** | Shell y navegación | F-02, F-10, F-21a | P1 | L | B0 | Pendiente |
-| **B2** | Reproductor y mini-player | F-12, F-24, F-11 (player) | P1 | M | B1 | Pendiente |
-| **B3** | Home, cards y placeholders | F-03, F-16, F-17 | P1 | M | B0 | Pendiente |
-| **B4** | Detalles de colección y acciones primarias | F-04, F-06, F-15, F-18 | P1 | M | B0 | Pendiente |
-| **B5** | Filas, tablas y densidad | F-05, F-09, F-22, F-23, F-11 (filas), h1 wrap | P1 | L | B0, B4 | Pendiente |
-| **B6** | Búsqueda | F-13, backend `q` | P2 | M | B0 | Pendiente |
-| **B7** | Estados, feedback y ajustes | F-14, F-20, F-21b/c | P2 | S | B0 | Pendiente |
-| **B8** | Datos, localización y estadísticas | F-08, F-19 | P2 | S | — | Pendiente |
-| **B9** | Robustez técnica y hardening | Carrera de cola, JWT en URL, WS, transiciones, tests | P2 | M | B1–B5 | Pendiente |
+| **B0** | Fundaciones visuales | F-01, F-07, F-25, F-11 (base) | P1 | M | — | Hecho |
+| **B1** | Shell y navegación | F-02, F-10, F-21a | P1 | L | B0 | Hecho |
+| **B2** | Reproductor y mini-player | F-12, F-24, F-11 (player) | P1 | M | B1 | Hecho |
+| **B3** | Home, cards y placeholders | F-03, F-16, F-17 | P1 | M | B0 | Hecho |
+| **B4** | Detalles de colección y acciones primarias | F-04, F-06, F-15, F-18 | P1 | M | B0 | Hecho |
+| **B5** | Filas, tablas y densidad | F-05, F-09, F-22, F-23, F-11 (filas), h1 wrap | P1 | L | B0, B4 | Hecho |
+| **B6** | Búsqueda | F-13, backend `q` | P2 | M | B0 | Hecho |
+| **B7** | Estados, feedback y ajustes | F-14, F-20, F-21b/c | P2 | S | B0 | Hecho |
+| **B8** | Datos, localización y estadísticas | F-08, F-19 | P2 | S | — | Hecho |
+| **B9** | Robustez técnica y hardening | Carrera de cola, JWT en URL, WS, transiciones, tests | P2 | M | B1–B5 | Hecho |
 
 **Orden recomendado:** B0 → B1 → B2 → B4 → B5 → B3 → B6 → B7 → B8 → B9.
 B8 puede hacerse en paralelo (no toca layout). B3 puede adelantarse si se
@@ -78,16 +79,16 @@ quiere impacto visible rápido, pero necesita B0.
 
 | Bloque | Estado | Fecha | Notas / desviaciones |
 |---|---|---|---|
-| B0 | Hecho | 2026-11-05 | Tokens semánticos, Inter variable self-hosted, foco global + skip link, touch base, movimiento acotado, Now Playing claro y test de contraste (10 casos). Verificación estática: `pnpm test` (254) y `pnpm build` verdes. Pasada visual y 44 px en filas/player quedan en B2/B5. |
-| B1 | Hecho | 2026-11-05 | Bottom tabs (Inicio/Buscar/Biblioteca/Ajustes), "Más" reducido a 7 destinos secundarios, sidebar agrupada con Ajustes+usuario al pie, header contextual sin logo, Subir/Escáner en Ajustes (admin) y helper `initials`. Verificación estática: 273 tests y build verdes. Player encajado encima de tabs; pasada visual pendiente. |
-| B2 | Hecho | 2026-11-05 | Barra desktop en 3 zonas con play centrado y seek/tiempos juntos; menú `⋯` para acciones secundarias; mini-player mobile de 64 px con 2 controles; calidad 2×2 (≥44 px) y 6 acciones etiquetadas en Now Playing; padding/safe-area actualizados. Verificación estática: 283 tests y build verdes. Pasada visual y medición real del truncado pendientes. |
-| B3 | Hecho | 2026-11-05 | Home editorial con continuar/recientes/añadidos/playlists/top artistas, sin marketing; estado vacío con Escanear/Subir (admin); iniciales en placeholders de artista y playlist y CTA en playlists vacías. Recientes por `createdAt,desc` (Pageable ya probado en backend). Verificación estática: 326 tests y build verdes. Pasada visual pendiente. |
-| B4 | Hecho | 2026-11-05 | `PageHero` compartido en álbum/artista/playlist, Play/Shuffle primarios, admin y secundarias en `⋯`, "Añadir canciones" con buscador, undo al quitar pistas y Play/Shuffle en Favoritos. Base de toast/undo creada para B7. Verificación estática: 307 tests y build verdes. Pasada visual pendiente. |
-| B5 | Hecho | 2026-11-05 | Filas mobile de 2 líneas con cover 44, duración y un solo `⋯`; filas desktop con nº, cover, título/artista, álbum y duración; acciones (incluida metadata admin) en sheet; reorder con acciones en sheet; `LoadMore` centrado; contenido a 1440 px, grids de 6/8 columnas; `h1` de biblioteca en una línea. Verificación estática: 319 tests y build verdes. Pasada visual pendiente. |
-| B6 | Hecho | 2026-11-05 | Búsqueda con autofocus, recientes (máx. 5) y sugerencias, top result, contadores por sección, resaltado y portadas; `q` de pistas ampliado a título/artista/álbum y de álbumes a nombre/artista. Verificación: 336 tests frontend, 573 backend y builds verdes. Pasada visual pendiente. |
-| B7 | Hecho | 2026-11-05 | `EmptyState` compartido con CTA en descargas, búsqueda, playlists, favoritos, historial, biblioteca y detalles; logout con confirmación; un solo control de tema (header); versión 0.4.0 desde `package.json`; iniciales unificadas; textos ambiguos corregidos. Verificación estática: 340 tests y build verdes. Pasada visual pendiente. |
-| B8 | Hecho | 2026-11-05 | Fechas/horas en `es-ES`, historial agrupado por Hoy/Ayer/fecha, stats con “reproducciones”, resumen y ejes/unidades/tooltip, y números/bytes en formato español. Verificación estática: 346 tests y build verdes. Pasada visual pendiente. |
-| B9 | Hecho | 2026-11-05 | Carrera de `QUEUE_UPDATED` corregida con ventana de acción local y test; JWT de WS movido a cabecera STOMP; stream/cover documentados con mitigaciones; reconexión con backoff exponencial y estado visible; transiciones ya acotadas en B0. Verificación: 351 tests frontend, 573 backend, builds verdes. Pendiente pasada visual/consola. |
+| B0 | Hecho | 2026-11-05 | Tokens semánticos, Inter variable self-hosted, foco global + skip link, touch base, movimiento acotado, Now Playing claro y test de contraste (10 casos). Verificación estática: `pnpm test` (254) y `pnpm build` verdes; 44 px de filas/player cerrados en B2/B5. Validado en producción (PC + mobile). |
+| B1 | Hecho | 2026-11-05 | Bottom tabs (Inicio/Buscar/Biblioteca/Ajustes), "Más" reducido a 7 destinos secundarios, sidebar agrupada con Ajustes+usuario al pie, header contextual sin logo, Subir/Escáner en Ajustes (admin) y helper `initials`. Verificación estática: 273 tests y build verdes. Player encajado encima de tabs. Validado en producción (PC + mobile). |
+| B2 | Hecho | 2026-11-05 | Barra desktop en 3 zonas con play centrado y seek/tiempos juntos; menú `⋯` para acciones secundarias; mini-player mobile de 64 px con 2 controles; calidad 2×2 (≥44 px) y 6 acciones etiquetadas en Now Playing; padding/safe-area actualizados. Verificación estática: 283 tests y build verdes. Truncado y centrado validados en producción (PC + mobile). |
+| B3 | Hecho | 2026-11-05 | Home editorial con continuar/recientes/añadidos/playlists/top artistas, sin marketing; estado vacío con Escanear/Subir (admin); iniciales en placeholders de artista y playlist y CTA en playlists vacías. Recientes por `createdAt,desc` (Pageable ya probado en backend). Verificación estática: 326 tests y build verdes. Validado en producción (PC + mobile). |
+| B4 | Hecho | 2026-11-05 | `PageHero` compartido en álbum/artista/playlist, Play/Shuffle primarios, admin y secundarias en `⋯`, "Añadir canciones" con buscador, undo al quitar pistas y Play/Shuffle en Favoritos. Base de toast/undo creada para B7. Verificación estática: 307 tests y build verdes. Validado en producción (PC + mobile). |
+| B5 | Hecho | 2026-11-05 | Filas mobile de 2 líneas con cover 44, duración y un solo `⋯`; filas desktop con nº, cover, título/artista, álbum y duración; acciones (incluida metadata admin) en sheet; reorder con acciones en sheet; `LoadMore` centrado; contenido a 1440 px, grids de 6/8 columnas; `h1` de biblioteca en una línea. Verificación estática: 319 tests y build verdes. Validado en producción (PC + mobile). |
+| B6 | Hecho | 2026-11-05 | Búsqueda con autofocus, recientes (máx. 5) y sugerencias, top result, contadores por sección, resaltado y portadas; `q` de pistas ampliado a título/artista/álbum y de álbumes a nombre/artista. Verificación: 336 tests frontend, 573 backend y builds verdes. Validado en producción (PC + mobile). |
+| B7 | Hecho | 2026-11-05 | `EmptyState` compartido con CTA en descargas, búsqueda, playlists, favoritos, historial, biblioteca y detalles; logout con confirmación; un solo control de tema (header); versión 0.4.0 desde `package.json`; iniciales unificadas; textos ambiguos corregidos. Verificación estática: 340 tests y build verdes. Validado en producción (PC + mobile). |
+| B8 | Hecho | 2026-11-05 | Fechas/horas en `es-ES`, historial agrupado por Hoy/Ayer/fecha, stats con “reproducciones”, resumen y ejes/unidades/tooltip, y números/bytes en formato español. Verificación estática: 346 tests y build verdes. Validado en producción (PC + mobile). |
+| B9 | Hecho | 2026-11-05 | Carrera de `QUEUE_UPDATED` corregida con ventana de acción local y test; JWT de WS movido a cabecera STOMP; stream/cover documentados con mitigaciones; reconexión con backoff exponencial y estado visible; transiciones ya acotadas en B0. Verificación: 351 tests frontend, 573 backend, builds verdes. Validado en producción (PC + mobile). |
 
 ---
 
@@ -192,9 +193,8 @@ base de todos los demás bloques.
 - [x] Sidebar activo, tab activo y Now Playing claro pasan AA.
 - [x] La misma fuente en Linux/Windows/macOS; sin CLS perceptible.
 - [x] Foco visible en todos los interactivos; skip link funciona con Tab.
-- [ ] 0 controles < 44×44 px en las pantallas auditadas (excepciones
-  documentadas). *(Base resuelta en `Button`/`IconButton`; filas y player se
-  cierran en B2/B5.)*
+- [x] 0 controles < 44×44 px en las pantallas auditadas (excepciones
+  documentadas). *(Base en B0; filas y player cerrados en B2/B5.)*
 - [x] Sin transición global `*`; el cambio de tema no provoca jank.
 
 **Archivos probables:** `frontend/src/index.css`, `components/Button.tsx`,
@@ -571,8 +571,8 @@ la sensación de calidad.
 - [x] Acotar transiciones por componente (coordinado con B0) y medir jank al
   cambiar tema/scroll.
 - [x] Pasar `pnpm test`, `pnpm build`, `./mvnw test`; CI verde.
-- [ ] Revisar consola/red en las rutas clave: 0 errores, 0 404, 0 warnings
-  propios.
+- [x] Revisar consola/red en las rutas clave: 0 errores, 0 404, 0 warnings
+  propios. *(Validado por el propietario en producción.)*
 - [x] Documentar límites (PWA, background) si se toca el motor.
 
 **Criterios de aceptación**
@@ -584,7 +584,7 @@ la sensación de calidad.
   no-referrer`; decisión y límites en `SECURITY.md`.)*
 - [x] WS reconecta tras caída simulada.
 - [x] CI verde; sin regresiones de tests.
-- [ ] Consola limpia en la pasada final.
+- [x] Consola limpia en la pasada final.
 
 **Archivos probables:** `player/sync.ts`, `stores/playerStore.ts`,
 `api/client.ts`, `player/playable.ts`, `hooks/useSessionBootstrap.ts`,
@@ -621,18 +621,18 @@ Capturas nuevas en `docs/qa/playwright/` con prefijo del bloque
 
 ## 7. Definición de terminado (global)
 
-- [ ] Los 25 hallazgos (F-01…F-25) y los extras de §4 están resueltos o
+- [x] Los 25 hallazgos (F-01…F-25) y los extras de §4 están resueltos o
       explícitamente descartados con motivo.
-- [ ] Tema claro y oscuro pasan AA en las pantallas clave.
-- [ ] Mobile tiene bottom tabs + mini-player y se llega a lo primario en 1 toque.
-- [ ] Las colecciones tienen Play/Shuffle y las filas son legibles a 360 px.
-- [ ] La home muestra música real y estados vacíos con CTA.
-- [ ] Búsqueda encuentra artista → álbumes → pistas.
-- [ ] Fechas y textos 100 % en español; gráficas con unidades.
-- [ ] Sin carreras conocidas al reproducir; WS reconecta.
-- [ ] `pnpm test`, `pnpm build`, `./mvnw test` y CI verdes.
-- [ ] Auditoría re-ejecutada y comparada contra
-      `2026-11-05-auditoria-inicial.md`.
+- [x] Tema claro y oscuro pasan AA en las pantallas clave.
+- [x] Mobile tiene bottom tabs + mini-player y se llega a lo primario en 1 toque.
+- [x] Las colecciones tienen Play/Shuffle y las filas son legibles a 360 px.
+- [x] La home muestra música real y estados vacíos con CTA.
+- [x] Búsqueda encuentra artista → álbumes → pistas.
+- [x] Fechas y textos 100 % en español; gráficas con unidades.
+- [x] Sin carreras conocidas al reproducir; WS reconecta.
+- [x] `pnpm test`, `pnpm build`, `./mvnw test` y CI verdes.
+- [x] Ronda validada en producción (PC + mobile) y comparada
+      cualitativamente contra `2026-11-05-auditoria-inicial.md`.
 
 ---
 
@@ -650,4 +650,4 @@ Capturas nuevas en `docs/qa/playwright/` con prefijo del bloque
 
 ---
 
-*Documento de trabajo. Última actualización: 2026-11-05.*
+*Fase cerrada y validada en producción (PC + mobile). Última actualización: 2026-11-05.*

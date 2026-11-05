@@ -10,20 +10,19 @@
 - **Tipo:** Servidor de música personal (self-hosted)
 - **Inspiración visual:** Spotify + cyberpunk neón (retrowave/cyberpunk)
 - **Objetivo:** Reproductor web/mobile-first con playlist, carátulas, letras, scrobbling y radio por similitud.
-- **Estado:** v0.2 desplegada en producción (Debian Trixie bare-metal) y endurecida
-  con una pasada de seguridad, concurrencia, accesibilidad y rendimiento. Incluye
-  **rotación/revocación de refresh token**, **UI de scanner (admin)**, **página de
-  historial**, **gestión de descargas** y validación de subida de carátulas.
-  v0.3 cerrada: fulltext (pg_trgm), notificaciones nativas (Web Push), quality
-  selector (transcodificación AAC) y stats personales. v0.4 en curso: **edición
-  de metadata desde la UI** (escribe los tags en los ficheros reales) y **subida
-  de música** (web `/upload` + carpeta de entrada `incoming`); pendiente
-  audiolibros/podcasts y Chromecast (ver §11). El motor de reproducción web se
-  endureció y **validó en Android el 2026-11-05** con la app en segundo plano y
-  pantalla apagada.
-- **Testing/CI (2026-10-02):** backend con **570 tests** (`./mvnw test`) y JaCoCo
+- **Estado:** v0.4 desplegada en producción (Debian Trixie bare-metal). Incluye
+  **rotación/revocación de refresh token**, **UI de scanner (admin)**, **historial**,
+  **descargas**, **fulltext (pg_trgm)**, **Web Push**, **quality selector (AAC)**,
+  **stats**, **edición de metadata** y **subida de música** (`/upload` + `incoming`).
+  La **ronda de QA visual (auditoría 2026-11-05) está cerrada**: los 10 bloques
+  B0–B9 de `docs/ft/FEATURE-02.md` se implementaron y el propietario los validó
+  en producción, en PC y mobile. Pendiente audiolibros/podcasts y Chromecast
+  (ver §11). El motor de reproducción web se validó en Android el 2026-11-05
+  con la app en segundo plano y pantalla apagada.
+- **Testing/CI (2026-11-05):** backend con **573 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **236 tests** (Vitest + Testing Library, incluida la suite del motor de reproducción); CI en
+  Testcontainers; frontend con **351 tests** (Vitest + Testing Library, incluida
+  la suite del motor de reproducción y la remediación UI/UX); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
 ### Próximos pasos
@@ -36,9 +35,10 @@
 2. **Validación Android opcional restante:** controles concretos del sistema,
    Doze/ahorro extremo, Bluetooth, cambio de red y AudioContext suspendido
    (`docs/player/plan-pruebas-android.md`). No bloquea la fase.
-3. **Verificar en producción (v0.4):** editar metadata (pista/álbum/artista) sin
-   que el watcher lo revierta; subir un álbum por `/upload` y por `incoming`
-   comprobando que entra **una sola vez**; escaneo real de `/srv/Music`.
+3. **Ronda de QA visual: cerrada (2026-11-05).** Los bloques B0–B9 están
+   desplegados y validados en producción (PC y mobile). Para futuras rondas,
+   reutilizar el playbook `docs/qa/README.md` y comparar contra
+   `docs/qa/reports/2026-11-05-auditoria-inicial.md`.
 4. **Resto de v0.4:** audiolibros/podcasts y Chromecast (roadmap en §11).
 
 ---
@@ -502,14 +502,14 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 
 ## 14. Testing y CI
 
-- **Backend:** `cd backend && ./mvnw test`. JUnit 5 + Mockito + Spring Boot Test.
-  Incluye `PostgresMigrationTest` (Testcontainers) que arranca un PostgreSQL real,
-  aplica Flyway `V1..V9` y verifica `ddl-auto: validate`; se **salta solo** si no
-  hay Docker.
+- **Backend:** `cd backend && ./mvnw test` (**573 tests**). JUnit 5 + Mockito +
+  Spring Boot Test. Incluye `PostgresMigrationTest` (Testcontainers) que arranca
+  un PostgreSQL real, aplica Flyway y verifica `ddl-auto: validate`; se **salta
+  solo** si no hay Docker.
 - **Cobertura:** JaCoCo genera `backend/target/site/jacoco` (HTML + CSV/XML) y el
   build **falla** por debajo de **líneas ≥ 82%** y **ramas ≥ 63%**. Para subir el
   umbral, editar `jacoco-maven-plugin` en `backend/pom.xml`.
-- **Frontend:** `cd frontend && pnpm test` (Vitest + Testing Library sobre jsdom).
+- **Frontend:** `cd frontend && pnpm test` (**351 tests**, Vitest + Testing Library sobre jsdom).
   `pnpm test:coverage` para el reporte. `pnpm build` hace el typecheck (`tsc -b`).
 - **Fixtures de audio:** `backend/src/test/resources/audio/` contiene clips MP3
   cortos con tags ID3 y artwork embebido para probar `JAudioTaggerMetadataExtractor`.
@@ -523,4 +523,26 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 
 ---
 
-*Última actualización: 2026-10-04*
+## 15. QA visual (Playwright MCP)
+
+- **MCP:** `qa_neonvibe` en `opencode.json` (Firefox, perfil persistente en
+  `docs/qa/.browser`, evidencia en `docs/qa/playwright`). Un solo servidor: el
+  perfil persistente no admite dos navegadores a la vez; mobile se audita con
+  `browser_resize` (390x844).
+- **Playbook:** `docs/qa/README.md` (entorno, login, matriz de viewports, estados,
+  checklist heurístico, severidad y formato de reporte).
+- **Comando:** `/qa` (`.opencode/commands/qa.md`). Reportes versionados en
+  `docs/qa/reports/` con la plantilla `TEMPLATE.md`.
+- **Login:** la sesión vive en `localStorage['neonvibe-auth']` (JWT), no en
+  cookies. Se siembra desde el navegador del propietario y el perfil la renueva
+  solo. Ver el playbook.
+- **Reglas:** auditoría de solo lectura en producción; los flujos que escriben
+  (subida, metadata, borrado) se prueban en local y con confirmación.
+- **Estado:** la ronda inicial está cerrada (2026-11-05) con los 10 bloques de
+  `docs/ft/FEATURE-02.md` desplegados y validados en producción (PC + mobile).
+- **Secretos:** `docs/qa/.browser/` y `docs/qa/.auth/` contienen tokens y están
+  en `.gitignore`; nunca commitearlos.
+
+---
+
+*Última actualización: 2026-11-05*

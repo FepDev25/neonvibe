@@ -178,16 +178,35 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Testing
 
-- Backend **570 tests** (`./mvnw test`, cobertura JaCoCo ≥82% líneas / ≥63%
-  ramas) y frontend **236 tests** (`pnpm test`). Se añaden tests de la edición de
+- Backend **573 tests** (`./mvnw test`, cobertura JaCoCo ≥82% líneas / ≥63%
+  ramas) y frontend **351 tests** (`pnpm test`). Se añaden tests de la edición de
   metadata, la ingesta (mover/organizar, ZIP anti *zip-slip*, carátula lateral),
-  el filtrado de pistas no disponibles y **118 tests nuevos/ampliados del motor
-  de reproducción** (acciones, Media Session, carreras, offline, token, precarga,
-  EQ y diagnóstico).
+  el filtrado de pistas no disponibles, **118 tests del motor de reproducción**
+  (acciones, Media Session, carreras, offline, token, precarga, EQ y diagnóstico)
+  y la suite de la remediación UI/UX.
 - **Validación Android (2026-11-05):** el propietario confirmó que la
   reproducción con la app en segundo plano y la pantalla apagada funciona
   correctamente. El resto de la matriz de `docs/player/plan-pruebas-android.md`
   queda como comprobación opcional y no se declara superado.
+
+### QA visual (2026-11-05)
+
+- **Ronda inicial cerrada:** los 10 bloques de
+  [`docs/ft/FEATURE-02.md`](docs/ft/FEATURE-02.md) (B0–B9) están desplegados y
+  validados por el propietario en producción, en PC y mobile.
+- **Fundaciones:** tokens semánticos por tema, Inter variable self-hosted, foco
+  global y skip link, objetivos táctiles, movimiento acotado y auditoría de
+  contraste automatizada.
+- **Navegación:** bottom tabs mobile, hoja “Más”, sidebar agrupada, header
+  contextual sin logo duplicado y admin separado.
+- **Reproductor:** barra desktop en tres zonas, mini-player mobile de 2
+  controles, menú `⋯` y calidad accesible en Now Playing.
+- **Contenido:** home editorial, `PageHero` compartido, Play/Shuffle, filas de
+  pista rediseñadas, búsqueda con recientes/top result/resaltado y empty states
+  con CTA.
+- **Datos y robustez:** fechas/números en `es-ES`, gráficas con ejes/unidades,
+  guard de carrera en `QUEUE_UPDATED`, JWT de WebSocket en cabecera STOMP,
+  reconexión con backoff y `Referrer-Policy: no-referrer` para medios.
 
 
 ## [0.2.0] - 2026-10-02
