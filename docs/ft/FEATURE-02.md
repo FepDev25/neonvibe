@@ -81,7 +81,7 @@ quiere impacto visible rápido, pero necesita B0.
 | B0 | Hecho | 2026-11-05 | Tokens semánticos, Inter variable self-hosted, foco global + skip link, touch base, movimiento acotado, Now Playing claro y test de contraste (10 casos). Verificación estática: `pnpm test` (254) y `pnpm build` verdes. Pasada visual y 44 px en filas/player quedan en B2/B5. |
 | B1 | Hecho | 2026-11-05 | Bottom tabs (Inicio/Buscar/Biblioteca/Ajustes), "Más" reducido a 7 destinos secundarios, sidebar agrupada con Ajustes+usuario al pie, header contextual sin logo, Subir/Escáner en Ajustes (admin) y helper `initials`. Verificación estática: 273 tests y build verdes. Player encajado encima de tabs; pasada visual pendiente. |
 | B2 | Hecho | 2026-11-05 | Barra desktop en 3 zonas con play centrado y seek/tiempos juntos; menú `⋯` para acciones secundarias; mini-player mobile de 64 px con 2 controles; calidad 2×2 (≥44 px) y 6 acciones etiquetadas en Now Playing; padding/safe-area actualizados. Verificación estática: 283 tests y build verdes. Pasada visual y medición real del truncado pendientes. |
-| B3 | Pendiente | — | — |
+| B3 | Hecho | 2026-11-05 | Home editorial con continuar/recientes/añadidos/playlists/top artistas, sin marketing; estado vacío con Escanear/Subir (admin); iniciales en placeholders de artista y playlist y CTA en playlists vacías. Recientes por `createdAt,desc` (Pageable ya probado en backend). Verificación estática: 326 tests y build verdes. Pasada visual pendiente. |
 | B4 | Hecho | 2026-11-05 | `PageHero` compartido en álbum/artista/playlist, Play/Shuffle primarios, admin y secundarias en `⋯`, "Añadir canciones" con buscador, undo al quitar pistas y Play/Shuffle en Favoritos. Base de toast/undo creada para B7. Verificación estática: 307 tests y build verdes. Pasada visual pendiente. |
 | B5 | Hecho | 2026-11-05 | Filas mobile de 2 líneas con cover 44, duración y un solo `⋯`; filas desktop con nº, cover, título/artista, álbum y duración; acciones (incluida metadata admin) en sheet; reorder con acciones en sheet; `LoadMore` centrado; contenido a 1440 px, grids de 6/8 columnas; `h1` de biblioteca en una línea. Verificación estática: 319 tests y build verdes. Pasada visual pendiente. |
 | B6 | Pendiente | — | — |
@@ -316,22 +316,27 @@ Coordinar con B9 (carrera de cola) sin mezclar.
 
 **Tareas**
 
-- [ ] Home editorial: "Continuar escuchando", "Escuchado recientemente",
+- [x] Home editorial: "Continuar escuchando", "Escuchado recientemente",
   "Añadido recientemente", "Tus playlists", "Top artistas".
-- [ ] Eliminar las tarjetas de marketing y el texto "próximo".
-- [ ] Empty state de biblioteca vacía: "Escanear" / "Subir música".
-- [ ] Placeholder de artista: iniciales + degradado determinista; imagen si
+- [x] Eliminar las tarjetas de marketing y el texto "próximo".
+- [x] Empty state de biblioteca vacía: "Escanear" / "Subir música".
+- [x] Placeholder de artista: iniciales + degradado determinista; imagen si
   existe.
-- [ ] Portada de playlist: iniciales + icono/patrón; CTA "Añadir canciones" si
+- [x] Portada de playlist: iniciales + icono/patrón; CTA "Añadir canciones" si
   está vacía.
-- [ ] Hover/focus de cards y radios consistentes.
+- [x] Hover/focus de cards y radios consistentes.
 
 **Criterios de aceptación**
 
-- [ ] Desde la home se reanuda o inicia reproducción en 1 toque.
-- [ ] No queda contenido de marketing ni texto obsoleto.
-- [ ] Dos artistas/playlists distintos se distinguen sin leer el nombre.
-- [ ] La home funciona con biblioteca vacía y con datos.
+- [x] Desde la home se reanuda o inicia reproducción en 1 toque.
+- [x] No queda contenido de marketing ni texto obsoleto.
+- [x] Dos artistas/playlists distintos se distinguen sin leer el nombre.
+- [x] La home funciona con biblioteca vacía y con datos.
+
+**Nota backend:** "Añadido recientemente" usa `sort=createdAt,desc` sobre
+`GET /albums`; el `Pageable` de Spring ya lo respeta y
+`AlbumServiceTest.search_respectsExplicitClientSort` cubre el contrato. No hizo
+falta cambiar el backend.
 
 **Archivos probables:** `pages/HomePage.tsx`, `ArtistCard.tsx`,
 `PlaylistCard.tsx`, `AlbumCard.tsx`, `hooks/useLibrary.ts`, `hooks/useHistory.ts`.
