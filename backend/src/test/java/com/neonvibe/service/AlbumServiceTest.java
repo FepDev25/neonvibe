@@ -90,13 +90,14 @@ class AlbumServiceTest {
     }
 
     @Test
-    void search_textOnly_usesNameSearch() {
-        when(albumRepository.findByNameContainingIgnoreCase(eq("q"), any(Pageable.class)))
+    void search_textOnly_usesTextSearch() {
+        when(albumRepository.searchByText(eq("q"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
         service.search("q", null, pageable);
 
-        verify(albumRepository).findByNameContainingIgnoreCase(eq("q"), any(Pageable.class));
+        verify(albumRepository).searchByText(eq("q"), any(Pageable.class));
+        verify(albumRepository, never()).findByNameContainingIgnoreCase(any(), any());
         verify(albumRepository, never()).findByArtistContainingIgnoreCase(any(), any());
     }
 

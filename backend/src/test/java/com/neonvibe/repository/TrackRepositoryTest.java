@@ -83,6 +83,18 @@ class TrackRepositoryTest {
     }
 
     @Test
+    void search_byQ_matchesArtistAndAlbum() {
+        Page<Track> byArtist = trackRepository.search("Artist A", null, null, null, null,
+                PageRequest.of(0, 20));
+        assertThat(byArtist.getTotalElements()).isEqualTo(2);
+
+        Page<Track> byAlbum = trackRepository.search("Album Two", null, null, null, null,
+                PageRequest.of(0, 20));
+        assertThat(byAlbum.getTotalElements()).isEqualTo(1);
+        assertThat(byAlbum.getContent().get(0).getTitle()).isEqualTo("Gamma");
+    }
+
+    @Test
     void findByFilePathIsUniqueLookup() {
         // Unique on file_path: a lookup always returns the single canonical row.
         assertThat(trackRepository.findByFilePath("/music/a.mp3")).isPresent();

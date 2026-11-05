@@ -35,10 +35,22 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
 
     Page<Album> findByArtistContainingIgnoreCase(String artist, Pageable pageable);
 
-    /** Combined text + artist search (both filters applied, unlike name-only). */
+    /** Free-text search across album name and artist (search page). */
     @Query("""
             SELECT a FROM Album a
             WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(a.artist) LIKE LOWER(CONCAT('%', :q, '%'))
+            """)
+    Page<Album> searchByText(@Param("q") String q, Pageable pageable);
+
+    /**
+     * Combined text + artist search: q matches name or artist, and the explicit
+     * artist filter is applied on top.
+     */
+    @Query("""
+            SELECT a FROM Album a
+            WHERE (LOWER(a.name) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(a.artist) LIKE LOWER(CONCAT('%', :q, '%')))
               AND LOWER(a.artist) LIKE LOWER(CONCAT('%', :artist, '%'))
             """)
     Page<Album> searchByNameAndArtist(@Param("q") String q,

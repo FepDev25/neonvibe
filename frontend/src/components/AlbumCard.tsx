@@ -2,12 +2,15 @@ import { Link } from 'react-router-dom';
 import { Disc3 } from 'lucide-react';
 import AlbumCover from './AlbumCover';
 import FavoriteButton from './FavoriteButton';
+import HighlightText from './HighlightText';
 import { albumCoverUrl } from '@/api/cover';
 import type { Album } from '@/types';
 import { formatTrackCount } from '@/utils/format';
 
 interface AlbumCardProps {
   album: Album;
+  /** Search term to highlight in the name/artist. */
+  highlight?: string;
 }
 
 /**
@@ -15,7 +18,7 @@ interface AlbumCardProps {
  * Navigates to `/album/:id`. The favorite heart is a sibling of the link (not a
  * nested button inside the anchor, which would be invalid HTML).
  */
-export default function AlbumCard({ album }: AlbumCardProps) {
+export default function AlbumCard({ album, highlight }: AlbumCardProps) {
   return (
     <div className="group relative flex flex-col gap-2 rounded-2xl p-2 transition-colors hover:bg-surface-alt">
       <Link to={`/album/${album.id}`} className="flex flex-col gap-2">
@@ -29,9 +32,11 @@ export default function AlbumCard({ album }: AlbumCardProps) {
         </AlbumCover>
         <div className="flex min-w-0 flex-col px-1">
           <p className="truncate text-sm font-semibold text-text" title={album.name}>
-            {album.name}
+            <HighlightText text={album.name} term={highlight} />
           </p>
-          <p className="truncate text-xs text-text-muted">{album.artist}</p>
+          <p className="truncate text-xs text-text-muted">
+            <HighlightText text={album.artist} term={highlight} />
+          </p>
           <p className="text-[11px] text-text-muted/70">
             {formatTrackCount(album.track_count)}
           </p>

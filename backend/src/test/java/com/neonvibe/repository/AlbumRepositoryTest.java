@@ -80,6 +80,24 @@ class AlbumRepositoryTest {
     }
 
     @Test
+    void searchByText_matchesNameOrArtist() {
+        assertThat(albumRepository.searchByText("radio", PageRequest.of(0, 20)).getTotalElements())
+                .isEqualTo(2);
+        assertThat(albumRepository.searchByText("symmetry", PageRequest.of(0, 20)).getTotalElements())
+                .isEqualTo(1);
+    }
+
+    @Test
+    void searchByNameAndArtist_appliesTextAcrossNameAndArtist() {
+        assertThat(albumRepository.searchByNameAndArtist("radio", "radiohead",
+                PageRequest.of(0, 20)).getTotalElements()).isEqualTo(2);
+        assertThat(albumRepository.searchByNameAndArtist("kid", "radiohead",
+                PageRequest.of(0, 20)).getTotalElements()).isEqualTo(1);
+        assertThat(albumRepository.searchByNameAndArtist("radio", "muse",
+                PageRequest.of(0, 20)).getTotalElements()).isZero();
+    }
+
+    @Test
     void findByNameAndArtistNullSafe_matchesAlbumWithoutArtist() {
         Album noArtist = album("Unknown Album", null, 2024);
         albumRepository.save(noArtist);

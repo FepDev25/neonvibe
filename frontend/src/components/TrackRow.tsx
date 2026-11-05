@@ -18,6 +18,8 @@ interface TrackRowProps {
   showArtist?: boolean;
   /** Hide the album column when it would repeat the page title. */
   showAlbum?: boolean;
+  /** Search term to highlight in the row. */
+  highlight?: string;
 }
 
 /**
@@ -31,6 +33,7 @@ export default function TrackRow({
   queue,
   showArtist = true,
   showAlbum = true,
+  highlight,
 }: TrackRowProps) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -46,6 +49,7 @@ export default function TrackRow({
         showArtist={showArtist}
         showAlbum={showAlbum}
         favorite={isFavorite}
+        highlight={highlight}
         actions={
           <button
             type="button"

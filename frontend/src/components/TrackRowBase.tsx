@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Heart, Play } from 'lucide-react';
 import { usePlayerStore, type PlayerTrack } from '@/stores/playerStore';
+import HighlightText from './HighlightText';
 import AlbumCover from './AlbumCover';
 import NowPlayingBars from './NowPlayingIndicator';
 import { trackCoverUrl } from '@/api/cover';
@@ -18,6 +19,8 @@ interface TrackRowBaseProps {
   showAlbum?: boolean;
   /** Shows a small non-interactive heart next to the title. */
   favorite?: boolean;
+  /** Search term to highlight in title/artist/album. */
+  highlight?: string;
   /** Action controls (⋯ button, reorder buttons…). */
   actions: ReactNode;
 }
@@ -35,6 +38,7 @@ export default function TrackRowBase({
   showArtist = true,
   showAlbum = true,
   favorite = false,
+  highlight,
   actions,
 }: TrackRowBaseProps) {
   const playTrack = usePlayerStore((s) => s.playTrack);
@@ -110,7 +114,7 @@ export default function TrackRowBase({
             )}
             title={track.title}
           >
-            {track.title}
+            <HighlightText text={track.title} term={highlight} />
           </span>
           {favorite && (
             <Heart
@@ -124,7 +128,7 @@ export default function TrackRowBase({
         <span className="flex items-center justify-between gap-2 sm:block">
           {showArtist && track.artist && (
             <span className="truncate text-xs text-text-muted" title={track.artist}>
-              {track.artist}
+              <HighlightText text={track.artist} term={highlight} />
             </span>
           )}
           <span className="shrink-0 text-xs tabular-nums text-text-muted sm:hidden">
@@ -135,7 +139,7 @@ export default function TrackRowBase({
 
       {showAlbum && (
         <span className="hidden truncate text-xs text-text-muted lg:block" title={track.album}>
-          {track.album}
+          <HighlightText text={track.album} term={highlight} />
         </span>
       )}
 

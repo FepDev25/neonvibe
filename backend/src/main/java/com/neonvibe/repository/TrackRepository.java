@@ -70,12 +70,16 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
     long countByIsAvailableTrue();
 
     /**
-     * Combined search supporting q (title) plus optional artist/album/genre/year
-     * filters. All text filters are case-insensitive contains.
+     * Combined search supporting q (title, artist or album) plus optional
+     * artist/album/genre/year filters. All text filters are case-insensitive
+     * contains.
      */
     @Query("""
             SELECT t FROM Track t
-            WHERE (:#{#q} IS NULL OR :#{#q} = '' OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#q}, '%')))
+            WHERE (:#{#q} IS NULL OR :#{#q} = ''
+                   OR LOWER(t.title) LIKE LOWER(CONCAT('%', :#{#q}, '%'))
+                   OR LOWER(t.artist) LIKE LOWER(CONCAT('%', :#{#q}, '%'))
+                   OR LOWER(t.album) LIKE LOWER(CONCAT('%', :#{#q}, '%')))
               AND (:#{#artist} IS NULL OR :#{#artist} = '' OR LOWER(t.artist) LIKE LOWER(CONCAT('%', :#{#artist}, '%')))
               AND (:#{#album} IS NULL OR :#{#album} = '' OR LOWER(t.album) LIKE LOWER(CONCAT('%', :#{#album}, '%')))
               AND (:#{#genre} IS NULL OR :#{#genre} = '' OR LOWER(t.genre) LIKE LOWER(CONCAT('%', :#{#genre}, '%')))

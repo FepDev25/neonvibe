@@ -59,7 +59,7 @@ public class AlbumService {
             // Both filters applied, not just the text one.
             page = albumRepository.searchByNameAndArtist(q.trim(), artist.trim(), sorted);
         } else if (hasText) {
-            page = albumRepository.findByNameContainingIgnoreCase(q.trim(), sorted);
+            page = albumRepository.searchByText(q.trim(), sorted);
         } else if (hasArtist) {
             page = albumRepository.findByArtistContainingIgnoreCase(artist.trim(), sorted);
         } else {
