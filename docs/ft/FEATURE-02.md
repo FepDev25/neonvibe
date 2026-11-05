@@ -84,7 +84,7 @@ quiere impacto visible rápido, pero necesita B0.
 | B3 | Hecho | 2026-11-05 | Home editorial con continuar/recientes/añadidos/playlists/top artistas, sin marketing; estado vacío con Escanear/Subir (admin); iniciales en placeholders de artista y playlist y CTA en playlists vacías. Recientes por `createdAt,desc` (Pageable ya probado en backend). Verificación estática: 326 tests y build verdes. Pasada visual pendiente. |
 | B4 | Hecho | 2026-11-05 | `PageHero` compartido en álbum/artista/playlist, Play/Shuffle primarios, admin y secundarias en `⋯`, "Añadir canciones" con buscador, undo al quitar pistas y Play/Shuffle en Favoritos. Base de toast/undo creada para B7. Verificación estática: 307 tests y build verdes. Pasada visual pendiente. |
 | B5 | Hecho | 2026-11-05 | Filas mobile de 2 líneas con cover 44, duración y un solo `⋯`; filas desktop con nº, cover, título/artista, álbum y duración; acciones (incluida metadata admin) en sheet; reorder con acciones en sheet; `LoadMore` centrado; contenido a 1440 px, grids de 6/8 columnas; `h1` de biblioteca en una línea. Verificación estática: 319 tests y build verdes. Pasada visual pendiente. |
-| B6 | Pendiente | — | — |
+| B6 | Hecho | 2026-11-05 | Búsqueda con autofocus, recientes (máx. 5) y sugerencias, top result, contadores por sección, resaltado y portadas; `q` de pistas ampliado a título/artista/álbum y de álbumes a nombre/artista. Verificación: 336 tests frontend, 573 backend y builds verdes. Pasada visual pendiente. |
 | B7 | Pendiente | — | — |
 | B8 | Pendiente | — | — |
 | B9 | Pendiente | — | — |
@@ -453,21 +453,21 @@ su música.
 
 **Tareas**
 
-- [ ] Autofocus del input al entrar en `/search`.
-- [ ] Búsquedas recientes (localStorage, máx. 5) + sugerencias/chips.
-- [ ] "Top result" con portada y contador por sección.
-- [ ] Resaltar el término en resultados.
-- [ ] Portada/álbum en las filas de resultados.
-- [ ] Backend: ampliar `q` de pistas a `title/artist/album` y de álbumes a
+- [x] Autofocus del input al entrar en `/search`.
+- [x] Búsquedas recientes (localStorage, máx. 5) + sugerencias/chips.
+- [x] "Top result" con portada y contador por sección.
+- [x] Resaltar el término en resultados.
+- [x] Portada/álbum en las filas de resultados.
+- [x] Backend: ampliar `q` de pistas a `title/artist/album` y de álbumes a
   `name/artist` (o pasar `artist=` desde el frontend). Tests de repositorio.
-- [ ] Estado vacío con CTA (coordinado con B7).
+- [x] Estado vacío con CTA (coordinado con B7).
 
 **Criterios de aceptación**
 
-- [ ] Buscar un artista devuelve top result + álbumes + pistas.
-- [ ] Entrar en `/search` deja el cursor en el input.
-- [ ] Hay recientes y se pueden borrar.
-- [ ] Tests de backend para el nuevo `q`; tests de `SearchPage`.
+- [x] Buscar un artista devuelve top result + álbumes + pistas.
+- [x] Entrar en `/search` deja el cursor en el input.
+- [x] Hay recientes y se pueden borrar.
+- [x] Tests de backend para el nuevo `q`; tests de `SearchPage`.
 
 **Archivos probables:** `pages/SearchPage.tsx`,
 `backend/.../repository/TrackRepository.java`, `AlbumRepository.java`,
