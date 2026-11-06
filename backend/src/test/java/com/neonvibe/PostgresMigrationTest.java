@@ -1,7 +1,10 @@
 package com.neonvibe;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -12,6 +15,8 @@ import com.neonvibe.repository.TrackRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -24,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Real-PostgreSQL smoke test: boots the full application against a throwaway
- * Postgres container so Flyway applies V1..V11 and Hibernate's
+ * Postgres container so Flyway applies every migration and Hibernate's
  * {@code ddl-auto: validate} proves the entities match the migrated schema.
  *
  * <p>H2 in PostgreSQL mode cannot catch dialect-level mismatches (JSON, native
@@ -60,12 +65,26 @@ class PostgresMigrationTest {
     private PlayHistoryRepository playHistoryRepository;
 
     @Test
-    void flyway_appliesAllMigrationsSuccessfully() {
+    void flyway_appliesAllMigrationsSuccessfully() throws IOException {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT version, success FROM flyway_schema_history WHERE version IS NOT NULL ORDER BY installed_rank");
 
-        assertThat(rows).hasSize(11);
+        // Compare against the scripts on the classpath instead of a hardcoded count,
+        // so adding a new Vn__*.sql does not break this test.
+        assertThat(rows).extracting(row -> row.get("version"))
+                .containsExactlyElementsOf(expectedMigrationVersions());
         assertThat(rows).allSatisfy(row -> assertThat(row.get("success")).isEqualTo(true));
+    }
+
+    private static List<String> expectedMigrationVersions() throws IOException {
+        Resource[] scripts = new PathMatchingResourcePatternResolver()
+                .getResources("classpath*:db/migration/V*.sql");
+
+        return Arrays.stream(scripts)
+                .map(Resource::getFilename)
+                .map(name -> name.substring(1, name.indexOf("__")))
+                .sorted(Comparator.comparingInt(Integer::parseInt))
+                .toList();
     }
 
     @Test
