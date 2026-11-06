@@ -63,8 +63,11 @@ class LibrarySyncServiceTest {
     @Test
     void upsert_newTrack_createsArtistAndAlbumAndSetsFields() {
         when(trackRepository.findByFilePath(path.toString())).thenReturn(Optional.empty());
-        when(artistRepository.findByName("Artist")).thenReturn(Optional.empty());
-        when(albumRepository.findByNameAndArtistNullSafe("Album", "Artist")).thenReturn(Optional.empty());
+        when(artistRepository.findByName("Artist")).thenReturn(
+                Optional.empty(), Optional.of(Artist.builder().id(2L).name("Artist").build()));
+        when(albumRepository.findByNameAndArtistNullSafe("Album", "Artist")).thenReturn(
+                Optional.empty(),
+                Optional.of(Album.builder().id(3L).name("Album").artist("Artist").build()));
 
         Track saved = service.upsert(path, metadata("Artist", "Album"), null);
 
@@ -111,21 +114,41 @@ class LibrarySyncServiceTest {
     }
 
     @Test
-    void upsert_withoutArtistOrAlbum_leavesEntitiesNull() {
+    void upsert_withoutArtistOrAlbum_assignsTheGlobalSinglesAlbum() {
         when(trackRepository.findByFilePath(path.toString())).thenReturn(Optional.empty());
+        Album singles = Album.builder().id(9L).name("Singles").build();
+        when(albumRepository.findByNameAndArtistNullSafe("Singles", null)).thenReturn(Optional.of(singles));
 
         Track saved = service.upsert(path, metadata(null, null), null);
 
         assertThat(saved.getArtistEntity()).isNull();
-        assertThat(saved.getAlbumEntity()).isNull();
+        assertThat(saved.getAlbum()).isEqualTo("Singles");
+        assertThat(saved.getAlbumEntity()).isSameAs(singles);
         verifyNoInteractions(artistRepository);
+        verify(albumRepository, never()).save(any());
+    }
+
+    @Test
+    void upsert_legacySingleTag_normalizesToGlobalSingles() {
+        when(trackRepository.findByFilePath(path.toString())).thenReturn(Optional.empty());
+        when(artistRepository.findByName("Artist")).thenReturn(
+                Optional.empty(), Optional.of(Artist.builder().name("Artist").build()));
+        Album singles = Album.builder().id(9L).name("Singles").build();
+        when(albumRepository.findByNameAndArtistNullSafe("Singles", null)).thenReturn(Optional.of(singles));
+
+        Track saved = service.upsert(path, metadata("Artist", "Single"), null);
+
+        assertThat(saved.getAlbum()).isEqualTo("Singles");
+        assertThat(saved.getAlbumEntity()).isSameAs(singles);
     }
 
     @Test
     void upsert_withEmbeddedArt_cachesCoverAndSetsPath() {
         when(trackRepository.findByFilePath(path.toString())).thenReturn(Optional.empty());
-        when(artistRepository.findByName(anyString())).thenReturn(Optional.empty());
-        when(albumRepository.findByNameAndArtistNullSafe(anyString(), anyString())).thenReturn(Optional.empty());
+        when(artistRepository.findByName(anyString())).thenReturn(
+                Optional.empty(), Optional.of(Artist.builder().name("Artist").build()));
+        when(albumRepository.findByNameAndArtistNullSafe(anyString(), anyString())).thenReturn(
+                Optional.empty(), Optional.of(Album.builder().name("Album").build()));
         Path coverFile = Path.of("/covers/embedded/42.jpg");
         when(coverArtStore.fileFor("embedded", 42L, "jpg")).thenReturn(coverFile);
 
@@ -144,8 +167,10 @@ class LibrarySyncServiceTest {
         existing.setId(7L);
         existing.setCoverArtPath("/covers/embedded/7.jpg");
         when(trackRepository.findByFilePath(path.toString())).thenReturn(Optional.of(existing));
-        when(artistRepository.findByName(anyString())).thenReturn(Optional.empty());
-        when(albumRepository.findByNameAndArtistNullSafe(anyString(), anyString())).thenReturn(Optional.empty());
+        when(artistRepository.findByName(anyString())).thenReturn(
+                Optional.empty(), Optional.of(Artist.builder().name("Artist").build()));
+        when(albumRepository.findByNameAndArtistNullSafe(anyString(), anyString())).thenReturn(
+                Optional.empty(), Optional.of(Album.builder().name("Album").build()));
 
         service.upsert(path, metadata("Artist", "Album"), new EmbeddedArt(new byte[]{9}, "png"));
 
@@ -153,10 +178,37 @@ class LibrarySyncServiceTest {
     }
 
     @Test
+    void resolveArtist_whenAConcurrentIngestWins_reusesTheExistingRow() {
+        Artist existing = Artist.builder().id(9L).name("Peggy Gou").build();
+        when(artistRepository.findByName("Peggy Gou"))
+                .thenReturn(Optional.empty(), Optional.of(existing));
+
+        Artist resolved = service.resolveArtist("Peggy Gou");
+
+        assertThat(resolved).isSameAs(existing);
+        verify(artistRepository).insertIfAbsent("Peggy Gou");
+        verify(artistRepository, never()).save(any());
+    }
+
+    @Test
+    void resolveAlbum_whenAConcurrentIngestWins_reusesTheExistingRow() {
+        Album existing = Album.builder().id(9L).name("Singles").build();
+        when(albumRepository.findByNameAndArtistNullSafe("Singles", null))
+                .thenReturn(Optional.empty(), Optional.of(existing));
+
+        Album resolved = service.resolveAlbum(null, "Peggy Gou", 2024, null);
+
+        assertThat(resolved).isSameAs(existing);
+        verify(albumRepository).insertIfAbsent("Singles", null, 2024, null);
+    }
+
+    @Test
     void drainNewTrackIds_clearsAndIsUnmodifiable() {
         when(trackRepository.findByFilePath(path.toString())).thenReturn(Optional.empty());
-        when(artistRepository.findByName(anyString())).thenReturn(Optional.empty());
-        when(albumRepository.findByNameAndArtistNullSafe(anyString(), anyString())).thenReturn(Optional.empty());
+        when(artistRepository.findByName(anyString())).thenReturn(
+                Optional.empty(), Optional.of(Artist.builder().name("Artist").build()));
+        when(albumRepository.findByNameAndArtistNullSafe(anyString(), anyString())).thenReturn(
+                Optional.empty(), Optional.of(Album.builder().name("Album").build()));
         service.upsert(path, metadata("Artist", "Album"), null);
 
         assertThat(service.drainNewTrackIds()).containsExactly(42L);

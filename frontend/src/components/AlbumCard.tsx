@@ -19,6 +19,10 @@ interface AlbumCardProps {
  * nested button inside the anchor, which would be invalid HTML).
  */
 export default function AlbumCard({ album, highlight }: AlbumCardProps) {
+  // Global loose-track collection: no album artist, but the card explains it.
+  const isSingles = album.name.toLowerCase() === 'singles' && !album.artist;
+  const artistLabel = isSingles ? 'Varios artistas' : album.artist;
+
   return (
     <div className="group relative flex flex-col gap-2 rounded-2xl p-2 transition-colors hover:bg-surface-alt">
       <Link to={`/album/${album.id}`} className="flex flex-col gap-2">
@@ -35,7 +39,7 @@ export default function AlbumCard({ album, highlight }: AlbumCardProps) {
             <HighlightText text={album.name} term={highlight} />
           </p>
           <p className="truncate text-xs text-text-muted">
-            <HighlightText text={album.artist} term={highlight} />
+            <HighlightText text={artistLabel} term={highlight} />
           </p>
           <p className="text-[11px] text-text-muted/70">
             {formatTrackCount(album.track_count)}

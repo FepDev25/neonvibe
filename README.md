@@ -14,13 +14,16 @@ NeonVibe es un reproductor de música self-hosted diseñado para quienes tienen 
 - **Vista "Now Playing":** carátula grande, ambiente neón animado, controles y acciones (favorito, añadir a playlist, letras, radio, visualizador, descarga).
 - **Calidad seleccionable:** transcodificación AAC on-demand (Original · 320 · 192 · 128) con caché.
 - **Búsqueda instantánea:** filtros por texto en biblioteca, álbumes y artistas (índices `pg_trgm`).
+- **Ordena cualquier lista:** por título, artista, álbum, duración o año en álbumes, playlists, favoritos, artistas, biblioteca y descargas, con el orden original por defecto.
 - **Estadísticas:** tiempo escuchado, actividad, top de artistas/canciones/álbumes/géneros y por hora.
 - **Notificaciones nativas:** Web Push (VAPID), con aviso al completar un escaneo.
-- **Playlists:** Crea, edita y comparte tus playlists.
+- **Playlists:** Crea, edita y comparte tus playlists. También puedes crear una al vuelo desde el modal «Añadir a playlist» y añadir la canción al instante.
 - **Letras en vivo:** Sincronización con LRCLIB (con caché local).
 - **Carátulas automáticas:** Descarga desde múltiples fuentes (iTunes, MusicBrainz, Last.fm) con caché local y subida manual.
 - **Edición de metadata:** Corrige títulos, artistas, álbumes, años, géneros y nº de pista/disco desde la interfaz; se escribe en los ficheros reales del servidor.
 - **Sube tu música:** Añade canciones o un ZIP desde la interfaz (o deja lotes en una carpeta de entrada) y se organizan solos en la biblioteca.
+- **Singles:** las canciones sin álbum se agrupan en un álbum «Singles», conservando el artista de cada pista y con portada propia.
+- **Importa desde YouTube:** pega un enlace en `/upload` y el servidor descarga el audio con yt-dlp, lo etiqueta y lo guarda en Singles.
 - **Radio por similitud:** Descubre música de tu biblioteca basada en lo que estás escuchando.
 - **Scrobbling:** Integración con Last.fm (conecta tu cuenta desde Ajustes).
 - **Historial:** Página con tus reproducciones recientes.
@@ -103,8 +106,8 @@ cd backend && ./mvnw test        # JUnit 5 + Mockito (+ PostgreSQL vía Testcont
 cd frontend && pnpm test         # Vitest + Testing Library (jsdom)
 ```
 
-El backend tiene **573 tests** (cobertura JaCoCo, build falla por debajo de
-**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **351 tests**. El CI de GitHub
+El backend tiene **622 tests** (cobertura JaCoCo, build falla por debajo de
+**líneas ≥ 82%** y **ramas ≥ 63%**) y el frontend **383 tests**. El CI de GitHub
 Actions ejecuta ambos y empaqueta el JAR.
 
 La **ronda de QA visual (2026-11-05)** está cerrada: los 10 bloques de
@@ -154,6 +157,9 @@ Auth, streaming, playlists, carátulas, letras, scanner real-time, visualizador,
 - [x] Edición de metadata desde la UI (se escribe en los ficheros del servidor)
 - [x] Subida de álbumes/canciones (web upload + carpeta de entrada)
 - [x] Remediación UI/UX de la auditoría visual 2026-11-05 (bloques B0–B9)
+- [x] Álbum «Singles» para canciones sueltas (migración V12)
+- [x] Importación desde YouTube con yt-dlp
+- [x] Crear playlists desde el modal y ordenación de listas (título, artista, álbum, duración, año)
 - [ ] Audiolibros/podcasts y Chromecast/Bluetooth.
 
 ---

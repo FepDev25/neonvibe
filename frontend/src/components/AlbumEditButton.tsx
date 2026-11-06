@@ -18,6 +18,9 @@ interface AlbumEditButtonProps {
 /** Edits album-wide metadata, propagated to every track file of the album. */
 export default function AlbumEditButton({ album }: AlbumEditButtonProps) {
   const queryClient = useQueryClient();
+  // The reserved Singles album cannot be renamed; year/genre still editable.
+  const isSingles = album.name.toLowerCase() === 'singles' && !album.artist;
+  const fields = isSingles ? ALBUM_FIELDS.filter((field) => field.key !== 'name') : ALBUM_FIELDS;
 
   const initial: Record<string, string> = {
     name: album.name ?? '',
@@ -27,11 +30,13 @@ export default function AlbumEditButton({ album }: AlbumEditButtonProps) {
 
   const handleSave = async (values: Record<string, string>) => {
     await updateAlbumMetadata(album.id, {
-      name: values.name.trim(),
+      name: (values.name ?? album.name).trim(),
       year: toNumberOrNull(values.year),
       genre: toTextOrNull(values.genre),
     });
-    await Promise.all([
+    // The edit is committed; a background refresh failure must not look like a
+    // failed save in the dialog.
+    await Promise.allSettled([
       queryClient.invalidateQueries({ queryKey: ['albums'] }),
       queryClient.invalidateQueries({ queryKey: ['album'] }),
       queryClient.invalidateQueries({ queryKey: ['tracks'] }),
@@ -43,7 +48,7 @@ export default function AlbumEditButton({ album }: AlbumEditButtonProps) {
     <MetadataEditButton
       label="Editar álbum"
       title="Editar álbum"
-      fields={ALBUM_FIELDS}
+      fields={fields}
       initial={initial}
       onSave={handleSave}
     />

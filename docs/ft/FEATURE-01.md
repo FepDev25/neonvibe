@@ -1,11 +1,12 @@
 # FEATURE — NeonVibe: confiabilidad del motor web de reproducción
 
 **Fase:** 1 — Diagnóstico profundo y corrección del motor web  
-**Estado:** Especificación para ejecución autónoma con OpenCode `/goal`  
 **Repositorio:** `FepDev25/neonvibe`  
 **Prioridad:** Alta (calidad del núcleo del producto)  
 **Alcance:** Frontend/PWA y contratos de streaming/autenticación del backend estrictamente necesarios para el reproductor.  
 **No es:** una orden de migrar a Android nativo ni de implementar nuevas funciones sociales o de descubrimiento.
+
+**Estado:** Cerrada — motor web implementado, desplegado y validado en Android (2026-11-05)
 
 ## 1. Objetivo del producto
 

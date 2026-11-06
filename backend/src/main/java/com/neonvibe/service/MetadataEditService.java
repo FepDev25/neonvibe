@@ -17,7 +17,9 @@ import com.neonvibe.repository.AlbumRepository;
 import com.neonvibe.repository.ArtistRepository;
 import com.neonvibe.repository.TrackRepository;
 import com.neonvibe.scanner.AudioTagWriter;
+import com.neonvibe.scanner.LibraryCatalog;
 import com.neonvibe.scanner.LibrarySyncService;
+import com.neonvibe.scanner.RecentWrites;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -43,19 +45,22 @@ public class MetadataEditService {
     private final AudioTagWriter tagWriter;
     private final LibrarySyncService librarySyncService;
     private final TrackMapper trackMapper;
+    private final RecentWrites recentWrites;
 
     public MetadataEditService(TrackRepository trackRepository,
                                AlbumRepository albumRepository,
                                ArtistRepository artistRepository,
                                AudioTagWriter tagWriter,
                                LibrarySyncService librarySyncService,
-                               TrackMapper trackMapper) {
+                               TrackMapper trackMapper,
+                               RecentWrites recentWrites) {
         this.trackRepository = trackRepository;
         this.albumRepository = albumRepository;
         this.artistRepository = artistRepository;
         this.tagWriter = tagWriter;
         this.librarySyncService = librarySyncService;
         this.trackMapper = trackMapper;
+        this.recentWrites = recentWrites;
     }
 
     /** Outcome of a propagation edit: how many files were written vs skipped. */
@@ -67,10 +72,13 @@ public class MetadataEditService {
         Track track = trackRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Track not found: " + id));
 
-        writeTags(track, request.title(), request.artist(), request.album(),
+        // Clearing the album tag means "this is a loose track": it belongs to the
+        // reserved Singles album both in the file and in the database.
+        String albumName = LibraryCatalog.normalizeAlbumName(request.album());
+        writeTags(track, request.title(), request.artist(), albumName,
                 request.albumArtist(), request.year(), request.genre(),
                 request.trackNumber(), request.discNumber());
-        applyTrackFields(track, request.title(), request.artist(), request.album(),
+        applyTrackFields(track, request.title(), request.artist(), albumName,
                 request.albumArtist(), request.year(), request.genre(),
                 request.trackNumber(), request.discNumber());
 
@@ -82,9 +90,22 @@ public class MetadataEditService {
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Album not found: " + id));
 
-        String newName = request.name().trim();
+        // Normalizing here keeps "single"/"singles" from slipping past the
+        // reserved-name guard or creating a case-variant duplicate.
+        String newName = LibraryCatalog.normalizeAlbumName(request.name().trim());
         Integer year = request.year();
         String genre = trimToNull(request.genre());
+
+        boolean editingSingles = LibraryCatalog.isReservedSingles(album.getName(), album.getArtist());
+        boolean renamingToSingles = LibraryCatalog.isSingles(newName);
+        if (editingSingles && !renamingToSingles) {
+            throw new IllegalArgumentException(
+                    "El álbum «Singles» está reservado para canciones sueltas y no se puede renombrar");
+        }
+        if (!editingSingles && renamingToSingles) {
+            throw new IllegalArgumentException(
+                    "El nombre «Singles» está reservado para canciones sueltas");
+        }
 
         boolean renamed = !album.getName().equals(newName);
         Album target = album;
@@ -184,7 +205,7 @@ public class MetadataEditService {
                                   String albumArtist, Integer year, String genre,
                                   Integer trackNumber, Integer discNumber) {
         String artistName = trimToNull(artist);
-        String albumName = trimToNull(album);
+        String albumName = LibraryCatalog.normalizeAlbumName(album);
         String genreName = trimToNull(genre);
 
         track.setTitle(title);
@@ -203,7 +224,11 @@ public class MetadataEditService {
     private void writeTags(Track track, String title, String artist, String album,
                            String albumArtist, Integer year, String genre,
                            Integer trackNumber, Integer discNumber) {
-        tagWriter.write(Path.of(track.getFilePath()), new AudioTagWriter.TagValues(
+        Path file = Path.of(track.getFilePath());
+        // Tell the watcher this MODIFY is ours: re-ingesting it concurrently
+        // would race with this transaction on the same artist/album/track rows.
+        recentWrites.mark(file);
+        tagWriter.write(file, new AudioTagWriter.TagValues(
                 title, artist, album, albumArtist, year, genre, trackNumber, discNumber));
     }
 

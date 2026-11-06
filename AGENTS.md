@@ -18,10 +18,15 @@
   B0–B9 de `docs/ft/FEATURE-02.md` se implementaron y el propietario los validó
   en producción, en PC y mobile. Pendiente audiolibros/podcasts y Chromecast
   (ver §11). El motor de reproducción web se validó en Android el 2026-11-05
-  con la app en segundo plano y pantalla apagada.
-- **Testing/CI (2026-11-05):** backend con **573 tests** (`./mvnw test`) y JaCoCo
+  con la app en segundo plano y pantalla apagada. En 2026-11-06 se añadieron el
+  **álbum reservado «Singles»** (migración V12) y la **importación desde
+  YouTube con yt-dlp** (`/upload`, solo admin); ver `docs/ft/FEATURE-03.md`.
+  También se añadieron la **creación inline de playlists** y la **ordenación de
+  listas** (`docs/ft/FEATURE-04.md`), y se corrigió el falso error al editar
+  metadata (recarga posterior + carrera con el watcher).
+- **Testing/CI (2026-11-06):** backend con **622 tests** (`./mvnw test`) y JaCoCo
   (umbral líneas ≥ 82%, ramas ≥ 63%), incluido un smoke test de PostgreSQL con
-  Testcontainers; frontend con **351 tests** (Vitest + Testing Library, incluida
+  Testcontainers; frontend con **383 tests** (Vitest + Testing Library, incluida
   la suite del motor de reproducción y la remediación UI/UX); CI en
   `.github/workflows/ci.yml`. Ver §14.
 
@@ -175,6 +180,11 @@ neonvibe/
 **Album**
 - id, name, artist, year, genre, cover_art_path, cover_fetched_at, created_at
 - Unique: (name, artist)
+- **Reservado:** `name='Singles'` con `artist=NULL` agrupa todas las canciones
+  sueltas (índice único parcial `uq_albums_singles`, V12). Cada pista conserva su
+  artista en `tracks.artist`; la normalización vive en `scanner/LibraryCatalog`
+  (tag vacío o `Single`/`Singles` ⇒ «Singles»). No hereda portada de sus pistas
+  (V13): cada single muestra su propia carátula o ninguna
 
 **Artist**
 - id, name (único), cover_art_path, cover_fetched_at, created_at
@@ -288,6 +298,11 @@ Scanner (solo admin, vía `ADMIN_EMAILS`):
 - `POST /admin/upload` — Sube canciones o un ZIP (multipart `files`); se escriben
   en staging, se organizan en `<Artista>/<Álbum>/` y se ingieren
 
+YouTube (solo admin; requiere `yt-dlp` + runtime JS, ver `docs/DEPLOY.md`):
+- `GET /admin/upload/youtube/status` — Disponibilidad, versión, runtime y aviso
+- `POST /admin/upload/youtube` — `{url}` → `202` con un job asíncrono
+- `GET /admin/upload/youtube/jobs/:id` — Estado del job (polling de la UI)
+
 Stats (por usuario):
 - `GET /stats/overview?range=` — Totales (tiempo, plays, completadas) y distintos
 - `GET /stats/top?type=&range=&limit=` — Top tracks/albums/artists/genres
@@ -367,6 +382,7 @@ ignore sus propios ecos. Ver `websocket/PlayerWebSocketController.java` y
 | Carátulas | iTunes, MusicBrainz, Last.fm | Fallback cascade (más artwork embebido y placeholder) |
 | Letras | LRCLIB | Cache local (Genius no implementado) |
 | Scrobbling | Last.fm API | Configurable por usuario |
+| Importación de audio | `yt-dlp` + Deno | Solo admin; un vídeo por importación, MP3 a «Singles» |
 | Auth | Google Identity Services + verificación `id_token` | No se usa `spring-security-oauth2-client`; se valida el `aud` con `GOOGLE_CLIENT_ID` |
 
 ---
@@ -421,6 +437,20 @@ neonvibe:
     max-cache-mb: ${TRANSCODE_MAX_CACHE_MB:2048}
     max-concurrent: ${TRANSCODE_MAX_CONCURRENT:1}
     timeout-seconds: ${TRANSCODE_TIMEOUT:300}
+  # Importación desde YouTube (admin). Requiere yt-dlp + runtime JS (Deno);
+  # si faltan, la UI lo indica y el resto de la app sigue funcionando.
+  ytdlp:
+    enabled: ${YTDLP_ENABLED:true}
+    binary: ${YTDLP_PATH:yt-dlp}
+    ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+    js-runtime: ${YTDLP_JS_RUNTIME:deno}
+    audio-format: ${YTDLP_AUDIO_FORMAT:mp3}
+    audio-quality: ${YTDLP_AUDIO_QUALITY:0}
+    cookies-file: ${YTDLP_COOKIES:}
+    timeout-seconds: ${YTDLP_TIMEOUT:300}
+    max-duration-seconds: ${YTDLP_MAX_DURATION:1800}
+    max-concurrent: ${YTDLP_MAX_CONCURRENT:1}
+    staging-path: ${YTDLP_STAGING:}
   frontend-base: ${FRONTEND_BASE}
   websocket:
     allowed-origins: ${WS_ORIGINS:"*"}        # Restringir en prod
@@ -470,6 +500,9 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 ### v0.4 (en curso)
 - [x] Edición de metadata desde la UI (pistas/álbumes/artistas), escribiendo en los ficheros
 - [x] Subida de álbumes/canciones (web upload + carpeta de entrada vigilada)
+- [x] Álbum «Singles» para canciones sueltas (migración V12)
+- [x] Importación desde YouTube con yt-dlp (`/upload`)
+- [x] Crear playlist desde el modal «Añadir a playlist» y ordenación de listas
 - [ ] Audiolibros / podcasts
 - [ ] Chromecast / Bluetooth audio routing
 - Social **descartado** (proyecto de un solo usuario).
@@ -502,14 +535,14 @@ desde `/opt/neonvibe/neonvibe.env` (ver `docs/DEPLOY.md`).
 
 ## 14. Testing y CI
 
-- **Backend:** `cd backend && ./mvnw test` (**573 tests**). JUnit 5 + Mockito +
+- **Backend:** `cd backend && ./mvnw test` (**622 tests**). JUnit 5 + Mockito +
   Spring Boot Test. Incluye `PostgresMigrationTest` (Testcontainers) que arranca
   un PostgreSQL real, aplica Flyway y verifica `ddl-auto: validate`; se **salta
   solo** si no hay Docker.
 - **Cobertura:** JaCoCo genera `backend/target/site/jacoco` (HTML + CSV/XML) y el
   build **falla** por debajo de **líneas ≥ 82%** y **ramas ≥ 63%**. Para subir el
   umbral, editar `jacoco-maven-plugin` en `backend/pom.xml`.
-- **Frontend:** `cd frontend && pnpm test` (**351 tests**, Vitest + Testing Library sobre jsdom).
+- **Frontend:** `cd frontend && pnpm test` (**383 tests**, Vitest + Testing Library sobre jsdom).
   `pnpm test:coverage` para el reporte. `pnpm build` hace el typecheck (`tsc -b`).
 - **Fixtures de audio:** `backend/src/test/resources/audio/` contiene clips MP3
   cortos con tags ID3 y artwork embebido para probar `JAudioTaggerMetadataExtractor`.

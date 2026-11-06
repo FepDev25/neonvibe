@@ -9,6 +9,8 @@ export interface TrackFilters {
   year?: number;
   page?: number;
   size?: number;
+  /** Spring Pageable sort, e.g. `title,asc` (the backend honors it). */
+  sort?: string;
 }
 
 export interface AlbumFilters {

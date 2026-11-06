@@ -24,6 +24,7 @@ import com.neonvibe.domain.Track;
 import com.neonvibe.service.CoverArtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -54,7 +55,6 @@ public class IngestService {
     private static final long MAX_UNCOMPRESSED_BYTES = 4L * 1024 * 1024 * 1024; // 4 GiB
     private static final int MAX_ZIP_ENTRIES = 5000;
     private static final String UNKNOWN_ARTIST = "Unknown Artist";
-    private static final String UNKNOWN_ALBUM = "Unknown Album";
 
     private final ScannerConfig config;
     private final MetadataExtractor metadataExtractor;
@@ -140,6 +140,16 @@ public class IngestService {
         return cleaned.isEmpty() ? "upload" : cleaned;
     }
 
+    /**
+     * Ingests a single, already-tagged audio file and returns the persisted
+     * track. Used by importers that prepare the file themselves (YouTube);
+     * the regular upload/drop-folder paths keep using {@link #ingestUpload} and
+     * {@link #ingestIncomingFolder}.
+     */
+    public Track ingestSingle(Path source) throws IOException {
+        return ingestFile(source);
+    }
+
     // ---- internals ----
 
     private IngestResult ingestTree(Path root) {
@@ -164,14 +174,12 @@ public class IngestService {
         int processed = 0;
         int failed = 0;
         List<String> errors = new ArrayList<>();
-        Map<Path, Long> albumByDir = new HashMap<>();
+        Map<Path, Track> trackByDir = new HashMap<>();
 
         for (Path file : audioFiles) {
             try {
-                Long albumId = ingestFile(file);
-                if (albumId != null) {
-                    albumByDir.put(file.getParent(), albumId);
-                }
+                Track track = ingestFile(file);
+                trackByDir.put(file.getParent(), track);
                 processed++;
             } catch (Exception ex) {
                 failed++;
@@ -182,15 +190,24 @@ public class IngestService {
             }
         }
 
-        // Apply sidecar covers to the album the folder's tracks belong to.
+        // Apply sidecar covers to the album the folder's tracks belong to. For
+        // loose tracks (the global Singles album) the image belongs to the track:
+        // otherwise every single upload would replace the collection cover.
         for (Map.Entry<Path, Path> entry : coversByDir.entrySet()) {
-            Long albumId = albumByDir.get(entry.getKey());
-            if (albumId == null) {
+            Track track = trackByDir.get(entry.getKey());
+            if (track == null) {
                 continue;
             }
             try {
                 Path cover = entry.getValue();
-                coverArtService.saveManualAlbum(albumId, Files.readAllBytes(cover), contentTypeOf(cover));
+                byte[] bytes = Files.readAllBytes(cover);
+                String contentType = contentTypeOf(cover);
+                if (LibraryCatalog.isSingles(track.getAlbum())) {
+                    coverArtService.saveManualTrack(track.getId(), bytes, contentType);
+                } else if (track.getAlbumEntity() != null) {
+                    coverArtService.saveManualAlbum(
+                            track.getAlbumEntity().getId(), bytes, contentType);
+                }
             } catch (Exception ex) {
                 log.warn("Could not apply sidecar cover {}: {}", entry.getValue(), ex.getMessage());
             }
@@ -199,8 +216,8 @@ public class IngestService {
         return new IngestResult(processed, failed, errors);
     }
 
-    /** Moves the file into the library and upserts it; returns its album id. */
-    private Long ingestFile(Path source) throws IOException {
+    /** Moves the file into the library and upserts it; returns the persisted track. */
+    private Track ingestFile(Path source) throws IOException {
         MetadataExtractor.ExtractedFile extracted = metadataExtractor.extractFile(source);
         MusicMetadata meta = extracted.metadata();
 
@@ -208,8 +225,33 @@ public class IngestService {
         Files.createDirectories(destination.getParent());
         Path finalPath = moveIntoLibrary(source, destination);
 
-        Track track = librarySyncService.upsert(finalPath, meta, extracted.embeddedArt());
-        return track.getAlbumEntity() != null ? track.getAlbumEntity().getId() : null;
+        return upsertWithRetry(finalPath, meta, extracted.embeddedArt());
+    }
+
+    /**
+     * Retries a single upsert when another ingestion (the watcher seeing the file
+     * we just moved, or a concurrent scan) wins the unique {@code file_path} race.
+     * Each attempt runs in its own transaction, so a rolled-back attempt leaves
+     * no partial state; artist/album creation itself is idempotent.
+     */
+    private Track upsertWithRetry(Path path, MusicMetadata meta, EmbeddedArt art) {
+        DataIntegrityViolationException last = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                return librarySyncService.upsert(path, meta, art);
+            } catch (DataIntegrityViolationException ex) {
+                last = ex;
+                log.debug("Concurrent ingest for {}; retrying ({}/3)", path, attempt);
+                try {
+                    Thread.sleep(50L * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+        throw last != null ? last
+                : new IllegalStateException("Interrupted while ingesting " + path);
     }
 
     /**
@@ -244,7 +286,9 @@ public class IngestService {
 
     private Path destinationFor(MusicMetadata meta, String originalName) {
         String artist = sanitize(firstNonBlank(meta.albumArtist(), meta.artist(), UNKNOWN_ARTIST));
-        String album = sanitize(firstNonBlank(meta.album(), UNKNOWN_ALBUM));
+        // Loose tracks live in <artist>/Singles/ — the same reserved album the
+        // DB assigns, so the folder and the entity never disagree.
+        String album = sanitize(LibraryCatalog.normalizeAlbumName(meta.album()));
         Path dir = config.primaryRoot().resolve(artist).resolve(album);
         return unique(dir.resolve(sanitizeFileName(originalName)));
     }

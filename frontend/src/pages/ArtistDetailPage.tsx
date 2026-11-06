@@ -17,6 +17,8 @@ import HeroMenu from '@/components/HeroMenu';
 import Skeleton from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import Button from '@/components/Button';
+import TrackSortSelect from '@/components/TrackSortSelect';
+import { sortTracks, type TrackSortKey } from '@/utils/trackSort';
 import { formatTrackCount } from '@/utils/format';
 import { initials } from '@/utils/initials';
 
@@ -31,8 +33,10 @@ export default function ArtistDetailPage() {
   const tracksQuery = useArtistTracks(artistId);
   const queryClient = useQueryClient();
   const [coverVersion, setCoverVersion] = useState<number | undefined>(undefined);
+  const [sort, setSort] = useState<TrackSortKey>('default');
   const tracks = tracksQuery.data ?? [];
-  const queue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
+  const sortedTracks = useMemo(() => sortTracks(tracks, sort), [tracks, sort]);
+  const queue = useMemo(() => tracksToPlayerQueue(sortedTracks), [sortedTracks]);
 
   const handleCoverUploaded = () => {
     void queryClient.invalidateQueries({ queryKey: ['artist', artistId] });
@@ -102,7 +106,7 @@ export default function ArtistDetailPage() {
         actions={<CollectionActions queue={queue} />}
         menu={
           <HeroMenu label="Acciones del artista">
-            {tracks.length > 0 && <RadioButton trackId={tracks[0].id} />}
+            {sortedTracks.length > 0 && <RadioButton trackId={sortedTracks[0].id} />}
             <CoverUploadButton
               onUpload={(file) => uploadArtistCover(artist.id, file)}
               onUploaded={handleCoverUploaded}
@@ -125,9 +129,20 @@ export default function ArtistDetailPage() {
 
       {tracks.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-text">Canciones</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-bold text-text">Canciones</h2>
+            {tracks.length > 1 && (
+              <TrackSortSelect
+                id="artist-track-sort"
+                value={sort}
+                onChange={setSort}
+                includeAlbum
+                defaultLabel="Orden del artista"
+              />
+            )}
+          </div>
           <div className="flex flex-col gap-1">
-            {tracks.map((track, index) => (
+            {sortedTracks.map((track, index) => (
               <TrackRow
                 key={track.id}
                 track={track}

@@ -121,6 +121,20 @@ neonvibe:
     max-cache-mb: ${TRANSCODE_MAX_CACHE_MB:2048}
     max-concurrent: ${TRANSCODE_MAX_CONCURRENT:1}
     timeout-seconds: ${TRANSCODE_TIMEOUT:300}
+  # Importación desde YouTube (solo admin). Requiere el binario yt-dlp y, para
+  # YouTube, un runtime JavaScript externo (Deno por defecto).
+  ytdlp:
+    enabled: ${YTDLP_ENABLED:true}
+    binary: ${YTDLP_PATH:yt-dlp}
+    ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+    js-runtime: ${YTDLP_JS_RUNTIME:deno}
+    audio-format: ${YTDLP_AUDIO_FORMAT:mp3}
+    audio-quality: ${YTDLP_AUDIO_QUALITY:0}
+    cookies-file: ${YTDLP_COOKIES:}
+    timeout-seconds: ${YTDLP_TIMEOUT:300}
+    max-duration-seconds: ${YTDLP_MAX_DURATION:1800}
+    max-concurrent: ${YTDLP_MAX_CONCURRENT:1}
+    staging-path: ${YTDLP_STAGING:}
   frontend-base: ${FRONTEND_BASE:http://localhost:5173}
   websocket:
     allowed-origins: "*"

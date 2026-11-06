@@ -61,6 +61,9 @@ neonvibe:
     retry-days: 7
   lyrics:
     cache-path: ${LYRICS_CACHE:/var/lib/neonvibe/lyrics}
+  # Las descargas de YouTube se escriben aquí (se borran al terminar el job).
+  ytdlp:
+    staging-path: ${YTDLP_STAGING:/var/lib/neonvibe/ytdlp}
   lastfm:
     api-key: ${LASTFM_API_KEY:}
     api-secret: ${LASTFM_API_SECRET:}

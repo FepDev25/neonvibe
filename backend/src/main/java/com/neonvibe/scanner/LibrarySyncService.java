@@ -79,7 +79,9 @@ public class LibrarySyncService {
 
         track.setTitle(meta.title());
         track.setArtist(meta.artist());
-        track.setAlbum(meta.album());
+        // Blank/"single"/"singles" tags all materialize as the reserved Singles
+        // album, so the denormalized text and the FK never disagree.
+        track.setAlbum(LibraryCatalog.normalizeAlbumName(meta.album()));
         track.setAlbumArtist(meta.albumArtist());
         track.setYear(meta.year());
         track.setGenre(meta.genre());
@@ -135,33 +137,48 @@ public class LibrarySyncService {
         }
     }
 
-    /** Resolves (or creates) the artist entity for a tag name. Shared with metadata edits. */
+    /**
+     * Resolves (or creates) the artist entity for a tag name. Shared with
+     * metadata edits.
+     *
+     * <p>The insert is idempotent at the database level: a concurrent watcher /
+     * scan / YouTube import may create the same artist between our lookup and our
+     * insert, so {@code ON CONFLICT DO NOTHING} plus a second lookup is used
+     * instead of a plain {@code save} that would abort the transaction.</p>
+     */
     public Artist resolveArtist(String name) {
         if (name == null || name.isBlank()) {
             return null;
         }
         return artistRepository.findByName(name)
                 .orElseGet(() -> {
-                    Artist artist = new Artist();
-                    artist.setName(name);
-                    return artistRepository.save(artist);
+                    artistRepository.insertIfAbsent(name);
+                    return artistRepository.findByName(name)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Could not resolve artist: " + name));
                 });
     }
 
-    /** Resolves (or creates) the album entity for a track's tag values. Shared with metadata edits. */
+    /**
+     * Resolves (or creates) the album entity for a track's tag values. Shared
+     * with metadata edits.
+     *
+     * <p>Blank album tags (and the legacy "Single"/"Singles" values) resolve to
+     * the reserved {@link LibraryCatalog#SINGLES_ALBUM} album, which has no
+     * artist: the singles collection is global and every track keeps its own
+     * artist.</p>
+     */
     public Album resolveAlbum(String name, String artist, Integer year, String genre) {
+        String albumName = LibraryCatalog.normalizeAlbumName(name);
+        String albumArtist = LibraryCatalog.isSingles(albumName) ? null : artist;
         String albumGenre = (genre != null && !genre.isBlank()) ? genre : null;
-        if (name == null || name.isBlank()) {
-            return null;
-        }
-        return albumRepository.findByNameAndArtistNullSafe(name, artist)
+        return albumRepository.findByNameAndArtistNullSafe(albumName, albumArtist)
                 .orElseGet(() -> {
-                    Album album = new Album();
-                    album.setName(name);
-                    album.setArtist(artist);
-                    album.setYear(year);
-                    album.setGenre(albumGenre);
-                    return albumRepository.save(album);
+                    // Same race as resolveArtist: insert-or-ignore, then re-read.
+                    albumRepository.insertIfAbsent(albumName, albumArtist, year, albumGenre);
+                    return albumRepository.findByNameAndArtistNullSafe(albumName, albumArtist)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Could not resolve album: " + albumName));
                 });
     }
 }

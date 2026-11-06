@@ -13,13 +13,17 @@ import com.neonvibe.service.CoverArtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -118,6 +122,42 @@ class IngestServiceTest {
     }
 
     @Test
+    void ingestUpload_retriesWhenAnotherIngestWinsTheTrackRace() throws Exception {
+        doThrow(new DataIntegrityViolationException("duplicate file_path"))
+                .doAnswer(inv -> Track.builder()
+                        .id(1L)
+                        .filePath(inv.<Path>getArgument(0).toString())
+                        .albumEntity(Album.builder().id(42L).name("Album").build())
+                        .build())
+                .when(sync).upsert(any(), any(), any());
+        Path staging = staging();
+        Files.write(staging.resolve("song.mp3"), fixture());
+
+        IngestService.IngestResult result = service.ingestUpload(staging);
+
+        assertThat(result.processed()).isEqualTo(1);
+        verify(sync, times(2)).upsert(any(), any(), any());
+    }
+
+    @Test
+    void ingestUpload_singleCoverIsAppliedToTheTrackNotTheAlbum() throws Exception {
+        doAnswer(inv -> {
+            Path path = inv.getArgument(0);
+            return Track.builder().id(5L).filePath(path.toString()).album("Singles")
+                    .albumEntity(Album.builder().id(42L).name("Singles").build())
+                    .build();
+        }).when(sync).upsert(any(), any(), any());
+        Path staging = staging();
+        Files.write(staging.resolve("song.mp3"), fixture());
+        Files.write(staging.resolve("cover.jpg"), new byte[]{1, 2, 3});
+
+        service.ingestUpload(staging);
+
+        verify(coverArt).saveManualTrack(eq(5L), eq(new byte[]{1, 2, 3}), eq("image/jpeg"));
+        verify(coverArt, never()).saveManualAlbum(anyLong(), any(), any());
+    }
+
+    @Test
     void ingestUpload_ignoresNonCoverImages() throws Exception {
         Path staging = staging();
         Files.write(staging.resolve("song.mp3"), fixture());
@@ -144,6 +184,23 @@ class IngestServiceTest {
         assertThat(result.processed()).isEqualTo(1);
         assertThat(Files.readString(destDir.resolve("song.mp3"))).isEqualTo("existing");
         assertThat(destDir.resolve("song (1).mp3")).exists();
+    }
+
+    @Test
+    void ingestUpload_blankAlbum_landsInArtistsSinglesFolder() throws Exception {
+        MetadataExtractor blankAlbum = mock(MetadataExtractor.class);
+        when(blankAlbum.extractFile(any())).thenReturn(new MetadataExtractor.ExtractedFile(
+                new MusicMetadata("Song", "Artist", null, null, null, null,
+                        null, null, 200, 320, "mp3", "audio/mpeg", false),
+                null));
+        IngestService looseTracks = new IngestService(config, blankAlbum, sync, coverArt);
+        Path staging = staging();
+        Files.write(staging.resolve("song.mp3"), new byte[]{1, 2, 3});
+
+        IngestService.IngestResult result = looseTracks.ingestUpload(staging);
+
+        assertThat(result.processed()).isEqualTo(1);
+        assertThat(tempDir.resolve("Artist").resolve("Singles").resolve("song.mp3")).exists();
     }
 
     @Test

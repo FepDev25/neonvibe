@@ -58,6 +58,25 @@ export function useDeletePlaylist() {
   });
 }
 
+/**
+ * Creates a private playlist and immediately appends a track to it. Used by the
+ * "add to playlist" sheet so the user never has to leave the current view.
+ */
+export function useCreatePlaylistWithTrack() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ name, trackId }: { name: string; trackId: number }) => {
+      const playlist = await createPlaylist({ name, is_public: false });
+      await addTrackToPlaylist(playlist.id, trackId);
+      return playlist;
+    },
+    onSuccess: (playlist) => {
+      qc.invalidateQueries({ queryKey: PLAYLISTS_KEY });
+      qc.invalidateQueries({ queryKey: playlistKey(playlist.id) });
+    },
+  });
+}
+
 export function useAddTrackToPlaylist() {
   const qc = useQueryClient();
   return useMutation({

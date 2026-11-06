@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Download, Trash2 } from 'lucide-react';
@@ -5,7 +6,21 @@ import { useOfflineStore } from '@/offline/offlineStore';
 import Button from '@/components/Button';
 import EmptyState from '@/components/EmptyState';
 import Skeleton from '@/components/Skeleton';
+import SortSelect, { type SortOption } from '@/components/SortSelect';
+import { sortDownloads, type DownloadSortKey } from '@/utils/downloadSort';
 import { formatBytes, formatDateTime } from '@/utils/format';
+
+const SORT_OPTIONS: SortOption[] = [
+  { value: 'default', label: 'Orden predeterminado' },
+  { value: 'title-asc', label: 'Título (A–Z)' },
+  { value: 'title-desc', label: 'Título (Z–A)' },
+  { value: 'artist-asc', label: 'Artista (A–Z)' },
+  { value: 'artist-desc', label: 'Artista (Z–A)' },
+  { value: 'date-desc', label: 'Descarga (reciente)' },
+  { value: 'date-asc', label: 'Descarga (antigua)' },
+  { value: 'size-desc', label: 'Tamaño (mayor)' },
+  { value: 'size-asc', label: 'Tamaño (menor)' },
+];
 
 /**
  * Offline downloads management: lists downloaded tracks with size/date and
@@ -18,7 +33,9 @@ export default function DownloadsPage() {
     queryKey: ['downloads'],
     queryFn: () => useOfflineStore.getState().downloadedTracks(),
   });
+  const [sort, setSort] = useState<DownloadSortKey>('default');
   const records = downloads.data ?? [];
+  const sortedRecords = sortDownloads(records, sort);
   const totalBytes = records.reduce((acc, r) => acc + (r.size ?? 0), 0);
 
   const handleDelete = async (id: number) => {
@@ -55,7 +72,17 @@ export default function DownloadsPage() {
         />
       ) : (
         <div className="flex flex-col gap-1">
-          {records.map((record) => (
+          {records.length > 1 && (
+            <div className="flex justify-end pb-1">
+              <SortSelect
+                id="downloads-sort"
+                value={sort}
+                options={SORT_OPTIONS}
+                onChange={(next) => setSort(next as DownloadSortKey)}
+              />
+            </div>
+          )}
+          {sortedRecords.map((record) => (
             <div
               key={record.id}
               className="flex min-h-[56px] items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-surface-alt"

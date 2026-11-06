@@ -36,8 +36,10 @@ class MusicScannerServiceTest {
     private final ScannerStatus status = new ScannerStatus();
     private final FileWatcherService watcher = mock(FileWatcherService.class);
     private final IngestService ingestService = mock(IngestService.class);
+    private final RecentWrites recentWrites = new RecentWrites();
     private final com.neonvibe.websocket.ScannerWsBridge wsBridge = mock(com.neonvibe.websocket.ScannerWsBridge.class);
-    private final MusicScannerService scanner = new MusicScannerService(config, extractor, sync, status, watcher, ingestService, wsBridge, null);
+    private final MusicScannerService scanner = new MusicScannerService(
+            config, extractor, sync, status, watcher, ingestService, recentWrites, wsBridge, null);
 
     private Path mp3;
     private Path flac;
@@ -78,6 +80,28 @@ class MusicScannerServiceTest {
 
         verify(sync).upsert(eq(mp3), any(MusicMetadata.class), any());
         assertTrue(status.getProcessed() >= 1);
+    }
+
+    @Test
+    void onFileModified_recentlyWrittenFile_isIgnored() {
+        recentWrites.mark(mp3);
+
+        scanner.onFileModified(mp3);
+
+        verify(extractor, never()).extractFile(any());
+        verify(sync, never()).upsert(any(), any(), any());
+    }
+
+    @Test
+    void onFileModified_externalChange_isProcessed() {
+        when(extractor.extractFile(mp3)).thenReturn(new MetadataExtractor.ExtractedFile(
+                new MusicMetadata("T", "A", "Al", null, null,
+                        null, null, null, null, null, "mp3", "audio/mpeg", false),
+                null));
+
+        scanner.onFileModified(mp3);
+
+        verify(sync).upsert(eq(mp3), any(MusicMetadata.class), any());
     }
 
     @Test

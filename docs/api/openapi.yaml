@@ -588,6 +588,54 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UploadResultResponse"
+  /api/v1/admin/upload/youtube:
+    post:
+      tags:
+      - you-tube-import-controller
+      operationId: importVideo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YouTubeImportRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/YouTubeImportJobResponse"
+  /api/v1/admin/upload/youtube/jobs/{jobId}:
+    get:
+      tags:
+      - you-tube-import-controller
+      operationId: job
+      parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/YouTubeImportJobResponse"
+  /api/v1/admin/upload/youtube/status:
+    get:
+      tags:
+      - you-tube-import-controller
+      operationId: status_1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/YouTubeStatusResponse"
   /api/v1/admin/scan:
     post:
       tags:
@@ -2035,6 +2083,66 @@ components:
           type: object
           additionalProperties:
             type: string
+    YouTubeImportRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          maxLength: 2000
+          minLength: 1
+      required:
+      - url
+    YouTubeImportJobResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        state:
+          type: string
+          enum:
+          - QUEUED
+          - DOWNLOADING
+          - TAGGING
+          - INGESTING
+          - SUCCEEDED
+          - FAILED
+        stage:
+          type: string
+        url:
+          type: string
+        title:
+          type: string
+        artist:
+          type: string
+        albumId:
+          type: integer
+          format: int64
+        trackId:
+          type: integer
+          format: int64
+        error:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+    YouTubeStatusResponse:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        available:
+          type: boolean
+        version:
+          type: string
+        jsRuntime:
+          type: string
+        jsRuntimeAvailable:
+          type: boolean
+        message:
+          type: string
   securitySchemes:
     bearer:
       type: http

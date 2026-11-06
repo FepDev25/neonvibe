@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -39,14 +39,19 @@ vi.mock('@/hooks/usePlaylists', () => ({
 vi.mock('@/components/ReorderTrackRow', () => ({
   default: ({
     track,
+    canReorder,
     onRemove,
   }: {
     track: { id: number; title: string };
+    canReorder?: boolean;
     onRemove: (id: number) => void;
   }) => (
-    <button type="button" onClick={() => onRemove(track.id)}>
-      Quitar {track.title}
-    </button>
+    <div>
+      <button type="button" onClick={() => onRemove(track.id)}>
+        Quitar {track.title}
+      </button>
+      {canReorder ? <span>Mover {track.title}</span> : null}
+    </div>
   ),
 }));
 
@@ -141,6 +146,22 @@ describe('PlaylistDetailPage', () => {
         trackIds: [11, 12],
       }),
     );
+  });
+
+  it('only allows reordering in the default order', () => {
+    renderPage();
+
+    expect(screen.getByText('Mover Song A')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Ordenar por'), {
+      target: { value: 'title-desc' },
+    });
+
+    expect(screen.queryByText('Mover Song A')).not.toBeInTheDocument();
+    expect(screen.getByText(/Vuelve a «Orden de la playlist»/)).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('button', { name: /^Quitar Song/ }).map((b) => b.textContent),
+    ).toEqual(['Quitar Song B', 'Quitar Song A']);
   });
 
   it('moves destructive playlist actions into the menu', async () => {

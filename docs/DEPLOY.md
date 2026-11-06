@@ -158,6 +158,33 @@ sudo -u neonvibe mkdir -p /var/lib/neonvibe/incoming
 > **Cloudflare:** el plan free limita cada petición a **100 MB**, así que para
 > lotes grandes (varios FLAC) usa la carpeta de entrada en vez de la subida web.
 
+### Importación desde YouTube (opcional)
+
+La página **`/upload`** puede importar un vídeo de YouTube como single usando
+`yt-dlp` (solo admin). El servidor necesita el binario **y un runtime JavaScript**
+(Deno), porque YouTube lo exige desde yt-dlp 2025.11.12:
+
+```bash
+sudo ./deploy/install-ytdlp.sh
+# comprobar que el usuario del servicio los ve:
+sudo -u neonvibe env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  sh -c 'yt-dlp --version; deno --version | head -1'
+```
+
+El script instala/actualiza `yt-dlp` y `deno` en `/usr/local/bin`, asegura
+`ffmpeg` y crea el staging de descargas `/var/lib/neonvibe/ytdlp` con owner
+`neonvibe`. Si instalas los binarios a mano, crea esa carpeta tú mismo:
+
+```bash
+sudo install -d -m 0755 -o neonvibe -g neonvibe /var/lib/neonvibe/ytdlp
+```
+
+Actualiza `yt-dlp` con `sudo yt-dlp -U` cuando YouTube cambie (no hace falta
+reiniciar el servicio). Las descargas temporales van a `YTDLP_STAGING`
+(`/var/lib/neonvibe/ytdlp`) y se borran al terminar. Si faltan los binarios o la
+carpeta no es escribible, la UI muestra el aviso y el resto de la aplicación
+funciona con normalidad.
+
 ---
 
 ## 6. Secrets — `/opt/neonvibe/neonvibe.env`
@@ -198,6 +225,17 @@ de AAC va a `TRANSCODE_CACHE` (por defecto `/var/lib/neonvibe/transcode`, se cre
 sola). Ajustes opcionales: `TRANSCODE_ENABLED` (default `true`),
 `TRANSCODE_MAX_CACHE_MB` (2048), `TRANSCODE_MAX_CONCURRENT` (1), `FFMPEG_PATH`.
 Si FFmpeg no está disponible, el stream sirve siempre el original.
+
+**Importación desde YouTube:** `YTDLP_STAGING` (temporal de descargas, por
+defecto `/var/lib/neonvibe/ytdlp`), `YTDLP_ENABLED` (`true`), `YTDLP_PATH`,
+`YTDLP_JS_RUNTIME` (`deno`), `YTDLP_AUDIO_FORMAT` (`mp3`),
+`YTDLP_AUDIO_QUALITY` (`0`), `YTDLP_TIMEOUT` (300 s), `YTDLP_MAX_DURATION`
+(1800 s), `YTDLP_MAX_CONCURRENT` (1) y `YTDLP_COOKIES` (exportación Netscape,
+solo para vídeos que exigen sesión). `FFMPEG_PATH` vacío o `ffmpeg` hace que
+yt-dlp busque **ffmpeg y ffprobe** en el `PATH`; una ruta absoluta se pasa como
+`--ffmpeg-location`. Instala los binarios con
+`deploy/install-ytdlp.sh` (ver §5). Si faltan, la UI lo indica y el resto de la
+app sigue funcionando. Detalle: [`docs/ft/FEATURE-03.md`](ft/FEATURE-03.md).
 
 `setup.sh` **genera** `/opt/neonvibe/neonvibe.env` con `JWT_SECRET` y `DB_PASSWORD`
 reales y deja `GOOGLE_CLIENT_ID`, `ALLOWED_EMAILS` y `ADMIN_EMAILS` con `CHANGE_ME`:

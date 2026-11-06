@@ -23,8 +23,12 @@ import CollectionActions from '@/components/CollectionActions';
 import HeroMenu from '@/components/HeroMenu';
 import AddTracksToPlaylistSheet from '@/components/AddTracksToPlaylistSheet';
 import Skeleton from '@/components/Skeleton';
+import TrackSortSelect from '@/components/TrackSortSelect';
+import { sortTracks, type TrackSortKey } from '@/utils/trackSort';
 import { formatTrackCount, formatTotalDuration } from '@/utils/format';
-import type { PlaylistDetail } from '@/types';
+import type { PlaylistDetail, Track } from '@/types';
+
+const EMPTY_TRACKS: Track[] = [];
 
 /**
  * Playlist detail. Owner: edit/delete and reorder/remove tracks (↑/↓).
@@ -67,13 +71,19 @@ export default function PlaylistDetailPage() {
 
   const isOwner = currentUserId != null && playlistQuery.data?.owner_id === currentUserId;
 
+  const playlistTracks = playlistQuery.data?.tracks ?? EMPTY_TRACKS;
+  const [sort, setSort] = useState<TrackSortKey>('default');
+  const sortedTracks = useMemo(
+    () => sortTracks(playlistTracks, sort),
+    [playlistTracks, sort],
+  );
   const totalSeconds = useMemo(
-    () => (playlistQuery.data?.tracks ?? []).reduce((acc, t) => acc + (t.duration_seconds ?? 0), 0),
-    [playlistQuery.data],
+    () => playlistTracks.reduce((acc, t) => acc + (t.duration_seconds ?? 0), 0),
+    [playlistTracks],
   );
   const queue = useMemo(
-    () => tracksToPlayerQueue(playlistQuery.data?.tracks ?? []),
-    [playlistQuery.data],
+    () => tracksToPlayerQueue(sortedTracks),
+    [sortedTracks],
   );
 
   if (playlistQuery.isPending) {
@@ -103,7 +113,8 @@ export default function PlaylistDetailPage() {
   }
 
   const playlist = playlistQuery.data;
-  const tracks = playlist.tracks;
+  const tracks = playlistTracks;
+  const reorderable = sort === 'default';
   const sharedArtist =
     tracks.length > 0 && tracks.every((track) => track.artist === tracks[0].artist);
 
@@ -268,6 +279,23 @@ export default function PlaylistDetailPage() {
         }
       />
 
+      {tracks.length > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <TrackSortSelect
+            id="playlist-track-sort"
+            value={sort}
+            onChange={setSort}
+            includeAlbum
+            defaultLabel="Orden de la playlist"
+          />
+          {!reorderable && (
+            <p className="text-xs text-text-muted">
+              Vuelve a «Orden de la playlist» para reordenar.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col gap-1">
         {tracks.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -281,13 +309,14 @@ export default function PlaylistDetailPage() {
             )}
           </div>
         ) : (
-          tracks.map((track, index) => (
+          sortedTracks.map((track, index) => (
             <ReorderTrackRow
               key={track.id}
               track={track}
               index={index}
-              total={tracks.length}
+              total={sortedTracks.length}
               canEdit={isOwner}
+              canReorder={isOwner && reorderable}
               queue={queue}
               showArtist={!sharedArtist}
               busy={reorder.isPending}

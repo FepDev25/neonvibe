@@ -54,7 +54,9 @@ export default function TrackEditButton({
       disc_number: toNumberOrNull(values.disc_number),
     });
     // A track edit can regroup albums/artists, so refresh the whole library.
-    await Promise.all([
+    // The save is already committed: a failed refresh must not be reported as a
+    // failed edit (the dialog would stay open showing a misleading error).
+    await Promise.allSettled([
       queryClient.invalidateQueries({ queryKey: ['tracks'] }),
       queryClient.invalidateQueries({ queryKey: ['albums'] }),
       queryClient.invalidateQueries({ queryKey: ['artists'] }),

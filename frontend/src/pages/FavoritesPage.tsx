@@ -17,6 +17,8 @@ import EmptyState from '@/components/EmptyState';
 import Button from '@/components/Button';
 import PullToRefresh from '@/components/PullToRefresh';
 import Skeleton from '@/components/Skeleton';
+import TrackSortSelect from '@/components/TrackSortSelect';
+import { sortTracks, type TrackSortKey } from '@/utils/trackSort';
 import { cn } from '@/utils/cn';
 
 type Tab = 'tracks' | 'albums' | 'artists';
@@ -34,6 +36,7 @@ const TABS: Array<{ id: Tab; label: string; icon: typeof Music }> = [
 export default function FavoritesPage() {
   useFavoritesLoaded();
   const [tab, setTab] = useState<Tab>('tracks');
+  const [sort, setSort] = useState<TrackSortKey>('default');
   const queryClient = useQueryClient();
 
   const tracksQuery = useFavoriteTracks();
@@ -43,7 +46,8 @@ export default function FavoritesPage() {
   const tracks = tracksQuery.data ?? [];
   const albums = albumsQuery.data ?? [];
   const artists = artistsQuery.data ?? [];
-  const trackQueue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
+  const sortedTracks = useMemo(() => sortTracks(tracks, sort), [tracks, sort]);
+  const trackQueue = useMemo(() => tracksToPlayerQueue(sortedTracks), [sortedTracks]);
 
   const active = tab === 'tracks' ? tracksQuery : tab === 'albums' ? albumsQuery : artistsQuery;
   const empty = active.isPending
@@ -112,7 +116,18 @@ export default function FavoritesPage() {
         />
       ) : tab === 'tracks' ? (
         <div className="flex flex-col gap-1">
-          {tracks.map((track, index) => (
+          {tracks.length > 1 && (
+            <div className="flex justify-end pb-1">
+              <TrackSortSelect
+                id="favorites-track-sort"
+                value={sort}
+                onChange={setSort}
+                includeAlbum
+                defaultLabel="Orden de favoritos"
+              />
+            </div>
+          )}
+          {sortedTracks.map((track, index) => (
             <TrackRow
               key={track.id}
               track={track}

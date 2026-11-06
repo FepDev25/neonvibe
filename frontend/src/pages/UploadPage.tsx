@@ -1,4 +1,5 @@
 import UploadCard from '@/components/UploadCard';
+import YouTubeImportCard from '@/components/YouTubeImportCard';
 
 /**
  * Dedicated page to upload new albums/tracks (admin). The heavy lifting
@@ -10,11 +11,14 @@ export default function UploadPage() {
       <div>
         <h1 className="neon-text text-2xl font-bold">Subir música</h1>
         <p className="text-sm text-text-muted">
-          Añade canciones o un ZIP; se organizan en la biblioteca por artista y álbum.
+          Añade canciones, un ZIP o un enlace de YouTube; se organizan en la biblioteca
+          por artista y álbum. Las canciones sueltas van a «Singles».
         </p>
       </div>
 
       <UploadCard />
+
+      <YouTubeImportCard />
 
       <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-text-muted">
         <p className="font-medium text-text">¿Lotes grandes?</p>

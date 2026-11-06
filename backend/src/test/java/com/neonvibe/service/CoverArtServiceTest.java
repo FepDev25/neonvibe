@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -104,6 +105,90 @@ class CoverArtServiceTest {
 
         assertEquals("image/jpeg", svc.getAlbumCover(1L).contentType());
         assertTrue(a.getCoverArtPath() != null && a.getCoverArtPath().endsWith(".jpg"));
+    }
+
+    @Test
+    void manualTrackUpload_isUsedByTheTrackCover() throws Exception {
+        Track track = new Track();
+        track.setId(5L);
+        track.setTitle("Song");
+        when(trackRepository.findById(5L)).thenReturn(Optional.of(track));
+
+        CoverArtService svc = service(store());
+        svc.saveManualTrack(5L, new byte[]{9}, "image/png");
+
+        assertTrue(track.getCoverArtPath() != null && track.getCoverArtPath().endsWith(".png"));
+        CoverResult result = svc.getTrackCover(5L);
+        assertArrayEquals(new byte[]{9}, result.bytes());
+        assertEquals("image/png", result.contentType());
+    }
+
+    @Test
+    void singlesAlbum_withoutStoredCover_returnsPlaceholderAndNeverUsesTrackArt() {
+        Album singles = new Album();
+        singles.setId(9L);
+        singles.setName("Singles");
+        when(albumRepository.findById(9L)).thenReturn(Optional.of(singles));
+
+        CoverResult result = service(store()).getAlbumCover(9L);
+
+        assertEquals("image/svg+xml", result.contentType());
+        assertTrue(new String(result.bytes()).contains("<svg"));
+        verify(trackRepository, never()).findByAlbumEntityId(9L);
+        verifyNoInteractions(iTunesClient, musicBrainzClient, lastFmClient);
+    }
+
+    @Test
+    void singlesTrack_withoutOwnCover_returnsPlaceholderInsteadOfTheAlbumCover() {
+        Album singles = new Album();
+        singles.setId(9L);
+        singles.setName("Singles");
+        Track track = new Track();
+        track.setId(5L);
+        track.setTitle("Song");
+        track.setAlbum("Singles");
+        track.setAlbumEntity(singles);
+        when(trackRepository.findById(5L)).thenReturn(Optional.of(track));
+        when(albumRepository.findById(9L)).thenReturn(Optional.of(singles));
+
+        CoverResult result = service(store()).getTrackCover(5L);
+
+        assertEquals("image/svg+xml", result.contentType());
+        assertTrue(new String(result.bytes()).contains("<svg"));
+    }
+
+    @Test
+    void singlesTrack_withOwnCover_keepsIt() throws Exception {
+        Album singles = new Album();
+        singles.setId(9L);
+        singles.setName("Singles");
+        Track track = new Track();
+        track.setId(5L);
+        track.setTitle("Song");
+        track.setAlbumEntity(singles);
+        Path own = tempDir.resolve("own.jpg");
+        Files.write(own, "own".getBytes());
+        track.setCoverArtPath(own.toString());
+        when(trackRepository.findById(5L)).thenReturn(Optional.of(track));
+
+        CoverResult result = service(store()).getTrackCover(5L);
+
+        assertArrayEquals("own".getBytes(), result.bytes());
+    }
+
+    @Test
+    void singlesAlbum_withManualCover_servesIt() throws Exception {
+        Album singles = new Album();
+        singles.setId(9L);
+        singles.setName("Singles");
+        Path manual = tempDir.resolve("manual.jpg");
+        Files.write(manual, "manual".getBytes());
+        singles.setCoverArtPath(manual.toString());
+        when(albumRepository.findById(9L)).thenReturn(Optional.of(singles));
+
+        CoverResult result = service(store()).getAlbumCover(9L);
+
+        assertArrayEquals("manual".getBytes(), result.bytes());
     }
 
     @Test

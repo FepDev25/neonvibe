@@ -33,6 +33,28 @@ function emptyQuery() {
   };
 }
 
+function tracksQuery() {
+  return {
+    data: {
+      pages: [
+        {
+          content: [
+            { id: 1, title: 'Beta', artist: 'B', duration_seconds: 100 },
+            { id: 2, title: 'Alpha', artist: 'A', duration_seconds: 120 },
+          ],
+          last: true,
+          number: 0,
+        },
+      ],
+      pageParams: [0],
+    },
+    isPending: false,
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    fetchNextPage: vi.fn(),
+  };
+}
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -72,6 +94,24 @@ describe('LibraryPage search', () => {
     );
     expect((screen.getByLabelText('Buscar en tu biblioteca') as HTMLInputElement).value).toBe(
       'moon',
+    );
+  });
+
+  it('sorts the whole library server-side and omits sort for the default', async () => {
+    mocks.useInfiniteTracks.mockReturnValue(tracksQuery());
+    renderPage();
+
+    expect(mocks.useInfiniteTracks).toHaveBeenCalledWith({ size: 20 });
+
+    fireEvent.change(screen.getByLabelText('Ordenar por'), {
+      target: { value: 'title-asc' },
+    });
+
+    await waitFor(() =>
+      expect(mocks.useInfiniteTracks).toHaveBeenLastCalledWith({
+        size: 20,
+        sort: 'title,asc',
+      }),
     );
   });
 });

@@ -22,6 +22,7 @@ import com.neonvibe.infra.MusicBrainzClient;
 import com.neonvibe.repository.AlbumRepository;
 import com.neonvibe.repository.ArtistRepository;
 import com.neonvibe.repository.TrackRepository;
+import com.neonvibe.scanner.LibraryCatalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -85,10 +86,21 @@ public class CoverArtService {
     public CoverResult getAlbumCover(Long albumId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new ResourceNotFoundException("Album not found: " + albumId));
+        return albumCover(album);
+    }
+
+    private CoverResult albumCover(Album album) {
+        Long albumId = album.getId();
 
         Optional<CoverResult> fromDb = readStored(album.getCoverArtPath());
         if (fromDb.isPresent()) {
             return fromDb.get();
+        }
+        // The reserved Singles album must not inherit the cover of one of its
+        // tracks (nor fetch a generic one online): each single keeps its own art.
+        // A manually uploaded collection cover is still served above (DB path).
+        if (LibraryCatalog.isReservedSingles(album.getName(), album.getArtist())) {
+            return cover(placeholderSvg(albumId, album.getName()), "image/svg+xml");
         }
         Optional<Path> cached = store.find("album", albumId);
         if (cached.isPresent()) {
@@ -145,7 +157,15 @@ public class CoverArtService {
         }
         Long albumId = track.getAlbumEntity() != null ? track.getAlbumEntity().getId() : null;
         if (albumId != null) {
-            return getAlbumCover(albumId);
+            Album album = albumRepository.findById(albumId).orElse(null);
+            if (album != null) {
+                // A loose track without its own art must show no cover, not the
+                // collection cover (which would be another single's artwork).
+                if (LibraryCatalog.isReservedSingles(album.getName(), album.getArtist())) {
+                    return cover(placeholderSvg(trackId, track.getTitle()), "image/svg+xml");
+                }
+                return albumCover(album);
+            }
         }
         return cover(placeholderSvg(trackId, track.getTitle()), "image/svg+xml");
     }
@@ -202,6 +222,23 @@ public class CoverArtService {
         album.setCoverArtPath(file.toString());
         album.setCoverFetchedAt(Instant.now());
         albumRepository.save(album);
+        deleteStoredIfDifferent(previous, file);
+        return cover(bytes, contentType);
+    }
+
+    /**
+     * Stores a cover for a single track. Used for loose tracks: their sidecar
+     * artwork must not overwrite the global «Singles» album cover.
+     */
+    @Transactional
+    public CoverResult saveManualTrack(Long trackId, byte[] bytes, String contentType) {
+        Track track = trackRepository.findById(trackId)
+                .orElseThrow(() -> new ResourceNotFoundException("Track not found: " + trackId));
+        Path file = store.fileFor("embedded", trackId, extOf(contentType));
+        store.write(file, bytes);
+        String previous = track.getCoverArtPath();
+        track.setCoverArtPath(file.toString());
+        trackRepository.save(track);
         deleteStoredIfDifferent(previous, file);
         return cover(bytes, contentType);
     }

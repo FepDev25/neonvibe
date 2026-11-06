@@ -12,6 +12,11 @@ interface ReorderTrackRowProps {
   index: number;
   total: number;
   canEdit: boolean;
+  /**
+   * Whether the move buttons are available. Disabled when the list is sorted by
+   * a criterion other than the persisted playlist position.
+   */
+  canReorder?: boolean;
   /** Surrounding list used to build the play queue. */
   queue?: PlayerTrack[];
   /** Hide the artist when every track in the list shares it. */
@@ -33,6 +38,7 @@ export default function ReorderTrackRow({
   index,
   total,
   canEdit,
+  canReorder = canEdit,
   queue,
   showArtist = true,
   showAlbum = true,
@@ -63,24 +69,28 @@ export default function ReorderTrackRow({
           canEdit ? (
             <>
               <div className="hidden items-center gap-0.5 lg:flex lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
-                <button
-                  type="button"
-                  disabled={busy || index === 0}
-                  onClick={moveUp}
-                  aria-label={`Mover arriba: ${track.title}`}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-accent-text disabled:opacity-30"
-                >
-                  <ChevronUp className="h-4 w-4" aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  disabled={busy || index === total - 1}
-                  onClick={moveDown}
-                  aria-label={`Mover abajo: ${track.title}`}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-accent-text disabled:opacity-30"
-                >
-                  <ChevronDown className="h-4 w-4" aria-hidden />
-                </button>
+                {canReorder && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={busy || index === 0}
+                      onClick={moveUp}
+                      aria-label={`Mover arriba: ${track.title}`}
+                      className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-accent-text disabled:opacity-30"
+                    >
+                      <ChevronUp className="h-4 w-4" aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy || index === total - 1}
+                      onClick={moveDown}
+                      aria-label={`Mover abajo: ${track.title}`}
+                      className="flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-alt hover:text-accent-text disabled:opacity-30"
+                    >
+                      <ChevronDown className="h-4 w-4" aria-hidden />
+                    </button>
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={remove}
@@ -112,24 +122,28 @@ export default function ReorderTrackRow({
           title={track.title}
           description={track.artist}
         >
-          <button
-            type="button"
-            disabled={busy || index === 0}
-            onClick={moveUp}
-            className={ACTION_ROW}
-          >
-            <ChevronUp className="h-4 w-4 shrink-0" aria-hidden />
-            Mover arriba
-          </button>
-          <button
-            type="button"
-            disabled={busy || index === total - 1}
-            onClick={moveDown}
-            className={ACTION_ROW}
-          >
-            <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
-            Mover abajo
-          </button>
+          {canReorder && (
+            <>
+              <button
+                type="button"
+                disabled={busy || index === 0}
+                onClick={moveUp}
+                className={ACTION_ROW}
+              >
+                <ChevronUp className="h-4 w-4 shrink-0" aria-hidden />
+                Mover arriba
+              </button>
+              <button
+                type="button"
+                disabled={busy || index === total - 1}
+                onClick={moveDown}
+                className={ACTION_ROW}
+              >
+                <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+                Mover abajo
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={remove}

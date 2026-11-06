@@ -18,7 +18,9 @@ export default function ArtistEditButton({ artist }: ArtistEditButtonProps) {
 
   const handleSave = async (values: Record<string, string>) => {
     await updateArtistMetadata(artist.id, { name: values.name.trim() });
-    await Promise.all([
+    // The edit is committed; a background refresh failure must not look like a
+    // failed save in the dialog.
+    await Promise.allSettled([
       queryClient.invalidateQueries({ queryKey: ['artists'] }),
       queryClient.invalidateQueries({ queryKey: ['artist'] }),
       queryClient.invalidateQueries({ queryKey: ['albums'] }),

@@ -31,6 +31,20 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
     Optional<Album> findByNameAndArtistNullSafe(@Param("name") String name,
                                                 @Param("artist") String artist);
 
+    /**
+     * Inserts the album only when no row matches its unique keys. Also covers the
+     * partial {@code uq_albums_singles} index for the reserved no-artist album.
+     * Concurrent ingests must not abort each other with a duplicate-key error.
+     */
+    @Modifying
+    @Query(value = """
+            INSERT INTO albums (name, artist, year, genre)
+            VALUES (:name, :artist, :year, :genre)
+            ON CONFLICT DO NOTHING
+            """, nativeQuery = true)
+    int insertIfAbsent(@Param("name") String name, @Param("artist") String artist,
+                       @Param("year") Integer year, @Param("genre") String genre);
+
     Page<Album> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
     Page<Album> findByArtistContainingIgnoreCase(String artist, Pageable pageable);

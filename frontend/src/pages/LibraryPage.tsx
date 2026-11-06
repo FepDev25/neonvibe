@@ -14,6 +14,8 @@ import SearchInput from '@/components/SearchInput';
 import Skeleton from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import Button from '@/components/Button';
+import TrackSortSelect from '@/components/TrackSortSelect';
+import { trackSortParam, type TrackSortKey } from '@/utils/trackSort';
 import { cn } from '@/utils/cn';
 
 type Tab = 'tracks' | 'albums' | 'artists';
@@ -39,12 +41,28 @@ function AlbumGridSkeleton() {
 }
 
 function TracksTab({ q, onClear }: { q: string; onClear: () => void }) {
-  const query = useInfiniteTracks(q ? { q, size: 20 } : { size: 20 });
+  const [sort, setSort] = useState<TrackSortKey>('default');
+  const sortParam = trackSortParam(sort);
+  const query = useInfiniteTracks({
+    ...(q ? { q } : {}),
+    size: 20,
+    ...(sortParam ? { sort: sortParam } : {}),
+  });
   const tracks = query.data?.pages.flatMap((p) => p.content) ?? [];
   const queue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
 
   return (
     <div className="flex flex-col gap-1">
+      {tracks.length > 1 && (
+        <div className="flex justify-end pb-1">
+          <TrackSortSelect
+            id="library-track-sort"
+            value={sort}
+            onChange={setSort}
+            includeAlbum
+          />
+        </div>
+      )}
       {query.isPending ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 8 }).map((_, i) => (

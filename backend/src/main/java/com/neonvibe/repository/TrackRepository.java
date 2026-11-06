@@ -45,7 +45,12 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
 
     List<Track> findByAlbumEntityId(Long albumId);
 
-    @Query("SELECT t FROM Track t WHERE t.albumEntity.id = :albumId AND t.isAvailable = true ORDER BY t.trackNumber")
+    /**
+     * Album tracklist. Tracks without a track number (loose singles) go last and
+     * the id breaks ties, so the order is deterministic across pages.
+     */
+    @Query("SELECT t FROM Track t WHERE t.albumEntity.id = :albumId AND t.isAvailable = true "
+            + "ORDER BY t.trackNumber NULLS LAST, t.id")
     Page<Track> findByAlbumEntityIdPaged(@Param("albumId") Long albumId, Pageable pageable);
 
     @Query("SELECT COUNT(t) FROM Track t WHERE t.albumEntity.id = :albumId AND t.isAvailable = true")

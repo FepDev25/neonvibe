@@ -19,6 +19,7 @@ import com.neonvibe.repository.ArtistRepository;
 import com.neonvibe.repository.TrackRepository;
 import com.neonvibe.scanner.AudioTagWriter;
 import com.neonvibe.scanner.LibrarySyncService;
+import com.neonvibe.scanner.RecentWrites;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -50,6 +51,8 @@ class MetadataEditServiceTest {
     private LibrarySyncService librarySyncService;
     @Mock
     private TrackMapper trackMapper;
+    @Mock
+    private RecentWrites recentWrites;
 
     @InjectMocks
     private MetadataEditService service;
@@ -72,6 +75,7 @@ class MetadataEditServiceTest {
         TrackResponse result = service.updateTrack(1L,
                 new TrackMetadataRequest("New Title", "New Artist", "New Album", "AA", 2024, "Jazz", 5, 1));
 
+        verify(recentWrites).mark(Path.of("/m/a.mp3"));
         verify(tagWriter).write(eq(Path.of("/m/a.mp3")), eq(new AudioTagWriter.TagValues(
                 "New Title", "New Artist", "New Album", "AA", 2024, "Jazz", 5, 1)));
         assertThat(track.getTitle()).isEqualTo("New Title");
@@ -91,6 +95,62 @@ class MetadataEditServiceTest {
                 .isInstanceOf(TagWriteException.class);
 
         verify(trackRepository, never()).save(any());
+    }
+
+    @Test
+    void updateTrack_blankAlbum_writesTheSinglesAlbum() {
+        Track track = Track.builder().id(1L).filePath("/m/a.mp3").title("Old").build();
+        Album singles = Album.builder().id(3L).name("Singles").build();
+        TrackResponse response = new TrackResponse(1L, "/m/a.mp3", "T", "Artist",
+                "Singles", null, null, null, null, null, 200, 320, "mp3", "audio/mpeg",
+                false, null, true, Instant.now(), Instant.now());
+
+        when(trackRepository.findById(1L)).thenReturn(Optional.of(track));
+        when(librarySyncService.resolveArtist("Artist")).thenReturn(null);
+        when(librarySyncService.resolveAlbum("Singles", "Artist", null, null)).thenReturn(singles);
+        when(trackRepository.save(track)).thenReturn(track);
+        when(trackMapper.toResponse(track)).thenReturn(response);
+
+        service.updateTrack(1L,
+                new TrackMetadataRequest("T", "Artist", "   ", null, null, null, null, null));
+
+        verify(tagWriter).write(eq(Path.of("/m/a.mp3")), eq(new AudioTagWriter.TagValues(
+                "T", "Artist", "Singles", null, null, null, null, null)));
+        assertThat(track.getAlbum()).isEqualTo("Singles");
+        assertThat(track.getAlbumEntity()).isSameAs(singles);
+    }
+
+    @Test
+    void updateAlbum_singlesAlbum_cannotBeRenamed() {
+        Album singles = Album.builder().id(2L).name("Singles").build();
+        when(albumRepository.findById(2L)).thenReturn(Optional.of(singles));
+
+        assertThatThrownBy(() -> service.updateAlbum(2L,
+                new AlbumMetadataRequest("Mis singles", 2024, null)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("reservado");
+    }
+
+    @Test
+    void updateAlbum_renamingAnotherAlbumToSingles_isRejected() {
+        Album album = Album.builder().id(3L).name("Real Album").artist("A").build();
+        when(albumRepository.findById(3L)).thenReturn(Optional.of(album));
+
+        assertThatThrownBy(() -> service.updateAlbum(3L,
+                new AlbumMetadataRequest("Singles", 2024, null)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("reservado");
+    }
+
+    @Test
+    void updateAlbum_legacySingleSpellingIsRejectedForOtherAlbums() {
+        Album album = Album.builder().id(3L).name("Real Album").artist("A").build();
+        when(albumRepository.findById(3L)).thenReturn(Optional.of(album));
+
+        assertThatThrownBy(() -> service.updateAlbum(3L,
+                new AlbumMetadataRequest("single", null, null)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("reservado");
     }
 
     @Test

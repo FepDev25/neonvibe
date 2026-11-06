@@ -17,6 +17,8 @@ import HeroMenu from '@/components/HeroMenu';
 import Skeleton from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import Button from '@/components/Button';
+import TrackSortSelect from '@/components/TrackSortSelect';
+import { sortTracks, type TrackSortKey } from '@/utils/trackSort';
 import { formatTrackCount, formatTotalDuration } from '@/utils/format';
 
 /**
@@ -29,8 +31,10 @@ export default function AlbumDetailPage() {
   const tracksQuery = useAlbumTracks(albumId);
   const queryClient = useQueryClient();
   const [coverVersion, setCoverVersion] = useState<number | undefined>(undefined);
+  const [sort, setSort] = useState<TrackSortKey>('default');
   const tracks = tracksQuery.data ?? [];
-  const queue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
+  const sortedTracks = useMemo(() => sortTracks(tracks, sort), [tracks, sort]);
+  const queue = useMemo(() => tracksToPlayerQueue(sortedTracks), [sortedTracks]);
 
   const handleCoverUploaded = () => {
     void queryClient.invalidateQueries({ queryKey: ['album', albumId] });
@@ -67,6 +71,8 @@ export default function AlbumDetailPage() {
   }
 
   const album = albumQuery.data;
+  // The reserved Singles album has no artist: every row shows its own artist.
+  const isSingles = album.name.toLowerCase() === 'singles' && !album.artist;
   const totalSeconds = tracks.reduce((acc, t) => acc + (t.duration_seconds ?? 0), 0);
 
   return (
@@ -80,7 +86,7 @@ export default function AlbumDetailPage() {
       </Link>
 
       <PageHero
-        kind="Álbum"
+        kind={isSingles ? 'Singles' : 'Álbum'}
         title={album.name}
         cover={
           <AlbumCover
@@ -113,7 +119,7 @@ export default function AlbumDetailPage() {
         menu={
           <HeroMenu label="Acciones del álbum">
             <DownloadButton tracks={queue} />
-            {tracks.length > 0 && <RadioButton trackId={tracks[0].id} />}
+            {sortedTracks.length > 0 && <RadioButton trackId={sortedTracks[0].id} />}
             <CoverUploadButton
               onUpload={(file) => uploadAlbumCover(album.id, file)}
               onUploaded={handleCoverUploaded}
@@ -122,6 +128,18 @@ export default function AlbumDetailPage() {
           </HeroMenu>
         }
       />
+
+      {tracks.length > 1 && (
+        <div className="flex justify-end">
+          <TrackSortSelect
+            id="album-track-sort"
+            value={sort}
+            onChange={setSort}
+            includeAlbum={false}
+            defaultLabel="Orden del álbum"
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-1">
         {tracksQuery.isPending ? (
@@ -140,13 +158,13 @@ export default function AlbumDetailPage() {
             }
           />
         ) : (
-          tracks.map((track, index) => (
+          sortedTracks.map((track, index) => (
             <TrackRow
               key={track.id}
               track={track}
               number={track.track_number ?? index + 1}
               queue={queue}
-              showArtist={false}
+              showArtist={isSingles}
               showAlbum={false}
             />
           ))

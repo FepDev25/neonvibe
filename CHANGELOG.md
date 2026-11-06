@@ -9,6 +9,28 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Crear playlist desde el modal «Añadir a playlist»:** campo de nombre inline
+  con «Crear y añadir»; la canción queda en la playlist recién creada sin salir
+  de la vista. Si no hay playlists, el formulario aparece directamente.
+- **Ordenación de listas:** selector «Ordenar por» en álbum, playlist, playlist
+  pública, artista, favoritos, biblioteca (canciones, orden global en servidor) y
+  descargas; por título, artista, álbum, duración, año, fecha o tamaño. El orden
+  por defecto se mantiene y la cola respeta el orden mostrado. En playlists el
+  reordenado manual solo se habilita con el orden original.
+- **Álbum «Singles»:** las canciones sin tag de álbum (y las etiquetadas
+  `Single`/`Singles`) se agrupan en un álbum global reservado **«Singles»**,
+  visible en Álbumes y con el artista real de cada pista. La migración **V12**
+  reasigna los singles existentes; los nuevos ficheros se organizan en
+  `<Artista>/Singles/` y las carátulas laterales se aplican a la pista (no al
+  álbum global). El álbum no hereda la portada de una pista (V13): cada single
+  muestra su propia carátula o ninguna. El álbum no se puede renombrar.
+- **Importación desde YouTube (yt-dlp):** card en **`/upload`** para pegar un
+  enlace, descargar el audio en el servidor, etiquetarlo (título, artista, año,
+  carátula embebida) y añadirlo a «Singles». Endpoints admin
+  `GET /admin/upload/youtube/status`, `POST /admin/upload/youtube` (job
+  asíncrono) y `GET /admin/upload/youtube/jobs/{id}`. Requiere `yt-dlp` + Deno
+  (`deploy/install-ytdlp.sh`); si faltan, la UI lo indica y el resto de la app
+  sigue funcionando.
 - **Subida de música al servidor:** `POST /api/v1/admin/upload` (admin) acepta
   varios ficheros de audio o un **ZIP**; se escriben en un staging fuera de la
   biblioteca, se leen sus tags, se **mueven a `<Artista>/<Álbum>/`**, se ingieren
@@ -99,6 +121,11 @@ proyecto respeta [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sesión anterior; el volumen 0 (mute) se restaura correctamente.
 ### Fixed
 
+- **Falso error al editar metadata:** el diálogo mostraba «An unexpected error
+  occurred» aunque el guardado ya se había aplicado. Las invalidaciones de caché
+  posteriores ya no convierten un guardado correcto en error, y el watcher ignora
+  los `MODIFY` de ficheros que la propia app acaba de etiquetar (evita reingestas
+  concurrentes con la transacción de edición).
 - **Canciones no disponibles visibles:** el detalle de álbum y de artista listaba
   los tracks con `is_available=false` (p. ej. los duplicados borrados seguían
   apareciendo). Las consultas de pistas por álbum/artista ahora filtran por

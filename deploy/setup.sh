@@ -26,14 +26,17 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-echo "==> [1/5] Dependencias (Java 21, PostgreSQL, curl)"
+echo "==> [1/5] Dependencias (Java 21, PostgreSQL, curl, ffmpeg)"
 export DEBIAN_FRONTEND=noninteractive
-if ! command -v java >/dev/null 2>&1; then
+PACKAGES=()
+command -v java    >/dev/null 2>&1 || PACKAGES+=(openjdk-21-jre-headless)
+command -v curl    >/dev/null 2>&1 || PACKAGES+=(curl)
+command -v openssl >/dev/null 2>&1 || PACKAGES+=(openssl)
+command -v ffmpeg  >/dev/null 2>&1 || PACKAGES+=(ffmpeg)
+command -v psql    >/dev/null 2>&1 || PACKAGES+=(postgresql postgresql-contrib)
+if [ ${#PACKAGES[@]} -gt 0 ]; then
   apt-get update -q
-  apt-get install -y -q openjdk-21-jre-headless curl openssl ffmpeg
-fi
-if ! command -v psql >/dev/null 2>&1; then
-  apt-get install -y -q postgresql postgresql-contrib
+  apt-get install -y -q "${PACKAGES[@]}"
 fi
 
 echo "==> [2/5] Usuario y directorios"
@@ -41,7 +44,7 @@ id -u "$SERVICE_USER" >/dev/null 2>&1 || useradd --system --no-create-home --she
 # /opt/neonvibe es de root (el servicio solo lee el JAR y el env; systemd los carga).
 install -d -m 0755 -o root -g root "$INSTALL_DIR"
 # /var/lib/neonvibe es donde el servicio ESCRIBE (covers/lyrics/staging).
-install -d -m 0755 -o "$SERVICE_USER" -g "$SERVICE_USER" "$DATA_DIR/covers" "$DATA_DIR/lyrics" "$DATA_DIR/incoming"
+install -d -m 0755 -o "$SERVICE_USER" -g "$SERVICE_USER" "$DATA_DIR/covers" "$DATA_DIR/lyrics" "$DATA_DIR/incoming" "$DATA_DIR/ytdlp"
 
 echo "==> [3/5] PostgreSQL (base + usuario)"
 DB_PASS="$(openssl rand -hex 16)"
@@ -101,6 +104,8 @@ if [ ! -f "$ENV_FILE" ]; then
     echo "COVERS_CACHE=/var/lib/neonvibe/covers"
     echo "LYRICS_CACHE=/var/lib/neonvibe/lyrics"
     echo "TRANSCODE_CACHE=/var/lib/neonvibe/transcode"
+    echo "# Importación desde YouTube (opcional; instala yt-dlp/Deno con deploy/install-ytdlp.sh)."
+    echo "YTDLP_STAGING=/var/lib/neonvibe/ytdlp"
     echo ""
     echo "# --- Opcionales ---"
     echo "# LASTFM_API_KEY="

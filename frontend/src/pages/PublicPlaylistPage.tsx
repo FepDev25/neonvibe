@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ListMusic, ArrowLeft, Music2 } from 'lucide-react';
@@ -7,6 +7,8 @@ import { tracksToPlayerQueue } from '@/stores/playerStore';
 import TrackRow from '@/components/TrackRow';
 import AlbumCover from '@/components/AlbumCover';
 import Skeleton from '@/components/Skeleton';
+import TrackSortSelect from '@/components/TrackSortSelect';
+import { sortTracks, type TrackSortKey } from '@/utils/trackSort';
 import { formatTrackCount } from '@/utils/format';
 
 interface PublicTrack {
@@ -42,8 +44,10 @@ export default function PublicPlaylistPage() {
     enabled: Number.isFinite(playlistId),
   });
 
+  const [sort, setSort] = useState<TrackSortKey>('default');
   const tracks = query.data?.tracks ?? [];
-  const queue = useMemo(() => tracksToPlayerQueue(tracks), [tracks]);
+  const sortedTracks = useMemo(() => sortTracks(tracks, sort), [tracks, sort]);
+  const queue = useMemo(() => tracksToPlayerQueue(sortedTracks), [sortedTracks]);
   const sharedArtist =
     tracks.length > 0 && tracks.every((track) => track.artist === tracks[0].artist);
 
@@ -102,13 +106,25 @@ export default function PublicPlaylistPage() {
               </div>
             </div>
 
+            {tracks.length > 1 && (
+              <div className="flex justify-end">
+                <TrackSortSelect
+                  id="public-playlist-track-sort"
+                  value={sort}
+                  onChange={setSort}
+                  includeAlbum
+                  defaultLabel="Orden de la playlist"
+                />
+              </div>
+            )}
+
             <div className="flex flex-col gap-1">
               {tracks.length === 0 ? (
                 <p className="py-8 text-center text-sm text-text-muted">
                   Esta playlist está vacía.
                 </p>
               ) : (
-                tracks.map((track, index) => (
+                sortedTracks.map((track, index) => (
                   <TrackRow
                     key={track.id}
                     track={track}

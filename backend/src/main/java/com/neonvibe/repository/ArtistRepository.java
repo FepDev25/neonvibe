@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Repository for {@link Artist}.
@@ -15,6 +16,16 @@ import org.springframework.data.jpa.repository.Query;
 public interface ArtistRepository extends JpaRepository<Artist, Long> {
 
     Optional<Artist> findByName(String name);
+
+    /**
+     * Inserts the artist only when the name is free. {@code ON CONFLICT DO
+     * NOTHING} keeps concurrent ingests (watcher, scan, YouTube import) from
+     * aborting each other with a duplicate-key error.
+     */
+    @Modifying
+    @Query(value = "INSERT INTO artists (name) VALUES (:name) ON CONFLICT DO NOTHING",
+            nativeQuery = true)
+    int insertIfAbsent(@Param("name") String name);
 
     Page<Artist> findByNameContainingIgnoreCase(String name, Pageable pageable);
 

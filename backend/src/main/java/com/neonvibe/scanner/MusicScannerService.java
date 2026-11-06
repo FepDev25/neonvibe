@@ -42,6 +42,7 @@ public class MusicScannerService {
     private final ScannerStatus status;
     private final FileWatcherService fileWatcher;
     private final IngestService ingestService;
+    private final RecentWrites recentWrites;
     private final ScannerWsBridge wsBridge;
     private final PushNotificationService pushNotifications;
 
@@ -80,6 +81,7 @@ public class MusicScannerService {
                                ScannerStatus status,
                                FileWatcherService fileWatcher,
                                IngestService ingestService,
+                               RecentWrites recentWrites,
                                @Autowired(required = false) ScannerWsBridge wsBridge,
                                @Autowired(required = false) PushNotificationService pushNotifications) {
         this.config = config;
@@ -88,6 +90,7 @@ public class MusicScannerService {
         this.status = status;
         this.fileWatcher = fileWatcher;
         this.ingestService = ingestService;
+        this.recentWrites = recentWrites;
         this.wsBridge = wsBridge;
         this.pushNotifications = pushNotifications;
     }
@@ -98,6 +101,7 @@ public class MusicScannerService {
             switch (type) {
                 case DELETE -> onFileDeleted(path);
                 case ROOT -> scanAll();
+                case MODIFY -> onFileModified(path);
                 default -> onFileChanged(path);
             }
         });
@@ -270,6 +274,11 @@ public class MusicScannerService {
         if (!Files.exists(path)) {
             return;
         }
+        if (recentWrites.isRecent(path)) {
+            // Our own metadata write: the edit transaction is updating the DB.
+            log.debug("Ignoring watcher event for recently edited file {}", path);
+            return;
+        }
         if (isInIncoming(path)) {
             // Serialized sweep: covers files/dirs copied before the watcher
             // registered them, and avoids concurrent moves of the same file.
@@ -277,6 +286,14 @@ public class MusicScannerService {
             return;
         }
         processPath(path);
+    }
+
+    /**
+     * MODIFY events go through the same path as CREATE: {@link #onFileChanged}
+     * filters out files the app itself just wrote (metadata edits).
+     */
+    public void onFileModified(Path path) {
+        onFileChanged(path);
     }
 
     /** Whether a path lives inside the watched incoming/drop folder. */

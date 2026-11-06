@@ -19,6 +19,7 @@ import java.util.function.BiConsumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
@@ -46,7 +47,9 @@ public class FileWatcherService {
     private volatile BiConsumer<Path, EventType> eventHandler = (p, t) -> { /* no-op until wired */ };
     private volatile boolean running;
 
-    public FileWatcherService(ScannerConfig config, ExecutorService workerPool) throws IOException {
+    public FileWatcherService(ScannerConfig config,
+                              @Qualifier("scannerExecutor") ExecutorService workerPool)
+            throws IOException {
         this.config = config;
         this.workerPool = workerPool;
         this.watchService = FileSystems.getDefault().newWatchService();
